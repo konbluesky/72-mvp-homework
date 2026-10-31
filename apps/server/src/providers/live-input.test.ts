@@ -8,6 +8,7 @@ import { transcriptResponse, plannerResponse } from '../../../../tests/fixtures/
 import type { Fetch } from './http.js';
 
 const plan: ReplyPlan = {
+  suggestions: [],
   segments: [{ text: '你好，坐一会儿吧。', emotion: 'curious', action: 'none', events: [] }],
 };
 const mp3 = new Uint8Array([0xff, 0xfb, 0x90, 0, 1, 2, 3, 4]);

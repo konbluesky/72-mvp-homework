@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+import Fastify, { type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import swagger from '@fastify/swagger';
@@ -23,18 +23,25 @@ import {
   TextInputSchema,
   AudioInputMetadataSchema,
   HealthSchema,
+  ConnectionProbeSchema,
+  SCHEMA_VERSION,
+  ConnectionEventSchema,
   ReadySchema,
   HttpErrorSchema,
   ServerEventSchema,
+  TranscriptionPreviewSchema,
 } from '@mira/protocol';
 import { loadConfig, type Config } from './config/index.js';
 import { createProviders, type ProviderSet } from './providers/index.js';
 import { createMediaService, cleanupLocalOrphans, type MediaService } from './media/index.js';
-import { SessionManager, type Turn } from './sessions/manager.js';
+import { SessionManager, type Session, type Turn } from './sessions/manager.js';
 import { AppError, publicError } from './http/errors.js';
 import { readInput } from './http/input.js';
 import { openStream } from './http/sse.js';
-import { abortable, runConversation } from './graphs/conversation.js';
+import { ConnectionStreams } from './http/connection.js';
+import { runConversation } from './graphs/conversation.js';
+import { abortable } from './graphs/abortable.js';
+import { transcribeRecording } from './graphs/transcription.js';
 
 export interface AppOptions {
   config?: Config;
@@ -52,6 +59,7 @@ const errors = {
   410: HttpErrorSchema,
   413: HttpErrorSchema,
   415: HttpErrorSchema,
+  422: HttpErrorSchema,
   429: HttpErrorSchema,
   500: HttpErrorSchema,
   502: HttpErrorSchema,
@@ -131,6 +139,30 @@ export async function createApp(options: AppOptions = {}) {
             },
           },
         });
+      const transcriptionRoute =
+        openapiObject.paths?.['/api/sessions/{id}/turns/{turnId}/transcription']?.post;
+      if (transcriptionRoute)
+        Object.assign(transcriptionRoute, {
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  required: ['metadata', 'audio'],
+                  properties: {
+                    metadata: {
+                      type: 'string',
+                      description: 'JSON serialized AudioInputMetadata',
+                      'x-json-schema': z.toJSONSchema(AudioInputMetadataSchema),
+                    },
+                    audio: { type: 'string', format: 'binary' },
+                  },
+                },
+              },
+            },
+          },
+        });
       if (inputRoute?.responses)
         Object.assign(inputRoute.responses, {
           '200': {
@@ -139,6 +171,20 @@ export async function createApp(options: AppOptions = {}) {
               'text/event-stream': {
                 schema: { type: 'string' },
                 'x-event-schema': z.toJSONSchema(ServerEventSchema),
+              },
+            },
+          },
+        });
+      const connectionRoute = openapiObject.paths?.['/api/connection/events']?.get;
+      if (connectionRoute?.responses)
+        Object.assign(connectionRoute.responses, {
+          '200': {
+            description:
+              'Long-lived, stateless server connection monitoring. Reconnect creates a new stream; no business replay.',
+            content: {
+              'text/event-stream': {
+                schema: { type: 'string' },
+                'x-event-schema': z.toJSONSchema(ConnectionEventSchema),
               },
             },
           },
@@ -202,6 +248,67 @@ export async function createApp(options: AppOptions = {}) {
   );
   const creationTimes = new Map<string, number[]>();
   const receivingInput = new Map<string, Turn>();
+
+  async function receiveInput(request: FastifyRequest, session: Session, turnId: string) {
+    const uploadTurn = session.turns.get(turnId);
+    if (!uploadTurn) throw new AppError('STALE_TURN', 409, '旧的回应已结束。');
+    sessions.assertCurrent(session, uploadTurn);
+    if (receivingInput.has(session.id) || receivingInput.size >= config.MAX_ACTIVE_TURNS)
+      throw new AppError('CAPACITY_EXCEEDED', 429, '录音正在传送，请稍后再试。', true);
+    receivingInput.set(session.id, uploadTurn);
+    uploadTurn.uploadRequestId = request.id;
+    const releaseUpload = () => {
+      // An older reader's finally must never release a newer turn's upload slot.
+      if (receivingInput.get(session.id) === uploadTurn) receivingInput.delete(session.id);
+      if (uploadTurn.uploadRequestId === request.id) uploadTurn.uploadRequestId = undefined;
+    };
+    const abortUpload = () => {
+      releaseUpload();
+      request.raw.destroy();
+    };
+    uploadTurn.abort.signal.addEventListener('abort', abortUpload, { once: true });
+    let input;
+    try {
+      input = await abortable(readInput(request, config), uploadTurn.abort.signal);
+      sessions.assertCurrent(session, uploadTurn);
+    } finally {
+      uploadTurn.abort.signal.removeEventListener('abort', abortUpload);
+      releaseUpload();
+    }
+    return input;
+  }
+  const connectionStreams = new ConnectionStreams();
+  // preClose runs before Fastify waits for active long-lived responses.
+  app.addHook('preClose', async () => {
+    connectionStreams.close();
+  });
+  app.get(
+    '/api/connection/ping',
+    {
+      logLevel: 'warn',
+      schema: { response: { 200: ConnectionProbeSchema } },
+    },
+    async () => ({ schemaVersion: SCHEMA_VERSION, status: 'ok' as const }),
+  );
+  app.get(
+    '/api/connection/events',
+    {
+      logLevel: 'warn',
+      schema: {
+        response: {
+          200: z.string().describe('Stateless SSE connection.ready/connection.heartbeat frames'),
+          ...errors,
+        },
+      },
+    },
+    async (request, reply) => {
+      const origin = request.headers.origin;
+      if (origin !== undefined && !config.CORS_ALLOWED_ORIGINS.includes(origin))
+        throw new AppError('INVALID_REQUEST', 403, '连接来源不受支持。');
+      if (!connectionStreams.open(reply))
+        throw new AppError('CAPACITY_EXCEEDED', 503, '连接监测暂忙，正在重试。', true);
+    },
+  );
   app.get('/healthz', { schema: { response: { 200: HealthSchema } } }, async () => ({
     status: 'ok' as const,
   }));
@@ -315,6 +422,59 @@ export async function createApp(options: AppOptions = {}) {
     },
   );
   app.post(
+    '/api/sessions/:id/turns/:turnId/transcription',
+    {
+      schema: {
+        security,
+        params: TurnParamsSchema,
+        description:
+          'Transcription preview only. Does not create a user message or call planner/TTS. Confirm edited text in a new turn.',
+        response: { 200: TranscriptionPreviewSchema, ...errors },
+      },
+    },
+    async (request, reply) => {
+      const session = sessions.authenticate(request.params.id, request.headers.authorization);
+      if (!providers.stt)
+        throw new AppError('UNSUPPORTED_AUDIO', 415, '当前模式暂不支持语音输入，请使用文字输入。');
+      const input = await receiveInput(request, session, request.params.turnId);
+      if (input.input.kind !== 'audio')
+        throw new AppError('INVALID_REQUEST', 400, '请上传需要预览的录音。');
+      const turn = sessions.startInput(
+        session,
+        request.params.turnId,
+        input.generation,
+        input.inputId,
+        input.digest,
+        { expectAudio: false },
+      );
+      const disconnected = () => {
+        if (!reply.raw.writableFinished)
+          sessions.fail(
+            turn,
+            new AppError('STREAM_INTERRUPTED', 499, '识别已取消，请重新录音。', true),
+          );
+      };
+      reply.raw.once('close', disconnected);
+      try {
+        const transcription = await transcribeRecording(
+          { config, providers, sessions, logger: request.log },
+          session,
+          turn,
+          input.input,
+        );
+        sessions.assertCurrent(session, turn);
+        sessions.generated(turn);
+        return { ...turn.identity, text: transcription.text, simulated: transcription.simulated };
+      } catch (error) {
+        const failure = publicError(turn.failure ?? error);
+        sessions.fail(turn, failure);
+        throw failure;
+      } finally {
+        reply.raw.off('close', disconnected);
+      }
+    },
+  );
+  app.post(
     '/api/sessions/:id/turns/:turnId/input',
     {
       schema: {
@@ -333,31 +493,7 @@ export async function createApp(options: AppOptions = {}) {
     },
     async (request, reply) => {
       const session = sessions.authenticate(request.params.id, request.headers.authorization);
-      const uploadTurn = session.turns.get(request.params.turnId);
-      if (!uploadTurn) throw new AppError('STALE_TURN', 409, '旧的回应已结束。');
-      sessions.assertCurrent(session, uploadTurn);
-      if (receivingInput.has(session.id) || receivingInput.size >= config.MAX_ACTIVE_TURNS)
-        throw new AppError('CAPACITY_EXCEEDED', 429, '录音正在传送，请稍后再试。', true);
-      receivingInput.set(session.id, uploadTurn);
-      uploadTurn.uploadRequestId = request.id;
-      const releaseUpload = () => {
-        // An older reader's finally must never release a newer turn's upload slot.
-        if (receivingInput.get(session.id) === uploadTurn) receivingInput.delete(session.id);
-        if (uploadTurn.uploadRequestId === request.id) uploadTurn.uploadRequestId = undefined;
-      };
-      const abortUpload = () => {
-        releaseUpload();
-        request.raw.destroy();
-      };
-      uploadTurn.abort.signal.addEventListener('abort', abortUpload, { once: true });
-      let input;
-      try {
-        input = await abortable(readInput(request, config), uploadTurn.abort.signal);
-        sessions.assertCurrent(session, uploadTurn);
-      } finally {
-        uploadTurn.abort.signal.removeEventListener('abort', abortUpload);
-        releaseUpload();
-      }
+      const input = await receiveInput(request, session, request.params.turnId);
       const turn = sessions.startInput(
         session,
         request.params.turnId,

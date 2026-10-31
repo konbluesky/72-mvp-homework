@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ReplyPlan } from '@mira/protocol';
 import { photoRequested, validateStory } from './rules.js';
 const photo: ReplyPlan = {
+  suggestions: [],
   segments: [
     {
       text: '给你看。',
@@ -26,6 +27,7 @@ describe('scenario authorization', () => {
   );
   it('rejects environment before either a previous confirmed photo or a planned photo', () => {
     const plan: ReplyPlan = {
+      suggestions: [],
       segments: [
         {
           text: '雨小了。',

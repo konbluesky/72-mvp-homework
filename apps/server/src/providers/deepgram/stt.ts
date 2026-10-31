@@ -39,7 +39,7 @@ export class DeepgramStt implements SpeechToTextProvider {
     private readonly client: DeepgramClient,
     private readonly options: DeepgramSttOptions,
   ) {
-    this.info = { provider: 'deepgram', model: options.model };
+    this.info = { provider: 'deepgram', model: options.model, language: options.language };
   }
   async transcribe(input: AudioData, signal: AbortSignal): Promise<Transcription> {
     signal.throwIfAborted();

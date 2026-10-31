@@ -10,7 +10,8 @@ import type { Config } from '../config/index.js';
 import type { ProviderSet } from '../providers/index.js';
 import type { MediaService } from '../media/index.js';
 import { AppError } from '../http/errors.js';
-import { normalizeRecording } from '../providers/audio-input.js';
+import { transcribeRecording } from './transcription.js';
+import { abortable } from './abortable.js';
 import { timed, type StageLogger } from '../observability/stages.js';
 import { validateStory } from '../scenario/rules.js';
 import type { Session, SessionManager, Turn } from '../sessions/manager.js';
@@ -40,23 +41,7 @@ const GraphState = Annotation.Root({
 });
 
 /** A non-cooperative upstream can finish later, but cannot keep the graph alive or publish. */
-export function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
-  if (signal.aborted) return Promise.reject(signal.reason);
-  return new Promise<T>((resolve, reject) => {
-    const abort = () => reject(signal.reason);
-    signal.addEventListener('abort', abort, { once: true });
-    promise.then(
-      (value) => {
-        signal.removeEventListener('abort', abort);
-        if (!signal.aborted) resolve(value);
-      },
-      (error: unknown) => {
-        signal.removeEventListener('abort', abort);
-        reject(error);
-      },
-    );
-  });
-}
+export { abortable } from './abortable.js';
 
 export async function runConversation(
   dependencies: ConversationDependencies,
@@ -97,29 +82,8 @@ export async function runConversation(
     })
     .addNode('transcribe', async () => {
       if (input.kind !== 'audio') return {};
-      const transcribe = providers.stt?.transcribe.bind(providers.stt);
-      if (!transcribe)
-        throw new AppError('UNSUPPORTED_AUDIO', 415, '当前模式暂不支持语音输入，请使用文字输入。');
-      const normalized = await stage('recording_decode', () =>
-        normalizeRecording(input, config, signal),
-      );
-      logger.info({
-        ...turn.identity,
-        stage: 'recording',
-        durationMs: normalized.durationMs,
-        inputBytes: input.bytes.length,
-      });
-      logger.info({ ...turn.identity, stage: 'stt_provider', ...providers.stt?.info });
-      const transcription = await stage('stt', () => transcribe(normalized, signal));
-      const text = transcription.text.trim();
-      logger.info({
-        ...turn.identity,
-        stage: 'stt_result',
-        providerRequestId: transcription.requestId ?? 'unknown',
-        audioDurationSeconds: transcription.durationSeconds ?? 'unknown',
-      });
-      if (!text || text.length > 1000)
-        throw new AppError('PROVIDER_FAILED', 502, '刚才没有听清，可以再说一次或打字。', true);
+      const transcription = await transcribeRecording(dependencies, session, turn, input);
+      const text = transcription.text;
       await publish({
         type: 'input.transcribed',
         payload: { text, simulated: transcription.simulated },
@@ -259,7 +223,13 @@ export async function runConversation(
           if (timer) clearTimeout(timer);
         }
       }
-      await publish({ type: 'reply.done', payload: { segmentCount: state.plan.segments.length } });
+      await publish({
+        type: 'reply.done',
+        payload: {
+          segmentCount: state.plan.segments.length,
+          suggestions: state.plan.suggestions,
+        },
+      });
       sessions.generated(turn);
       return {};
     })

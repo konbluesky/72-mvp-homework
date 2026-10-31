@@ -49,6 +49,7 @@ export function testMedia(config = testConfig()) {
   return new MediaService(config, new MemoryMediaStore());
 }
 export const oneSegment = {
+  suggestions: [],
   segments: [{ text: '雨还在下，我们慢慢聊。', emotion: 'curious', action: 'none', events: [] }],
 };
 export function testProviders(

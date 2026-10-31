@@ -49,6 +49,7 @@ describe('provider composition', () => {
       endpoints.push(path);
       if (path === '/v1/chat/completions')
         return plannerResponse({
+          suggestions: [],
           segments: [
             { text: '旅行让人想起很多事。', emotion: 'curious', action: 'lookWindow', events: [] },
           ],

@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import type { Config } from '../config/index.js';
 import type { AudioData } from './types.js';
+import { measurePcm16, type AudioSignalStats } from './audio-signal.js';
 
 export class AudioInputError extends Error {
   constructor(
@@ -57,7 +58,7 @@ export async function normalizeRecording(
   audio: AudioData,
   config: Config,
   signal: AbortSignal,
-): Promise<AudioData & { durationMs: number }> {
+): Promise<AudioData & { durationMs: number; signalStats: AudioSignalStats }> {
   signal.throwIfAborted();
   if (!audio.bytes.length || audio.bytes.length > config.MAX_UPLOAD_BYTES)
     throw new AudioInputError('INVALID_REQUEST', '录音大小不正确，请重新录制。');
@@ -169,6 +170,7 @@ export async function normalizeRecording(
       bytes: wave(pcm),
       mimeType: 'audio/wav',
       durationMs: (pcm.length / (SAMPLE_RATE * 2)) * 1000,
+      signalStats: measurePcm16(pcm),
     };
   } finally {
     decoding -= 1;

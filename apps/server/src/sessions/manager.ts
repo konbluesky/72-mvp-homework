@@ -189,6 +189,7 @@ export class SessionManager {
     generation: number,
     inputId: string,
     digest: string,
+    options: { expectAudio?: boolean } = {},
   ): Turn {
     const turn = this.getTurn(session, turnId, generation);
     if (turn.input) {
@@ -224,16 +225,17 @@ export class SessionManager {
         this.fail(turn, new AppError('TURN_TIMEOUT', 504, '这次回应等得太久，请再试一次。', true)),
       this.config.TURN_MAX_LIFETIME_MS,
     );
-    turn.firstAudioTimer = setTimeout(
-      () =>
-        this.fail(
-          turn,
-          new AppError('FIRST_AUDIO_TIMEOUT', 504, '声音还没有准备好，请再试一次。', true),
-        ),
-      this.config.FIRST_AUDIO_TIMEOUT_MS,
-    );
+    if (options.expectAudio !== false)
+      turn.firstAudioTimer = setTimeout(
+        () =>
+          this.fail(
+            turn,
+            new AppError('FIRST_AUDIO_TIMEOUT', 504, '声音还没有准备好，请再试一次。', true),
+          ),
+        this.config.FIRST_AUDIO_TIMEOUT_MS,
+      );
     turn.timer.unref();
-    turn.firstAudioTimer.unref();
+    turn.firstAudioTimer?.unref();
     return turn;
   }
 
