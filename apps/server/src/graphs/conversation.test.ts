@@ -42,6 +42,44 @@ function setup(providers: ProviderSet, overrides: Record<string, string> = {}) {
 afterEach(() => vi.useRealTimers());
 
 describe('real LangGraph orchestration', () => {
+  it('generates context-aware suggestions in the same planner call without committing them as dialogue', async () => {
+    const suggestions = [{ label: '问问那位朋友', draft: '你们上次见面是什么时候？' }];
+    const plan = vi.fn<ProviderSet['planner']['plan']>(async () => ({
+      ...oneSegment,
+      suggestions,
+    }));
+    const ctx = setup(testProviders({ plan }));
+    ctx.session.history.push({ role: 'assistant', text: '我在等一位老朋友。', mode: 'audio' });
+    ctx.session.facts.photo_revealed = true;
+    try {
+      await runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        { kind: 'text', text: '你们认识多久了？' },
+        ctx.publish,
+      );
+      expect(plan).toHaveBeenCalledOnce();
+      expect(plan.mock.calls[0]?.[0]).toMatchObject({
+        text: '你们认识多久了？',
+        facts: ['photo_revealed'],
+        history: [
+          { role: 'assistant', text: '我在等一位老朋友。' },
+          { role: 'user', text: '你们认识多久了？' },
+        ],
+      });
+      expect(ctx.events.at(-1)).toEqual({
+        type: 'reply.done',
+        payload: { segmentCount: 1, suggestions },
+      });
+      expect(ctx.session.history).toHaveLength(2);
+      expect(ctx.session.history.some((message) => message.text === suggestions[0]?.draft)).toBe(
+        false,
+      );
+    } finally {
+      await ctx.cleanup();
+    }
+  });
   it('uses one plan call and does not commit an unplayed response', async () => {
     const plan = vi.fn(async () => oneSegment);
     const ctx = setup(testProviders({ plan }));
@@ -60,7 +98,10 @@ describe('real LangGraph orchestration', () => {
     await ctx.cleanup();
   });
   it('repairs once inside the graph, then rejects a still-invalid model plan', async () => {
-    const plan = vi.fn(async () => ({ segments: [{ text: 'hi', action: 'execute-js' }] }));
+    const plan = vi.fn(async () => ({
+      suggestions: [],
+      segments: [{ text: 'hi', action: 'execute-js' }],
+    }));
     const ctx = setup(testProviders({ plan }));
     await expect(
       runConversation(
@@ -80,6 +121,7 @@ describe('real LangGraph orchestration', () => {
     {
       name: 'segment',
       invalid: {
+        suggestions: [],
         segments: [{ ...oneSegment.segments[0], url: 'https://unexpected.example/media' }],
       },
     },
@@ -182,7 +224,9 @@ describe('real LangGraph orchestration', () => {
       events: [],
     }));
     const synthesize = vi.fn(testProviders().tts.synthesize);
-    const ctx = setup(testProviders({ plan: async () => ({ segments }), synthesize }));
+    const ctx = setup(
+      testProviders({ plan: async () => ({ suggestions: [], segments }), synthesize }),
+    );
     const twoReady = deferred<void>();
     const audio: Array<Extract<ServerEvent, { type: 'audio.ready' }>['payload']> = [];
     const task = runConversation(
@@ -216,6 +260,7 @@ describe('real LangGraph orchestration', () => {
   });
   it('waits for actual photo presentation and removes the environment event after photo failure', async () => {
     const plan = {
+      suggestions: [],
       segments: [
         {
           text: '给你看照片。',
@@ -286,7 +331,10 @@ it('clears the first budget after audio readiness and independently bounds the n
   let calls = 0;
   const ctx = setup(
     testProviders({
-      plan: async () => ({ segments: [oneSegment.segments[0], oneSegment.segments[0]] }),
+      plan: async () => ({
+        suggestions: [],
+        segments: [oneSegment.segments[0], oneSegment.segments[0]],
+      }),
       synthesize: async () => {
         calls += 1;
         if (calls === 2) {

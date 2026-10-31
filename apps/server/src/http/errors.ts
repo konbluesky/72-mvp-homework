@@ -26,7 +26,12 @@ export function publicError(error: unknown): AppError {
     );
   if (error instanceof ProviderError) {
     if (error.code === 'NO_SPEECH')
-      return new AppError('INVALID_REQUEST', 400, '刚才没有听清，请再说一次或使用文字。', true);
+      return new AppError(
+        'NO_SPEECH',
+        422,
+        '没有识别出语音，请检查麦克风输入后重录，或使用文字。',
+        true,
+      );
     return new AppError(
       error.code === 'INVALID_AUDIO' ? 'MEDIA_FAILED' : error.code,
       error.code === 'PROVIDER_TIMEOUT' ? 504 : 502,

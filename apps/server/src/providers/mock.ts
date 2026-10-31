@@ -32,7 +32,7 @@ function segment(
 ): PlanSegment {
   return { text, emotion, action, events };
 }
-export function mockPlan(text: string, facts: string[]): ReplyPlan {
+function mockContent(text: string, facts: string[]): Pick<ReplyPlan, 'segments'> {
   // Refusal must win over a photo keyword; branch on content, never the turn count.
   if (/(不要|不想|不用|拒绝|别).{0,5}(照片|相片)|不看/.test(text))
     return { segments: [segment(MOCK_LINES.refuse, 'guarded')] };
@@ -70,6 +70,51 @@ export function mockPlan(text: string, facts: string[]): ReplyPlan {
     return { segments: [segment(MOCK_LINES.after, 'relieved')] };
   return {
     segments: [segment(MOCK_LINES.hello, 'curious'), segment(MOCK_LINES.helloNext, 'curious')],
+  };
+}
+
+/** Offline fixtures exercise the same suggestion protocol; Live choices come from the planner. */
+export function mockPlan(text: string, facts: string[]): ReplyPlan {
+  const content = mockContent(text, facts);
+  const reply = content.segments[0]?.text;
+  if (reply === MOCK_LINES.refuse)
+    return {
+      ...content,
+      suggestions: [
+        { label: '听一会儿雨', draft: '好，就这样安静坐一会儿吧。' },
+        { label: '聊聊旅行', draft: '旅行中有没有让你舍不得离开的地方？' },
+      ],
+    };
+  if (reply === MOCK_LINES.waiting)
+    return {
+      ...content,
+      suggestions: [
+        { label: '问问那位朋友', draft: '你们有多久没见面了？' },
+        { label: '陪她等一会儿', draft: '如果你愿意，我可以陪你再等一会儿。' },
+      ],
+    };
+  if (reply === MOCK_LINES.travel)
+    return {
+      ...content,
+      suggestions: [
+        { label: '聊聊海边', draft: '那片海对你有什么特别的意义吗？' },
+        { label: '说说我的旅行', draft: '我也有一段一直忘不了的旅行，想讲给你听。' },
+      ],
+    };
+  if (reply === MOCK_LINES.photo || facts.includes('photo_revealed'))
+    return {
+      ...content,
+      suggestions: [
+        { label: '聊聊那次旅行', draft: '那次海边的旅行，最让你难忘的是什么？' },
+        { label: '问问下一站', draft: '以后你还想去什么地方拍照？' },
+      ],
+    };
+  return {
+    ...content,
+    suggestions: [
+      { label: '聊聊摄影', draft: '你是什么时候开始喜欢摄影的？' },
+      { label: '陪她坐一会儿', draft: '我不赶时间，可以陪你聊一会儿。' },
+    ],
   };
 }
 export class MockStt implements SpeechToTextProvider {

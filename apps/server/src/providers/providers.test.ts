@@ -63,7 +63,7 @@ describe('provider contracts without paid network calls', () => {
   it('Live composes independent STT, planner and TTS without eagerly making network requests', () => {
     const http = vi.fn<Fetch>();
     const live = createLiveProviders(config, http);
-    expect(live.stt?.info).toEqual({ provider: 'deepgram', model: 'nova-3' });
+    expect(live.stt?.info).toEqual({ provider: 'deepgram', model: 'nova-3', language: 'zh-CN' });
     expect(live.planner.info.provider).toBe('openai-compatible');
     expect(live.tts.info.provider).toBe('deepgram');
     expect(http).not.toHaveBeenCalled();
@@ -78,6 +78,7 @@ describe('provider contracts without paid network calls', () => {
       DEEPGRAM_MODEL: 'flux-lijuan-zh',
     });
     const plan = {
+      suggestions: [],
       segments: [
         { text: '来自已配置接口的回复。', emotion: 'curious', action: 'none', events: [] },
       ],

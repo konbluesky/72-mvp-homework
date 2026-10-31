@@ -62,8 +62,8 @@ describe('Deepgram speech contracts', () => {
       error = reason;
     }
     expect(publicError(error)).toMatchObject({
-      code: 'INVALID_REQUEST',
-      status: 400,
+      code: 'NO_SPEECH',
+      status: 422,
       retryable: true,
     });
     expect(http).toHaveBeenCalledOnce();

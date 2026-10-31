@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SessionCreatedSchema, ServerEventSchema } from '@mira/protocol';
+import {
+  SessionCreatedSchema,
+  ServerEventSchema,
+  TranscriptionPreviewSchema,
+} from '@mira/protocol';
 import { createApp } from './app.js';
+import { ProviderError } from './providers/types.js';
 import { testConfig, testMedia, testProviders, wav } from '../test/helpers.js';
 
 const apps: Array<Awaited<ReturnType<typeof createApp>>> = [];
@@ -36,11 +41,89 @@ function events(payload: string) {
 }
 
 describe('Fastify API boundaries', () => {
+  it('previews transcription without dialogue or planner/TTS, then replies only to confirmed edited text', async () => {
+    const { app, created, base, headers, providers } = await setup({ MAX_ACTIVE_TURNS: '1' });
+    const plan = vi.spyOn(providers.planner, 'plan');
+    const tts = vi.spyOn(providers.tts, 'synthesize');
+    const stt = vi.spyOn(providers.stt, 'transcribe');
+    const boundary = 'preview-voice';
+    const payload = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="metadata"\r\n\r\n${JSON.stringify({ generation: 1, inputId: 'preview', durationMs: 500 })}\r\n--${boundary}\r\nContent-Disposition: form-data; name="audio"; filename="voice.wav"\r\nContent-Type: audio/wav\r\n\r\n`,
+      ),
+      Buffer.from(wav()),
+      Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+    const request = {
+      method: 'POST' as const,
+      url: `${base}/turns/turn/transcription`,
+      headers: { ...headers, 'content-type': `multipart/form-data; boundary=${boundary}` },
+      payload,
+    };
+    const response = await app.inject(request);
+    expect(response.statusCode, response.payload).toBe(200);
+    const preview = TranscriptionPreviewSchema.parse(response.json());
+    expect(preview).toMatchObject({
+      sessionId: created.sessionId,
+      turnId: 'turn',
+      generation: 1,
+      text: '这场雨什么时候停？',
+      simulated: true,
+    });
+    expect(plan).not.toHaveBeenCalled();
+    expect(tts).not.toHaveBeenCalled();
+    const previewTurn = app.services.sessions.sessions.get(created.sessionId)?.current;
+    expect(previewTurn?.firstAudioTimer).toBeUndefined();
+    expect(previewTurn?.timer).toBeUndefined();
+    const snapshot = (await app.inject({ method: 'GET', url: base, headers })).json();
+    expect(snapshot.history).toEqual([]);
+    expect(snapshot.scene.facts).toEqual({ photo_revealed: false, rain_softened: false });
+    const repeat = await app.inject(request);
+    expect(repeat.statusCode).toBe(409);
+    expect(stt).toHaveBeenCalledOnce();
+    await app.inject({
+      method: 'POST',
+      url: `${base}/turns`,
+      headers,
+      payload: { generation: 2, turnId: 'confirmed' },
+    });
+    const confirmed = await app.inject({
+      method: 'POST',
+      url: `${base}/turns/confirmed/input`,
+      headers,
+      payload: { generation: 2, inputId: 'edited-text', text: '我改主意了，聊聊旅行吧。' },
+    });
+    expect(confirmed.statusCode).toBe(200);
+    expect(plan).toHaveBeenCalledOnce();
+    expect(plan.mock.calls[0]?.[0].text).toBe('我改主意了，聊聊旅行吧。');
+    expect(tts).toHaveBeenCalledOnce();
+    expect(stt).toHaveBeenCalledOnce();
+    expect((await app.inject({ method: 'GET', url: base, headers })).json().history).toEqual([
+      { role: 'user', text: '我改主意了，聊聊旅行吧。' },
+    ]);
+  });
+  it('rejects transcription preview when voice is disabled without decoding or generating a reply', async () => {
+    const { app, base, headers, providers } = await setup({ FFMPEG_PATH: '/missing-decoder' });
+    delete app.services.providers.stt;
+    const plan = vi.spyOn(providers.planner, 'plan');
+    const response = await app.inject({
+      method: 'POST',
+      url: `${base}/turns/turn/transcription`,
+      headers,
+    });
+    expect(response.statusCode).toBe(415);
+    expect(plan).not.toHaveBeenCalled();
+    expect((await app.inject({ method: 'GET', url: base, headers })).json().history).toEqual([]);
+  });
   it('is ready in zero-key mock mode and generates OpenAPI from runtime routes', async () => {
     const { app } = await setup();
     expect((await app.inject('/healthz')).json()).toEqual({ status: 'ok' });
+    expect((await app.inject('/api/connection/ping')).json()).toEqual({
+      schemaVersion: 1,
+      status: 'ok',
+    });
     expect((await app.inject('/readyz')).json()).toEqual({ status: 'ready', mode: 'mock' });
-    expect(Object.keys(app.swagger().paths ?? {})).toHaveLength(9);
+    expect(Object.keys(app.swagger().paths ?? {})).toHaveLength(10);
   });
   it('rejects unsupported speech before decoding or provider calls and accepts the next text turn', async () => {
     const { app, headers, base, providers } = await setup({
@@ -372,6 +455,7 @@ it('normalizes an actual multipart recording before simulated STT and the shared
 it('preserves a presented photo when aborting the socket beats the explicit frozen snapshot', async () => {
   const { app, headers, base, providers, created } = await setup();
   providers.planner.plan = async () => ({
+    suggestions: [],
     segments: [
       {
         text: '给你看照片。',
@@ -490,4 +574,46 @@ it('aborts a hanging old upload and immediately gives the new turn its own input
   } finally {
     oldRequest.destroy();
   }
+});
+
+it('returns a specific speech-input failure while keeping the session usable for text', async () => {
+  const { app, created, base, headers, providers } = await setup();
+  vi.spyOn(providers.stt, 'transcribe').mockRejectedValue(new ProviderError('NO_SPEECH'));
+  const plan = vi.spyOn(providers.planner, 'plan'),
+    tts = vi.spyOn(providers.tts, 'synthesize');
+  const boundary = 'empty-speech';
+  const payload = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="metadata"\r\n\r\n${JSON.stringify({ generation: 1, inputId: 'empty', durationMs: 500 })}\r\n--${boundary}\r\nContent-Disposition: form-data; name="audio"; filename="voice.wav"\r\nContent-Type: audio/wav\r\n\r\n`,
+    ),
+    Buffer.from(wav()),
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+  const response = await app.inject({
+    method: 'POST',
+    url: `${base}/turns/turn/transcription`,
+    headers: { ...headers, 'content-type': `multipart/form-data; boundary=${boundary}` },
+    payload,
+  });
+  expect(response.statusCode).toBe(422);
+  expect(response.json()).toMatchObject({ error: { code: 'NO_SPEECH', retryable: true } });
+  expect(plan).not.toHaveBeenCalled();
+  expect(tts).not.toHaveBeenCalled();
+  expect((await app.inject({ method: 'GET', url: `${base}`, headers })).statusCode).toBe(200);
+  await app.inject({
+    method: 'POST',
+    url: `${base}/turns`,
+    headers,
+    payload: { generation: 2, turnId: 'text-next' },
+  });
+  const next = await app.inject({
+    method: 'POST',
+    url: `${base}/turns/text-next/input`,
+    headers,
+    payload: { generation: 2, inputId: 'typed', text: '你好' },
+  });
+  expect(events(next.payload).at(-1)?.type).toBe('reply.done');
+  expect(app.services.sessions.authenticate(created.sessionId, headers.authorization).id).toBe(
+    created.sessionId,
+  );
 });
