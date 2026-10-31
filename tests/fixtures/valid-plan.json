@@ -1,0 +1,13 @@
+{
+  "segments": [
+    {
+      "text": "这是那次旅行留下的照片。",
+      "emotion": "relieved",
+      "action": "offerPhoto",
+      "events": [
+        { "type": "photo", "resourceId": "travel_photo_01" },
+        { "type": "environment", "environment": "rain-soft" }
+      ]
+    }
+  ]
+}

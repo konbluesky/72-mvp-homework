@@ -1,0 +1,81 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Mira: 启动预检",
+      "type": "process",
+      "command": "node",
+      "args": [
+        "scripts/project.mjs",
+        "check-start",
+        "${config:mira.apiPort}",
+        "${config:mira.webPort}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Mira: 等待就绪",
+      "type": "process",
+      "command": "node",
+      "args": [
+        "scripts/project.mjs",
+        "wait",
+        "${config:mira.apiPort}",
+        "${config:mira.webPort}",
+        "any"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Mira: 安装依赖（npm ci）",
+      "type": "process",
+      "command": "node",
+      "args": ["scripts/project.mjs", "ci"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Mira: check",
+      "type": "process",
+      "command": "node",
+      "args": ["scripts/project.mjs", "check"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Mira: build",
+      "type": "process",
+      "command": "node",
+      "args": ["scripts/project.mjs", "build"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": ["$tsc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}

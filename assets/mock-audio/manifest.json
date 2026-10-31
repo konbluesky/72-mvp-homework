@@ -1,0 +1,93 @@
+{
+  "generator": "eSpeak NG 1.52.0",
+  "voice": "cmn",
+  "rate": 175,
+  "createdAt": "2026-10-31",
+  "source": "Project-authored Chinese text, synthesized offline by eSpeak NG. No human recording or vendor API.",
+  "generatorLicense": "GPL-3.0-or-later (generator not distributed); audio is original generated output.",
+  "redistribution": "Project-authored text and generated audio are dedicated under CC0-1.0; no commercial voice model or third-party recording included.",
+  "limitations": "Robotic demo Mandarin, not the production Mira voice. Human pronunciation/listening acceptance has not been performed.",
+  "entries": [
+    {
+      "id": "hello",
+      "text": "雨还在下。你也想在这里躲一会儿吗？",
+      "file": "hello.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 4841,
+      "sampleRate": 22050,
+      "sha256": "220f3bb5cb77be9dd1700f864d63461f452c8117263484559209d2c40b1e2336"
+    },
+    {
+      "id": "helloNext",
+      "text": "我叫米拉。窗边的位置，留给你。",
+      "file": "helloNext.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 3613,
+      "sampleRate": 22050,
+      "sha256": "56e9b87808ed0125e7377b8d41533f4e21798935d022e62618fcdbe9786a281f"
+    },
+    {
+      "id": "waiting",
+      "text": "我在等一个很久没见的人。也许，她今天不会来了。",
+      "file": "waiting.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 5539,
+      "sampleRate": 22050,
+      "sha256": "89c7292fb21cdecce67a94c0c712f3cc3bf9c6fa42a6ebce7d41e02c4ee4ab26"
+    },
+    {
+      "id": "travel",
+      "text": "你也喜欢旅行吗？我一直记得海边的那阵风。",
+      "file": "travel.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 4837,
+      "sampleRate": 22050,
+      "sha256": "694bbb7a916a3d42f14d17d1696d7f47c991e257c5088e837872064b7db42da4"
+    },
+    {
+      "id": "comfort",
+      "text": "谢谢你。有人愿意陪我坐一会儿，已经很好了。",
+      "file": "comfort.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 5719,
+      "sampleRate": 22050,
+      "sha256": "0c60d2d3a8ee71b7840b9047469fe7992ace21456d56293b3feea4662b469168"
+    },
+    {
+      "id": "photo",
+      "text": "可以。这是我们在海边留下的照片，你看，天空很亮。",
+      "file": "photo.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 6185,
+      "sampleRate": 22050,
+      "sha256": "78a778d06553f64a1a32bb7643c91c0527b931da92542fd9e225dc5c17676f51"
+    },
+    {
+      "id": "rain",
+      "text": "雨好像小了一点。今晚，也没有刚才那么冷了。",
+      "file": "rain.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 5095,
+      "sampleRate": 22050,
+      "sha256": "8dda0486dd80a0d093bec1dd0dae3b319f0a8bd31b589fc9f628dcaa0ae3af52"
+    },
+    {
+      "id": "refuse",
+      "text": "好，我们不看照片。就听一会儿雨声吧。",
+      "file": "refuse.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 5281,
+      "sampleRate": 22050,
+      "sha256": "260fe5f4ebb26990978431d3fd62f092ccabb57c17c1510f788b61d3b05644b7"
+    },
+    {
+      "id": "after",
+      "text": "刚才那张照片，让我想起了很多温暖的事。",
+      "file": "after.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 4818,
+      "sampleRate": 22050,
+      "sha256": "e062c487ea041b26071ffc16d24d9664e817dd11bcc9bac44d691a69cf46eda8"
+    }
+  ]
+}

@@ -1,0 +1,444 @@
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
+import swagger from '@fastify/swagger';
+import {
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from 'fastify-type-provider-zod';
+import { z } from 'zod';
+import {
+  BeginTurnSchema,
+  BeginTurnResponseSchema,
+  CancelTurnSchema,
+  ReceiptsRequestSchema,
+  ReceiptsResponseSchema,
+  SessionCreatedSchema,
+  SessionSnapshotSchema,
+  RouteParamsSchema,
+  TurnParamsSchema,
+  MediaParamsSchema,
+  TextInputSchema,
+  AudioInputMetadataSchema,
+  HealthSchema,
+  ReadySchema,
+  HttpErrorSchema,
+  ServerEventSchema,
+} from '@mira/protocol';
+import { loadConfig, type Config } from './config/index.js';
+import { createProviders, type ProviderSet } from './providers/index.js';
+import { createMediaService, cleanupLocalOrphans, type MediaService } from './media/index.js';
+import { SessionManager, type Turn } from './sessions/manager.js';
+import { AppError, publicError } from './http/errors.js';
+import { readInput } from './http/input.js';
+import { openStream } from './http/sse.js';
+import { abortable, runConversation } from './graphs/conversation.js';
+
+export interface AppOptions {
+  config?: Config;
+  providers?: ProviderSet;
+  media?: MediaService;
+  sessions?: SessionManager;
+  logger?: boolean;
+}
+const errors = {
+  400: HttpErrorSchema,
+  401: HttpErrorSchema,
+  403: HttpErrorSchema,
+  404: HttpErrorSchema,
+  409: HttpErrorSchema,
+  410: HttpErrorSchema,
+  413: HttpErrorSchema,
+  415: HttpErrorSchema,
+  429: HttpErrorSchema,
+  500: HttpErrorSchema,
+  502: HttpErrorSchema,
+  503: HttpErrorSchema,
+  504: HttpErrorSchema,
+};
+
+export async function createApp(options: AppOptions = {}) {
+  const config = options.config ?? loadConfig();
+  const providers = options.providers ?? createProviders(config);
+  const media = options.media ?? createMediaService(config);
+  const sessions = options.sessions ?? new SessionManager(config);
+  const app = Fastify({
+    logger:
+      options.logger === false
+        ? false
+        : {
+            level: 'info',
+            redact: ['req.headers.authorization', 'req.headers.cookie'],
+            serializers: {
+              req: (request) => ({
+                method: request.method,
+                url: request.url,
+                remoteAddress: request.ip,
+              }),
+            },
+          },
+    trustProxy: config.TRUST_PROXY,
+    bodyLimit: 16_384,
+    requestTimeout: 30_000,
+    connectionTimeout: 30_000,
+  }).withTypeProvider<ZodTypeProvider>();
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+  await app.register(cors, {
+    origin: (origin, callback) =>
+      callback(null, origin === undefined || config.CORS_ALLOWED_ORIGINS.includes(origin)),
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'X-Session-Id'],
+    credentials: false,
+  });
+  await app.register(multipart, {
+    limits: { files: 1, fields: 1, parts: 2, fileSize: config.MAX_UPLOAD_BYTES, fieldSize: 2048 },
+    throwFileSizeLimit: true,
+  });
+  await app.register(swagger, {
+    openapi: {
+      openapi: '3.1.0',
+      info: { title: 'Mira interaction API', version: '1.0.0' },
+      components: { securitySchemes: { sessionToken: { type: 'http', scheme: 'bearer' } } },
+    },
+    transform: jsonSchemaTransform,
+    transformObject: (document) => {
+      if (!('openapiObject' in document)) return document.swaggerObject;
+      const { openapiObject } = document;
+      const inputRoute = openapiObject.paths?.['/api/sessions/{id}/turns/{turnId}/input']?.post;
+      if (inputRoute)
+        Object.assign(inputRoute, {
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': { schema: z.toJSONSchema(TextInputSchema) },
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  required: ['metadata', 'audio'],
+                  properties: {
+                    metadata: {
+                      type: 'string',
+                      description: 'JSON serialized AudioInputMetadata',
+                      'x-json-schema': z.toJSONSchema(AudioInputMetadataSchema),
+                    },
+                    audio: { type: 'string', format: 'binary' },
+                  },
+                },
+              },
+            },
+          },
+        });
+      if (inputRoute?.responses)
+        Object.assign(inputRoute.responses, {
+          '200': {
+            description: 'POST SSE; reply.done ends generation, not presentation.',
+            content: {
+              'text/event-stream': {
+                schema: { type: 'string' },
+                'x-event-schema': z.toJSONSchema(ServerEventSchema),
+              },
+            },
+          },
+        });
+      const mediaRoute = openapiObject.paths?.['/api/media/{assetId}']?.get;
+      if (mediaRoute?.responses)
+        Object.assign(mediaRoute.responses, {
+          '200': {
+            description: 'Authenticated, private audio binary.',
+            content: {
+              'audio/wav': { schema: { type: 'string', format: 'binary' } },
+              'audio/mpeg': { schema: { type: 'string', format: 'binary' } },
+            },
+          },
+        });
+      return openapiObject;
+    },
+  });
+  app.addHook('onRequest', async (_request, reply) => {
+    reply
+      .header('X-Content-Type-Options', 'nosniff')
+      .header('Referrer-Policy', 'no-referrer')
+      .header('Cache-Control', 'no-store');
+  });
+  app.setErrorHandler((error, request, reply) => {
+    if (reply.raw.destroyed) return;
+    if (reply.raw.headersSent) {
+      if (!reply.raw.writableEnded) reply.raw.end();
+      return;
+    }
+    let safe = publicError(error);
+    if (error instanceof Error && 'validation' in error)
+      safe = new AppError('INVALID_REQUEST', 400, '请求格式不正确，请重新输入。');
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      [
+        'FST_REQ_FILE_TOO_LARGE',
+        'FST_FILES_LIMIT',
+        'FST_FIELDS_LIMIT',
+        'FST_PARTS_LIMIT',
+        'FST_ERR_CTP_BODY_TOO_LARGE',
+      ].includes(String(error.code))
+    )
+      safe = new AppError('UPLOAD_TOO_LARGE', 413, '输入太大，请缩短后重试。');
+    if (error instanceof Error && 'statusCode' in error && Number(error.statusCode) === 400)
+      safe = new AppError('INVALID_REQUEST', 400, '请求格式不正确，请重新输入。');
+    if (error instanceof Error && 'statusCode' in error && Number(error.statusCode) === 415)
+      safe = new AppError('INVALID_REQUEST', 415, '提交格式不支持，请使用文字或录音。');
+    request.log.info({ requestId: request.id, code: safe.code, stage: 'http' });
+    void reply.status(safe.status).send({
+      error: { code: safe.code, message: safe.message, retryable: safe.retryable },
+      requestId: request.id,
+    });
+  });
+  app.setNotFoundHandler((request, reply) =>
+    reply.status(404).send({
+      error: { code: 'INVALID_REQUEST', message: '这个入口不存在。', retryable: false },
+      requestId: request.id,
+    }),
+  );
+  const creationTimes = new Map<string, number[]>();
+  const receivingInput = new Map<string, Turn>();
+  app.get('/healthz', { schema: { response: { 200: HealthSchema } } }, async () => ({
+    status: 'ok' as const,
+  }));
+  app.get('/readyz', { schema: { response: { 200: ReadySchema } } }, async () => ({
+    status: 'ready' as const,
+    mode: config.APP_MODE,
+  }));
+  app.post(
+    '/api/sessions',
+    { schema: { response: { 201: SessionCreatedSchema, ...errors } } },
+    async (request, reply) => {
+      const now = Date.now();
+      const times = (creationTimes.get(request.ip) ?? []).filter((time) => time > now - 60_000);
+      if (times.length >= config.MAX_SESSIONS_PER_MINUTE)
+        throw new AppError('RATE_LIMITED', 429, '来访有些频繁，请稍后再试。', true);
+      if (creationTimes.size >= 1000 && !creationTimes.has(request.ip))
+        throw new AppError('CAPACITY_EXCEEDED', 503, '店里暂时有些忙，请稍后再来。', true);
+      creationTimes.set(request.ip, [...times, now]);
+      return reply
+        .status(201)
+        .send({ ...sessions.create(), capabilities: { voiceInput: Boolean(providers.stt) } });
+    },
+  );
+  const security = [{ sessionToken: [] }];
+  app.get(
+    '/api/sessions/:id',
+    {
+      schema: {
+        security,
+        params: RouteParamsSchema,
+        response: { 200: SessionSnapshotSchema, ...errors },
+      },
+    },
+    async (request) => ({
+      ...sessions.snapshot(sessions.authenticate(request.params.id, request.headers.authorization)),
+      capabilities: { voiceInput: Boolean(providers.stt) },
+    }),
+  );
+  app.post(
+    '/api/sessions/:id/turns',
+    {
+      schema: {
+        security,
+        params: RouteParamsSchema,
+        body: BeginTurnSchema,
+        response: { 200: BeginTurnResponseSchema, ...errors },
+      },
+    },
+    async (request) =>
+      sessions.begin(
+        sessions.authenticate(request.params.id, request.headers.authorization),
+        request.body,
+      ),
+  );
+  app.post(
+    '/api/sessions/:id/turns/:turnId/cancel',
+    {
+      schema: {
+        security,
+        params: TurnParamsSchema,
+        body: CancelTurnSchema,
+        response: { 200: ReceiptsResponseSchema, ...errors },
+      },
+    },
+    async (request) => ({
+      acknowledged: sessions.cancelRequest(
+        sessions.authenticate(request.params.id, request.headers.authorization),
+        request.params.turnId,
+        request.body.generation,
+        request.body.receipts,
+      ),
+    }),
+  );
+  app.post(
+    '/api/sessions/:id/receipts',
+    {
+      schema: {
+        security,
+        params: RouteParamsSchema,
+        body: ReceiptsRequestSchema,
+        response: { 200: ReceiptsResponseSchema, ...errors },
+      },
+    },
+    async (request) => ({
+      acknowledged: sessions.receipts(
+        sessions.authenticate(request.params.id, request.headers.authorization),
+        request.body.receipts,
+      ),
+    }),
+  );
+  app.get(
+    '/api/media/:assetId',
+    {
+      schema: {
+        security,
+        params: MediaParamsSchema,
+        headers: z.object({ 'x-session-id': z.string().min(1) }).passthrough(),
+        response: { ...errors, 200: z.unknown().describe('Authenticated audio binary') },
+      },
+    },
+    async (request, reply) => {
+      const session = sessions.authenticate(
+        request.headers['x-session-id'],
+        request.headers.authorization,
+      );
+      const audio = await media.get(request.params.assetId, session.id);
+      return reply
+        .type(audio.mimeType)
+        .header('Content-Length', audio.bytes.length)
+        .send(Buffer.from(audio.bytes));
+    },
+  );
+  app.post(
+    '/api/sessions/:id/turns/:turnId/input',
+    {
+      schema: {
+        security,
+        params: TurnParamsSchema,
+        body: TextInputSchema.nullish(),
+        description:
+          'POST SSE. The ready event precedes business events. reply.done means generation ended, never presentation. Multipart accepts metadata JSON and one audio file.',
+        response: {
+          ...errors,
+          200: z
+            .string()
+            .describe('text/event-stream, validated ServerEvent frames and comment heartbeats'),
+        },
+      },
+    },
+    async (request, reply) => {
+      const session = sessions.authenticate(request.params.id, request.headers.authorization);
+      const uploadTurn = session.turns.get(request.params.turnId);
+      if (!uploadTurn) throw new AppError('STALE_TURN', 409, '旧的回应已结束。');
+      sessions.assertCurrent(session, uploadTurn);
+      if (receivingInput.has(session.id) || receivingInput.size >= config.MAX_ACTIVE_TURNS)
+        throw new AppError('CAPACITY_EXCEEDED', 429, '录音正在传送，请稍后再试。', true);
+      receivingInput.set(session.id, uploadTurn);
+      uploadTurn.uploadRequestId = request.id;
+      const releaseUpload = () => {
+        // An older reader's finally must never release a newer turn's upload slot.
+        if (receivingInput.get(session.id) === uploadTurn) receivingInput.delete(session.id);
+        if (uploadTurn.uploadRequestId === request.id) uploadTurn.uploadRequestId = undefined;
+      };
+      const abortUpload = () => {
+        releaseUpload();
+        request.raw.destroy();
+      };
+      uploadTurn.abort.signal.addEventListener('abort', abortUpload, { once: true });
+      let input;
+      try {
+        input = await abortable(readInput(request, config), uploadTurn.abort.signal);
+        sessions.assertCurrent(session, uploadTurn);
+      } finally {
+        uploadTurn.abort.signal.removeEventListener('abort', abortUpload);
+        releaseUpload();
+      }
+      const turn = sessions.startInput(
+        session,
+        request.params.turnId,
+        input.generation,
+        input.inputId,
+        input.digest,
+      );
+      turn.abort.signal.addEventListener(
+        'abort',
+        () => {
+          void media.deleteTurn(session.id, turn.identity.turnId).catch(() =>
+            request.log.warn({
+              ...turn.identity,
+              stage: 'cancel_media_cleanup',
+              code: 'MEDIA_FAILED',
+            }),
+          );
+        },
+        { once: true },
+      );
+      const stream = await openStream(
+        reply,
+        sessions,
+        session,
+        turn,
+        config.HEARTBEAT_INTERVAL_MS,
+      ).catch((error: unknown) => {
+        sessions.fail(turn, publicError(error));
+        throw error;
+      });
+      request.log.info({
+        ...turn.identity,
+        requestId: request.id,
+        streamId: turn.streamId,
+        stage: 'input',
+        inputKind: input.input.kind,
+      });
+      try {
+        await runConversation(
+          { config, providers, media, sessions, logger: request.log },
+          session,
+          turn,
+          input.input,
+          stream.publish,
+        );
+      } catch (error) {
+        const safe = publicError(turn.failure ?? error);
+        sessions.fail(turn, safe);
+        await stream.error(safe);
+        request.log.info({
+          ...turn.identity,
+          requestId: request.id,
+          stage: 'turn',
+          code: safe.code,
+        });
+      } finally {
+        stream.finish();
+      }
+      return reply;
+    },
+  );
+  const sweep = setInterval(() => {
+    sessions.sweep();
+    for (const [ip, times] of creationTimes)
+      if ((times.at(-1) ?? 0) < Date.now() - 60_000) creationTimes.delete(ip);
+    void media
+      .cleanup()
+      .catch(() => app.log.warn({ stage: 'media_cleanup', code: 'MEDIA_FAILED' }));
+    void cleanupLocalOrphans(config).catch(() =>
+      app.log.warn({ stage: 'orphan_cleanup', code: 'MEDIA_FAILED' }),
+    );
+  }, 30_000);
+  sweep.unref();
+  app.addHook('preClose', async () => {
+    sessions.close();
+  });
+  app.addHook('onClose', async () => {
+    clearInterval(sweep);
+    sessions.close();
+    await media.close();
+  });
+  await app.ready();
+  return Object.assign(app, { services: { config, providers, media, sessions } });
+}

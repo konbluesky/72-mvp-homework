@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 185" role="img" aria-labelledby="title desc">
+  <title id="title">那年海边，天空很亮</title>
+  <desc id="desc">原创海岸插画：明亮的天空、薄云、蓝绿色的海面与沿岸白色浪花。</desc>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#aed2d7"/><stop offset="1" stop-color="#f5e6bb"/></linearGradient>
+    <linearGradient id="sea" x2="0" y2="1"><stop stop-color="#709c9b"/><stop offset="1" stop-color="#355f66"/></linearGradient>
+    <linearGradient id="sand" x2="1" y2="1"><stop stop-color="#e5d3ad"/><stop offset="1" stop-color="#b8a17b"/></linearGradient>
+  </defs>
+  <rect width="260" height="185" fill="url(#sky)"/>
+  <circle cx="196" cy="39" r="19" fill="#fff4cb" opacity=".95"/>
+  <path d="M-10 36q28-11 53 0t48 0m42-16q17-5 34 0" fill="none" stroke="#fff5d8" stroke-width="5" opacity=".5" stroke-linecap="round"/>
+  <path d="M0 91q36-6 65-2t80 0q60-4 115 1v95H0Z" fill="url(#sea)"/>
+  <path d="M0 89q23-17 43-9l29 10Z" fill="#758f81"/>
+  <path d="M0 185V115q25 2 35 18t44 20q35 3 57 32Z" fill="url(#sand)"/>
+  <path d="M0 109q28 3 42 17t43 23q39 6 64 36" fill="none" stroke="#eef0d6" stroke-width="4" opacity=".9"/>
+  <path d="M73 104h31m54-6h24m14 16h38m-127 12h27m28 15h45m-10 24h27m-57-43h26" fill="none" stroke="#d9e3cc" stroke-width="1.6" opacity=".7" stroke-linecap="round"/>
+  <path d="M23 62q5-5 11 0 6-5 11 0m62-15q4-4 8 0 5-4 9 0" fill="none" stroke="#6e8f88" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="m6 146 17-7 19 16-21 9Z" fill="#8a927a"/><path d="m21 149 8-3 11 10-17 5Z" fill="#a1a58b"/>
+  <path d="M0 178q31-7 53 7H0Z" fill="#64745b"/>
+</svg>

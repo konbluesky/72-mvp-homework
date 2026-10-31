@@ -1,0 +1,11 @@
+* text=auto
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.wav binary
+*.moc3 binary
+
+# Preserve exact upstream/model bytes required by SOURCES.json SHA-256 records.
+apps/web/public/assets/live2d/** -text
+# Upstream license text is retained verbatim, including original whitespace.
+apps/web/public/assets/live2d/vendor/** -whitespace

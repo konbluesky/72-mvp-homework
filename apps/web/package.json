@@ -1,0 +1,24 @@
+{
+  "name": "@mira/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run src"
+  },
+  "dependencies": {
+    "@mira/protocol": "0.1.0",
+    "pinia": "4.1.0",
+    "vue": "3.5.44"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.10",
+    "@vue/test-utils": "2.5.1",
+    "vite": "8.3.5",
+    "vue-tsc": "3.3.14"
+  }
+}

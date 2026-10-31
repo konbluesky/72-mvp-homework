@@ -1,0 +1,32 @@
+services:
+  api:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: infra/docker/server.Dockerfile
+    environment:
+      APP_MODE: mock
+      HOST: 0.0.0.0
+      PORT: 3000
+      CORS_ALLOWED_ORIGINS: http://localhost:8080
+      MEDIA_STORE: local
+    volumes:
+      - mira-media:/app/apps/server/data/media
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 15s
+  web:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+      args:
+        VITE_API_BASE_URL: ''
+    ports:
+      - '127.0.0.1:8080:8080'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+volumes:
+  mira-media:
