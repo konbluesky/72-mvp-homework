@@ -8,7 +8,6 @@ import { DeepgramTts } from './deepgram/tts.js';
 import { DeepgramClient } from './deepgram/client.js';
 import { GptPlanner } from './openai/planner.js';
 import { createLiveProviders } from './index.js';
-import { validateAudio } from '../media/audio-format.js';
 import { boundedBody, type Fetch } from './http.js';
 import { createMockProviders, MOCK_LINES, mockPlan } from '../scenario/cafe/mock.js';
 
@@ -296,15 +295,10 @@ describe('provider contracts without paid network calls', () => {
   );
 });
 
-describe('offline Mock audio and content', () => {
-  it('all branches and every spoken line are valid, nonempty PCM speech assets', async () => {
+describe('mock conversation content without a speech implementation', () => {
+  it('keeps conversation fixtures valid without providing a TTS adapter', async () => {
     const provider = createMockProviders();
-    for (const text of Object.values(MOCK_LINES)) {
-      const audio = await provider.tts.synthesize(text, signal());
-      expect(() => validateAudio(audio)).not.toThrow();
-      expect(audio.bytes.length).toBeGreaterThan(10000);
-      expect(new Set(audio.bytes.subarray(44)).size).toBeGreaterThan(100);
-    }
+    expect('tts' in provider).toBe(false);
     for (const input of ['你好', '你在等谁', '旅行', '我陪你', '能看看照片吗', '不要照片', '雨'])
       expect(
         ReplyPlanSchema.safeParse(

@@ -48,6 +48,67 @@ function setup(extra: Record<string, string> = {}) {
 afterEach(() => vi.useRealTimers());
 
 describe('single owner and presented facts', () => {
+  it('preserves confirmed progress and history through prolonged inactivity by default', () => {
+    vi.useFakeTimers();
+    const { manager, session, created, receipt } = setup();
+    try {
+      manager.receipts(session, [receipt('seg-1'), receipt('photo-1', 'photo')]);
+      const before = manager.snapshot(session);
+      const checkpoint = session.narrative;
+      expect(created.expiresAt).toBeNull();
+      vi.advanceTimersByTime(180 * 24 * 60 * 60 * 1000);
+      manager.sweep();
+      const restored = manager.authenticate(created.sessionId, `Bearer ${created.sessionToken}`);
+      expect(restored).toBe(session);
+      expect(restored.narrative).toBe(checkpoint);
+      expect(manager.snapshot(restored)).toEqual(before);
+    } finally {
+      manager.close();
+    }
+  });
+  it('restarts an owned session at capacity, cancelling only its old turn', () => {
+    const { manager, session, turn, created } = setup({ MAX_SESSIONS: '2' });
+    try {
+      const other = manager.create('conversation');
+      const next = manager.create('story', session);
+      expect(manager.sessions.size).toBe(2);
+      expect(turn.abort.signal.aborted).toBe(true);
+      expect(() =>
+        manager.authenticate(created.sessionId, `Bearer ${created.sessionToken}`),
+      ).toThrow('这次相遇已结束');
+      const fresh = manager.authenticate(next.sessionId, `Bearer ${next.sessionToken}`);
+      expect(fresh.generation).toBe(0);
+      expect(fresh.history).toEqual([]);
+      expect(next.expiresAt).toBeNull();
+      manager.begin(fresh, { generation: 1, turnId: 'new-turn', receipts: [], frozenTurns: [] });
+      const active = manager.startInput(fresh, 'new-turn', 1, 'new-input', 'new-digest');
+      manager.cancelRequest(session, turn.identity.turnId, turn.identity.generation, []);
+      expect(active.abort.signal.aborted).toBe(false);
+      expect(fresh.current).toBe(active);
+      expect(manager.authenticate(other.sessionId, `Bearer ${other.sessionToken}`).id).toBe(
+        other.sessionId,
+      );
+    } finally {
+      manager.close();
+    }
+  });
+  it('preserves the old session if preparing its replacement fails', () => {
+    const { manager, session, turn, created } = setup({ MAX_SESSIONS: '1' });
+    const initial = vi.spyOn(cafeScenario, 'initial').mockImplementationOnce(() => {
+      throw new Error('SCENARIO_UNAVAILABLE');
+    });
+    try {
+      expect(() => manager.create('story', session)).toThrow('SCENARIO_UNAVAILABLE');
+      expect(manager.sessions.size).toBe(1);
+      expect(manager.authenticate(created.sessionId, `Bearer ${created.sessionToken}`)).toBe(
+        session,
+      );
+      expect(turn.abort.signal.aborted).toBe(false);
+    } finally {
+      initial.mockRestore();
+      manager.close();
+    }
+  });
   it.each(['false', 'true'])('applies input frequency quotas only when enabled (%s)', (enabled) => {
     const { manager, session } = setup({
       RATE_LIMIT_ENABLED: enabled,

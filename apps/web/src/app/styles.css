@@ -223,8 +223,14 @@ button svg {
   fill: currentColor;
   stroke: none;
 }
-.composer.responding .hold-talk {
-  padding-right: 0;
+.composer-voice {
+  position: relative;
+}
+.composer-voice .composer-stop {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 .interaction-area {
   flex: none;
@@ -525,7 +531,9 @@ button svg {
   touch-action: none;
 }
 .hold-talk,
-.hold-talk * {
+.hold-talk *,
+.experience.recording-gesture-active,
+.experience.recording-gesture-active * {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;

@@ -49,7 +49,7 @@ export interface Turn {
 export interface Session {
   id: string;
   tokenHash: Buffer;
-  expiresAt: number;
+  expiresAt: number | null;
   generation: number;
   current?: Turn;
   turns: Map<string, Turn>;
@@ -85,9 +85,13 @@ export class SessionManager {
     this.id = dependencies.id ?? randomUUID;
   }
 
-  create(entry: 'story' | 'conversation' = 'story'): Omit<SessionCreated, 'capabilities'> {
+  create(
+    entry: 'story' | 'conversation' = 'story',
+    replace?: Session,
+  ): Omit<SessionCreated, 'capabilities'> {
     this.sweep();
-    if (this.closing || this.sessions.size >= this.config.MAX_SESSIONS) {
+    const replacing = replace && this.sessions.get(replace.id) === replace ? replace : undefined;
+    if (this.closing || this.sessions.size - (replacing ? 1 : 0) >= this.config.MAX_SESSIONS) {
       throw new AppError('CAPACITY_EXCEEDED', 503, '服务暂时繁忙，请稍后再试。', true);
     }
     const id = this.id();
@@ -97,7 +101,10 @@ export class SessionManager {
     const session: Session = {
       id,
       tokenHash: hash(token),
-      expiresAt: this.now() + this.config.SESSION_TTL_SECONDS * 1000,
+      expiresAt:
+        this.config.SESSION_TTL_SECONDS === 0
+          ? null
+          : this.now() + this.config.SESSION_TTL_SECONDS * 1000,
       generation: 0,
       turns: new Map(),
       facts: frame.facts,
@@ -106,8 +113,7 @@ export class SessionManager {
       history: [],
       inputTimes: [],
     };
-    this.sessions.set(id, session);
-    return {
+    const created: Omit<SessionCreated, 'capabilities'> = {
       sessionId: id,
       sessionToken: token,
       expiresAt: session.expiresAt,
@@ -115,11 +121,15 @@ export class SessionManager {
       scene: this.scene(session),
       ...(this.scenario.opening ? { opening: this.scenario.opening(narrative) } : {}),
     };
+    // Prepare the replacement completely before retiring the previous session.
+    if (replacing) this.remove(replacing);
+    this.sessions.set(id, session);
+    return created;
   }
 
   authenticate(id: string, authorization?: string): Session {
     const session = this.sessions.get(id);
-    if (!session || session.expiresAt <= this.now()) {
+    if (!session || (session.expiresAt !== null && session.expiresAt <= this.now())) {
       if (session) this.remove(session);
       throw new AppError('SESSION_EXPIRED', 410, '这次相遇已结束，请重新开始会话。', true);
     }
@@ -634,7 +644,7 @@ export class SessionManager {
 
   sweep(): void {
     for (const session of this.sessions.values())
-      if (session.expiresAt <= this.now()) this.remove(session);
+      if (session.expiresAt !== null && session.expiresAt <= this.now()) this.remove(session);
   }
 
   private remove(session: Session): void {

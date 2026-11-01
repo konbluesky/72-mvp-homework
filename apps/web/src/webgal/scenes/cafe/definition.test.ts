@@ -19,3 +19,33 @@ describe('scene package render bindings', () => {
     expect(cafeLocation('counter').lookDirection).toBe(1);
   });
 });
+
+it('renders an independent viewpoint without changing the player location', async () => {
+  const { initialStory, projectStory, BeatEventSchema } = await import('@mira/protocol');
+  const { stageScene } = await import('./definition.js');
+  const waiting = initialStory({ location: 'window-seat', ambience: 'open' });
+  const next = projectStory(
+    waiting,
+    BeatEventSchema.parse({
+      type: 'beat',
+      beatId: 'private-view',
+      shot: { location: 'washroom', mode: 'character' },
+    }),
+  );
+  expect(next.location).toBe('window-seat');
+  expect(stageScene(next, 'rain').background).toBe('washroom');
+  expect(
+    BeatEventSchema.safeParse({
+      type: 'beat',
+      beatId: 'untrusted',
+      shot: { location: 'https://example.invalid', mode: 'character' },
+    }).success,
+  ).toBe(false);
+  expect(
+    BeatEventSchema.safeParse({
+      type: 'beat',
+      beatId: 'untrusted',
+      shot: { location: 'washroom', mode: 'execute' },
+    }).success,
+  ).toBe(false);
+});

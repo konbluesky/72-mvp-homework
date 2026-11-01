@@ -4,11 +4,13 @@
 
 ## 会话与输入
 
-1. `POST /api/sessions` 返回短期 sessionToken与capabilities.voiceInput。浏览器按 API origin、入口和故事包隔离保存短期会话凭证，用于刷新恢复；过期或鉴权失效清除凭证，按实际能力开放录音，不由Mock/Live字符串推断。凭证方案见 [ADR 013](../architecture/decisions.md#adr-013--浏览器侧保存与短期会话恢复)。
+1. `POST /api/sessions` 返回 sessionToken、expiresAt 与 capabilities.voiceInput。`expiresAt: null` 表示不按时间过期（默认）；正整数表示 Unix 毫秒到期时间，可用 `SESSION_TTL_SECONDS` 正值显式开启。浏览器按 API origin、入口和故事包隔离保存会话凭证，用于刷新恢复；过期或鉴权失效清除凭证，按实际能力开放录音，不由 Mock/Live 字符串推断。凭证方案见 [ADR 013](../architecture/decisions.md#adr-013--浏览器侧保存与短期会话恢复)，保留策略见 [ADR 014](../architecture/decisions.md#adr-014--默认保留会话显式重新开始才替换)。
 2. 对该会话所有操作用 `Authorization: Bearer <sessionToken>`；私有媒体另带 `X-Session-Id`。令牌不放 URL。
 3. `POST /api/sessions/:id/turns` 提交 `{turnId,generation,receipts,frozenTurns}`。generation 是会话内单调正整数，同代同ID幂等，同代不同ID冲突，旧代拒绝。
 4. 等 begin 确认后 `POST .../:turnId/input`。文字：`{generation,inputId,text}`。录音：multipart 中 `metadata` 是 `{generation,inputId,durationMs}` JSON，`audio` 是真实 MIME 的文件，客户端不得只修改扩展名。
 5. 同轮同 inputId 和摘要不会二次调用 Provider：进行中 `INPUT_IN_PROGRESS`，已完成 `INPUT_COMPLETED`，已取消 `TURN_CANCELLED`。不同内容或不同 inputId 重用已提交轮次返回 `INPUT_CONFLICT`。这些都是 409，无自动旧音频重放。
+
+用户明确重新开始时，创建请求可携带 `{entry, replaceSessionId}`，并用旧会话的 `Authorization: Bearer` 鉴权。服务端先准备新会话，成功后同步取消并移除旧会话；满额时可复用自己的旧名额，不清理其他人的会话。错误凭证返回 401，旧会话不变；旧会话已不存在/过期时允许创建新会话。普通连接恢复只 GET 快照，不携带替换指令。明确重开后的网络失败保留替换意图与凭证，连接恢复或页面刷新可继续该创建操作，不发送玩家输入。本次 HTTP 字段扩展需前后端协调更新。
 
 ## SSE
 

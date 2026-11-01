@@ -1,14 +1,11 @@
-import { readFile } from 'node:fs/promises';
 import { ReplySuggestionsSchema, StoryStateSchema } from '@mira/protocol';
 import manifest from './manifest.json' with { type: 'json' };
 
 import type { PlanSegment, ReplyPlan } from '@mira/protocol';
 import {
-  ProviderError,
   type ProviderSet,
   type SpeechToTextProvider,
   type ReplyPlanner,
-  type TextToSpeechProvider,
   type AudioData,
   type PlanInput,
 } from '../../providers/types.js';
@@ -292,20 +289,6 @@ export class MockPlanner implements ReplyPlanner {
     };
   }
 }
-export class MockTts implements TextToSpeechProvider {
-  readonly info = { provider: 'mock', model: 'espeak-ng-cmn-fixtures' };
-  async synthesize(text: string, signal: AbortSignal) {
-    signal.throwIfAborted();
-    const voice = Object.values(manifest.voices).find((item) => item.text === text);
-    if (!voice) throw new ProviderError('INVALID_AUDIO');
-    const bytes = await readFile(
-      new URL(`../../../../../${manifest.mock.audioRoot}/${voice.file}`, import.meta.url),
-      { signal },
-    );
-    signal.throwIfAborted();
-    return { bytes, mimeType: 'audio/wav' };
-  }
-}
-export function createMockProviders(): ProviderSet & { stt: MockStt } {
-  return { stt: new MockStt(), planner: new MockPlanner(), tts: new MockTts() };
+export function createMockProviders(): Omit<ProviderSet, 'tts'> & { stt: MockStt } {
+  return { stt: new MockStt(), planner: new MockPlanner() };
 }

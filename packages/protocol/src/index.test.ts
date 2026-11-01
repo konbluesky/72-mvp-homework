@@ -9,9 +9,25 @@ import {
   ReplySuggestionSchema,
   BeginTurnSchema,
   MessageAttemptSchema,
+  SessionExpirySchema,
+  CreateSessionSchema,
 } from './index.js';
 
 describe('network schemas', () => {
+  it('represents unlimited retention explicitly and validates restart session identifiers', () => {
+    expect(SessionExpirySchema.parse(null)).toBeNull();
+    expect(SessionExpirySchema.parse(1_800_000_000_000)).toBe(1_800_000_000_000);
+    for (const value of [0, -1, Infinity, 'never'])
+      expect(SessionExpirySchema.safeParse(value).success).toBe(false);
+    expect(CreateSessionSchema.parse({ replaceSessionId: 'old-session' })).toEqual({
+      entry: 'story',
+      replaceSessionId: 'old-session',
+    });
+    expect(CreateSessionSchema.safeParse({ replaceSessionId: '../another' }).success).toBe(false);
+    expect(
+      CreateSessionSchema.safeParse({ replaceSessionId: 'session', token: 'secret' }).success,
+    ).toBe(false);
+  });
   it('accepts message identity on begin and rejects extra retry commands or malformed attempt results', () => {
     const begin = { generation: 2, turnId: 'retry', messageId: 'message' };
     expect(BeginTurnSchema.safeParse(begin).success).toBe(true);
@@ -66,7 +82,7 @@ describe('network schemas', () => {
     expect(
       ServerEventSchema.safeParse({
         type: 'reply.done',
-        schemaVersion: 2,
+        schemaVersion: 3,
         payload: { segmentCount: 0 },
       }).success,
     ).toBe(false);
@@ -101,7 +117,7 @@ describe('network schemas', () => {
 describe('stateless monitoring contract', () => {
   it('rejects unknown commands, sequence errors and credentials in health frames', () => {
     const frame = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       type: 'connection.ready',
       connectionId: 'monitor',
       seq: 1,
@@ -117,7 +133,7 @@ describe('stateless monitoring contract', () => {
     ])
       expect(ConnectionEventSchema.safeParse({ ...frame, ...extra }).success).toBe(false);
     expect(
-      ConnectionProbeSchema.safeParse({ schemaVersion: 2, status: 'ok', token: 'private' }).success,
+      ConnectionProbeSchema.safeParse({ schemaVersion: 3, status: 'ok', token: 'private' }).success,
     ).toBe(false);
   });
 });
@@ -125,7 +141,7 @@ describe('stateless monitoring contract', () => {
 it('rejects executable story targets and accepts independent presentation without an audio URL', async () => {
   const { JsonInputSchema, PresentationReadyPayloadSchema, SCHEMA_VERSION } =
     await import('./index.js');
-  expect(SCHEMA_VERSION).toBe(2);
+  expect(SCHEMA_VERSION).toBe(3);
   expect(
     JsonInputSchema.safeParse({
       generation: 1,

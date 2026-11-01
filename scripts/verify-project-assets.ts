@@ -108,8 +108,8 @@ const audioCatalogSchema = z.object({
     .min(1),
 });
 const audioConfigSchema = z.object({
-  mock: z.object({ audioRoot: local }).optional(),
-  voices: z.record(z.string(), z.object({ text: z.string(), file: local })),
+  mock: z.object({ audioRoot: local.optional() }).optional(),
+  voices: z.record(z.string(), z.object({ text: z.string(), file: local.optional() })),
 });
 function waveMetadata(bytes: Buffer) {
   if (bytes.toString('ascii', 0, 4) !== 'RIFF' || bytes.toString('ascii', 8, 12) !== 'WAVE')
@@ -145,7 +145,7 @@ export async function verifyOfflineAudio() {
       throw error;
     }
     const config = audioConfigSchema.parse(JSON.parse(text));
-    if (!config.mock) continue;
+    if (!config.mock?.audioRoot) continue;
     const audioRoot = resolve(root, config.mock.audioRoot);
     const catalog = audioCatalogSchema.parse(
       JSON.parse(await readFile(resolve(audioRoot, 'manifest.json'), 'utf8')),

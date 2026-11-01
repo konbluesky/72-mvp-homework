@@ -12,6 +12,13 @@ const liveTextConfig = {
 };
 
 describe('configuration boundaries', () => {
+  it('retains sessions by default and permits an explicit finite lifetime', () => {
+    expect(loadConfig({}).SESSION_TTL_SECONDS).toBe(0);
+    expect(loadConfig({ SESSION_TTL_SECONDS: '0' }).SESSION_TTL_SECONDS).toBe(0);
+    expect(loadConfig({ SESSION_TTL_SECONDS: '604800' }).SESSION_TTL_SECONDS).toBe(604800);
+    for (const value of ['-1', '0.5', '31536001', 'never'])
+      expect(() => loadConfig({ SESSION_TTL_SECONDS: value })).toThrow('SESSION_TTL_SECONDS');
+  });
   it('disables demo frequency quotas by default while retaining production limits and explicit overrides', () => {
     expect(loadConfig({}).RATE_LIMIT_ENABLED).toBe(false);
     expect(loadConfig({ NODE_ENV: 'development' }).RATE_LIMIT_ENABLED).toBe(false);

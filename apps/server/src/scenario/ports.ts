@@ -39,7 +39,7 @@ export interface StoryBeat {
   line?: { text: string; emotion: Emotion; action: Action };
 }
 export interface ScenarioDefinition {
-  mockProviders?: () => import('../providers/types.js').ProviderSet;
+  mockProviders?: () => Omit<import('../providers/types.js').ProviderSet, 'tts'>;
   initial(entry?: 'story' | 'conversation'): StoryCheckpoint;
   frame(checkpoint: StoryCheckpoint): StoryFrame;
   opening?(checkpoint: StoryCheckpoint): SessionOpening;

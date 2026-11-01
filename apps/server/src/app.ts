@@ -326,6 +326,9 @@ export async function createApp(options: AppOptions = {}) {
     '/api/sessions',
     {
       schema: {
+        description:
+          'Create an anonymous session; replaceSessionId requires its bearer token and atomically replaces that session.',
+        security: [{}, { sessionToken: [] }],
         body: CreateSessionSchema.optional(),
         response: { 201: SessionCreatedSchema, ...errors },
       },
@@ -337,7 +340,19 @@ export async function createApp(options: AppOptions = {}) {
         throw new AppError('RATE_LIMITED', 429, '来访有些频繁，请稍后再试。', true);
       if (config.RATE_LIMIT_ENABLED && creationTimes.size >= 1000 && !creationTimes.has(request.ip))
         throw new AppError('CAPACITY_EXCEEDED', 503, '服务暂时繁忙，请稍后再试。', true);
-      const created = sessions.create(request.body?.entry ?? 'story');
+      let previous: Session | undefined;
+      if (request.body?.replaceSessionId) {
+        try {
+          previous = sessions.authenticate(
+            request.body.replaceSessionId,
+            request.headers.authorization,
+          );
+        } catch (error) {
+          // The old session may already be gone after expiry or a process restart.
+          if (!(error instanceof AppError && error.code === 'SESSION_EXPIRED')) throw error;
+        }
+      }
+      const created = sessions.create(request.body?.entry ?? 'story', previous);
       if (config.RATE_LIMIT_ENABLED) creationTimes.set(request.ip, [...times, now]);
       return reply.status(201).send({
         ...created,

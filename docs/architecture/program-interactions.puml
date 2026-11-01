@@ -1,0 +1,286 @@
+@startuml platform_components
+title 角色互动平台：当前组件边界（2026-11-01 源码快照）
+left to right direction
+skinparam componentStyle uml2
+skinparam shadowing false
+actor 用户 as User
+package "浏览器 · apps/web" {
+  component "Vue 对话页 /\nentry=conversation" as Vue
+  component "React 故事页 /webgal.html\nentry=story" as React
+  component "TurnController + ApiClient\n输入 / 轮次 / 取消 / 回执" as Controller
+  component "PlaybackScheduler\n唯一回应播放调度" as Scheduler
+  component "BrowserAudio\n下载 / 解码 / 实际音量 / 播放" as Audio
+  component "场景呈现适配\n照片 / 正文 / 地点 / 环境 / 结局" as Presentation
+  component "WebGAL / Pixi\n舞台 / 背景 / 特效 / 动画" as WebGAL
+  component "CharacterDriver + profiles\nHaru / Miara" as Driver
+  component "Vue CharacterStage\nscene/live2d" as Legacy
+  component "Live2D / Cubism" as Live2D
+  component "前端场景包\n资源 / 布局 / 公开 manifest" as WebScene
+  component "ConnectionMonitor\n独立心跳 / 探测 / 恢复" as Monitor
+  User --> Vue
+  User --> React
+  Vue --> Controller
+  React --> Controller
+  Controller --> Scheduler : 有效事件入队
+  Scheduler --> Audio
+  Audio --> Scheduler : 实际音量
+  Scheduler --> Presentation
+  Scheduler --> Driver : 状态投影
+  Scheduler --> Legacy : 状态投影
+  Scheduler --> Controller : 呈现回执
+  Presentation --> WebGAL : WebGAL 宿主
+  Driver --> WebGAL : 共享舞台 / ticker
+  Driver --> Live2D
+  Legacy --> Live2D
+  WebScene ..> Presentation
+}
+package "共享代码 · packages" {
+  component "protocol\nZod / DTO / 事件 / 身份 / 回执" as Protocol
+  component "webgal-parser\nWebGAL DSL 与样式解析" as Parser
+}
+package "Node / Fastify · apps/server" {
+  component "Fastify HTTP 边界\n鉴权 / 校验 / SSE / 私有媒体" as HTTP
+  component "SessionManager\n单轮 / 历史 / 事实 / 存档 / 冻结" as Session
+  component "LangGraph\n单轮编排 / 验证 / 确认 / 背压" as Graph
+  component "ScenarioDefinition / InkScenario" as Scenario
+  component "inkjs\n副本解释器" as Ink
+  artifact "故事包\nInk / character / Lore / manifest / 作者台词" as Story
+  interface "SpeechToTextProvider" as STT
+  component "受限 FFmpeg\n录音解码 / 实际时长校验" as Decode
+  interface "ReplyPlanner" as Planner
+  interface "TextToSpeechProvider" as TTS
+  component "DeepgramStt / MockStt" as SttImpl
+  component "GptPlanner / MockPlanner" as PlannerImpl
+  component "DeepgramTts / MockTts" as TtsImpl
+  component "MediaService\n校验 / 归属 / ID / 有效期 / 清理" as Media
+  interface "MediaStore" as MediaStore
+  component "LocalMediaStore / R2MediaStore" as Store
+  HTTP --> Session
+  HTTP --> Graph
+  HTTP --> Decode : 转录预览（不进入回复 Graph）
+  Decode --> STT
+  Graph --> Session
+  Graph --> Scenario
+  Session --> Scenario : 回执后 accept checkpoint
+  Scenario --> Ink
+  Scenario ..> Story : 加载可信内容
+  Graph --> Decode : 兼容直接 audio input
+  Graph --> Planner
+  Graph --> TTS
+  SttImpl ..|> STT
+  PlannerImpl ..|> Planner
+  TtsImpl ..|> TTS
+  Graph --> Media
+  HTTP --> Media : 私有读取
+  Media --> MediaStore
+  Store ..|> MediaStore
+}
+cloud "外部服务（仅 Live）" {
+  component "Deepgram HTTP API\nSTT / TTS" as Deepgram
+  component "GPT / OpenAI 兼容 LLM API" as LLM
+}
+Controller --> HTTP : JSON / multipart / receipts / cancel
+HTTP --> Controller : POST SSE / JSON
+Audio --> HTTP : 鉴权 GET /api/media/:assetId
+Monitor --> HTTP : 独立 GET SSE / ping / 快照
+SttImpl --> Deepgram : Live
+TtsImpl --> Deepgram : Live
+PlannerImpl --> LLM : Live
+Controller ..> Protocol
+Scheduler ..> Protocol
+HTTP ..> Protocol
+Graph ..> Protocol
+Scenario ..> Protocol
+WebGAL ..> Parser
+Story ..> WebScene : scenarios:build 仅生成公开投影
+note bottom of WebGAL
+interactive 模式：原生剧本推进、自动播放、快进受门禁限制。
+WebGAL 不成为第二个剧情权威或回应播放器。
+end note
+note bottom of Session
+会话与 checkpoint 当前仅在单进程内存。
+R2 只存私有音频，不持久化剧情。
+end note
+note bottom of Protocol
+共享代码依赖，不是运行中的网络中转服务。
+end note
+@enduml
+
+@startuml text_reply
+title Live 普通文字聊天；Mock 替换 Provider，不访问外部
+skinparam shadowing false
+autonumber
+actor 用户 as U
+participant TurnController as C
+participant "Fastify API" as API
+participant SessionManager as S
+participant LangGraph as G
+participant "Scenario / Ink" as I
+participant "GPT Planner" as L
+participant "Deepgram TTS" as T
+participant MediaService as M
+participant PlaybackScheduler as P
+participant "音频 / 场景 / Live2D" as V
+U -> C : 发送文字 / 建议 draft
+C -> C : 失效旧轮、停止播放、冻结旧回执
+C -> API : POST /turns + generation + receipts + frozenTurns
+API -> S : 合并合法回执，begin
+S --> C : begun（经 API）
+C -> API : POST /turns/:turnId/input + text
+API -> S : startInput，校验身份/幂等/并发
+API --> C : SSE ready
+API -> G : runConversation
+G -> S : 登记用户输入，读取历史/事实
+G -> I : 当前角色 / 已知 Lore / 导演提示 / actions
+G -> L : 结构化规划请求
+L --> G : unknown 回复 + suggestions
+G -> G : schema / 场景规则校验；失败最多修复一次
+loop 逐句；最多准备当前句和下一句
+  G -> T : synthesize(text)
+  T --> G : 音频字节
+  G -> M : 校验并存储音频
+  M --> G : 服务端生成的私有 audioUrl
+  G -> S : issue segment target
+  API --> C : SSE audio.ready
+  C -> P : 身份/序号校验后入队
+  P -> API : 经 BrowserAudio 鉴权 GET /api/media/:assetId
+  API -> M : 校验 session 归属，读取音频
+  M --> API : 音频二进制
+  API --> P : 音频二进制
+  P -> V : 音频 / 字幕 / 动作 / 实际音量口型
+  V --> P : onended
+  P -> C : segment presented
+  C -> API : POST /receipts
+  API -> S : 校验 target，提交已完成台词
+  S --> G : 回执解除背压
+end
+G -> API : reply.done + suggestions
+API --> C : SSE reply.done，正常结束流
+C -> P : generationDone
+P -> P : 全部播放/呈现结束后发布建议
+note over G,P
+reply.done 可先于末句播放完成；正常 EOF 不取消有效播放。
+end note
+@enduml
+
+@startuml story_action
+title 剧情动作：候选计算、真实呈现、回执提交
+skinparam shadowing false
+autonumber
+actor 用户 as U
+participant "Controller / API" as C
+participant LangGraph as G
+participant "GPT Planner" as L
+participant "InkScenario / inkjs" as I
+participant SessionManager as S
+participant PlaybackScheduler as P
+participant "场景适配 / WebGAL / Live2D" as W
+U -> C : 当前轮 input
+C -> G : 合法文字或 interaction
+alt 文字表达动作
+  G -> L : plan_reply，当前 actions + 完整 userText
+  L --> G : actionId / actionRequest / suggestions
+  G -> G : quote / confirmed / 当前动作集合校验
+  opt explicit
+    G -> L : confirm_action，独立复核同一动作
+    L --> G : 确认或澄清
+  end
+  note over G,L : 只有确认通过才继续；否则普通回复/澄清或受控失败
+else 结构化菜单操作
+  G -> G : actionId + revision，不经 LLM 意图规划
+end
+G -> I : propose(action, 已确认 checkpoint)
+I -> I : 独立解释器副本运行，校验 choices / 版本 / 资源
+I --> G : 有序 beats + 候选 checkpoints
+loop 每 beat
+  opt 有作者台词
+    G -> G : TTS / MediaService / issue segment
+    G --> C : SSE audio.ready
+    C -> P : 入队
+    P -> W : 统一时序播放台词与角色状态
+    W --> P : 台词结束
+    P -> C : segment 回执
+    C -> S : 确认台词
+  end
+  G -> S : issueEvents，依赖 + 候选 checkpoint
+  G --> C : presentation.ready + storyAfter/factsAfter
+  C -> P : 视觉入队
+  P -> W : 正文 / 照片 / 地点 / 环境 / 结局
+  W --> P : 实际呈现完成或失败
+  P -> C : 独立 event 回执
+  C -> S : POST /receipts
+  S -> S : 校验依赖 / 冻结 / 顺序 / revision / 父存档链
+  alt 成功
+    S -> I : accept(current, candidate)
+    I --> S : 合法下一 checkpoint
+    S -> S : 提交 narrative / story / facts
+    S --> G : 解除等待，继续下一 beat
+  else 失败
+    S --> G : 唤醒后发现失败，停止后续 beat
+    note right of S : 不提交对应 checkpoint
+  end
+end
+G --> C : reply.done（成功路径）
+C -> P : generationDone
+note over I,S : propose 不提交；SessionManager 唯一提交权威进度
+@enduml
+
+@startuml voice_preview
+title 当前页面语音：预览、编辑、确认后发送文字
+skinparam shadowing false
+autonumber
+actor 用户 as U
+participant "TurnController / Recorder" as C
+participant "Fastify API" as API
+participant SessionManager as S
+participant "受限 FFmpeg" as F
+participant "Deepgram STT" as D
+U -> C : 按住录音，松开结束
+C -> API : begin + POST /transcription，multipart
+API -> S : 身份 / 能力 / 限额 / 并发检查
+API -> F : 解码到 16kHz 单声道，验证真实时长
+F --> API : WAV
+API -> D : transcribe(WAV)
+D --> API : text
+API -> S : 结束预览任务，释放处理占用
+API --> C : JSON text + simulated + TurnIdentity
+C --> U : 可编辑草稿
+note over API,D
+无 GPT/TTS、回复 SSE、用户对话历史或剧情事实。
+end note
+U -> C : 编辑并确认
+C -> API : 新 begin + 文字 input
+note over C,API : 后续进入文字回复 Graph，不重复 STT
+@enduml
+
+@startuml interruption
+title 打断与新轮：冻结回执、失效旧 owner、防止迟到污染
+skinparam shadowing false
+autonumber
+actor 用户 as U
+participant "TurnController / ReceiptBook" as C
+participant PlaybackScheduler as P
+participant "Fastify API" as API
+participant SessionManager as S
+participant "旧 Graph / Provider / 异步资源" as Old
+U -> C : 新输入 / 开始录音 / 打断
+C -> C : 同步失效 current，abort 旧请求
+C -> P : cancel，停止声音/字幕/瞬时演出/建议
+C -> C : freeze 旧轮累计回执
+C -> API : 尽力 POST 旧 turn/cancel + 冻结回执
+API -> S : 合并回执、冻结、取消该旧轮
+S -> Old : AbortSignal / 清理旧任务与媒体
+opt 新输入继续
+  C -> API : begin 新 generation + outbox + frozenTurns
+  API -> S : 构造新上下文前原子合并合法回执
+  S -> S : 保留已确认前缀，创建新轮
+  S --> C : begun（经 API）
+  C -> API : 新 input
+end
+Old --> C : 迟到响应 / 回调
+C -> C : 身份不匹配，丢弃
+note over S,Old
+await 前后检查当前轮；旧 cancel / finally 不能取消新轮。
+舞台/模型加载另有 owner / epoch 与取消检查。
+end note
+@enduml

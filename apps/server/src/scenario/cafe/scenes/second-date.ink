@@ -175,6 +175,7 @@
 -> menu
 
 === node_b04_4 ===
+~ phase = 2
 ~ beat = "b04-5"
 # cue:beat:b04-4
 # voice:long_b04_4

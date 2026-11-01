@@ -635,6 +635,7 @@ body {
 }
 
 .story-composer {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -699,13 +700,18 @@ body {
   touch-action: none !important;
 }
 .record-button,
-.record-button * {
+.record-button *,
+.story-app.recording-gesture-active,
+.story-app.recording-gesture-active * {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
 }
-.record-button:has(+ .story-stop-button) {
-  padding-right: 0;
+.record-button + .story-stop-button {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 .story-composer.is-recording {
   border-color: #a8b98a;

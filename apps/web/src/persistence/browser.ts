@@ -6,6 +6,7 @@ import {
   ReceiptSchema,
   ReplySuggestionsSchema,
   SessionOpeningSchema,
+  SessionExpirySchema,
 } from '@mira/protocol';
 
 export const BrowserPreferencesSchema = z
@@ -36,7 +37,7 @@ const credentials = z
   .object({
     sessionId: IdSchema,
     sessionToken: z.string().min(32).max(256),
-    expiresAt: z.number().finite().positive(),
+    expiresAt: SessionExpirySchema,
     mode: z.enum(['mock', 'live']),
   })
   .strict();
@@ -47,6 +48,7 @@ const activeRecovery = z
     session: credentials,
     scenarioVersion: z.string().max(80),
     generation: z.number().int().nonnegative(),
+    pendingRestart: z.boolean().optional(),
     pending: z.array(ReceiptSchema).max(128),
     frozenTurns: z.array(FrozenTurnSchema).max(8),
     activeTurn: FrozenTurnSchema.optional(),

@@ -28,7 +28,6 @@ const manifest = z
     performanceActions: z.array(ActionSchema).min(1).max(32),
     mock: z
       .object({
-        audioRoot: z.string().regex(/^assets\/[a-zA-Z0-9_/-]+$/),
         transcript: z.string().min(1).max(1000),
       })
       .strict(),
@@ -60,7 +59,10 @@ const manifest = z
       z
         .object({
           text: z.string().min(1).max(160),
-          file: z.string().regex(/^[a-zA-Z0-9_-]+\.wav$/),
+          file: z
+            .string()
+            .regex(/^[a-zA-Z0-9_-]+\.wav$/)
+            .optional(),
           emotion: EmotionSchema,
           action: ActionSchema,
         })

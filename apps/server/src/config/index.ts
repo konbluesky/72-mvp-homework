@@ -103,7 +103,8 @@ const base = z.object({
   TTS_TIMEOUT_MS: positive(10000),
   SESSION_STORE: z.literal('memory').default('memory'),
   CONTEXT_HISTORY_TOKENS: positive(1800, 16000),
-  SESSION_TTL_SECONDS: positive(1800, 86400),
+  // 0 retains sessions until an explicit restart or process shutdown.
+  SESSION_TTL_SECONDS: z.coerce.number().int().min(0).max(31_536_000).default(0),
   MAX_SESSIONS: positive(100, 10000),
   MAX_ACTIVE_TURNS: positive(8, 100),
   MAX_TURNS_PER_SESSION: positive(24, 100),

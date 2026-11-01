@@ -53,3 +53,7 @@ Deepgram HTTP200空transcript保留为NO_SPEECH，公开映射为422，不再混
 ## Ink上下文与私有规划输出
 
 PlanInput额外接受场景提供的systemPrompt与allowedActions，供应商适配不持有具体咖啡馆剧情。请求使用PlannerOutputSchema，在当前非explicit动作集合上约束actionId；Graph验证后分流普通回复与Ink beat。推荐kind/relatedActionId用于内部过滤，公开仍为label/draft。模板和actor的世界操作由scenario授权，不能由模型任意设置。
+
+## 2026-11-01 移除Mock语音
+
+场景Mock工厂只提供识别/规划，不再提供TTS。`createProviders`统一使用真实DeepgramTts，包括选择Mock会话适配器时也不创建模拟声音；实际发声需要真实Deepgram配置。没有text.ready或新文字替代通道，Live失败不回退Mock。原有用户主动选择的音频故障字幕恢复保持不变。CI应继续通过已有依赖注入测试替身隔离外部调用，不调用付费Provider。

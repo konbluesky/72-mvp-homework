@@ -4,6 +4,10 @@ import { InteractiveHost } from './host';
 import { CHARACTERS } from '../characters/profiles/index';
 import { PLATFORM_NAME } from '../../app/platform';
 import {
+  protectRecordingGesture,
+  type RecordingGestureGuard,
+} from '../../interaction/recording-gesture';
+import {
   canUseStoryActions,
   currentStoryAction,
   canSubmitConversation,
@@ -42,6 +46,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
   const focusText = useRef(false);
   const seenText = useRef({ subtitle: '', narration: '' });
   const pointer = useRef<number>();
+  const recordingGesture = useRef<RecordingGestureGuard>();
   const pressY = useRef(0);
 
   useEffect(() => {
@@ -149,12 +154,22 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       if (event.key !== 'Escape') return;
       if (host.getSnapshot().recording !== 'idle') {
         event.preventDefault();
-        pointer.current = undefined;
-        host.controller.cancelRecording();
+        cancelRecording();
       } else setExploring(false);
     };
     document.addEventListener('keydown', escape);
     return () => document.removeEventListener('keydown', escape);
+  }, [host]);
+  useEffect(() => {
+    const blur = () => {
+      if (pointer.current !== undefined || host.getSnapshot().recording !== 'idle')
+        cancelRecording();
+    };
+    window.addEventListener('blur', blur);
+    return () => {
+      window.removeEventListener('blur', blur);
+      recordingGesture.current?.dispose();
+    };
   }, [host]);
 
   const groups = useMemo(() => groupStoryActions(state.story.actions), [state.story.actions]);
@@ -165,6 +180,14 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
   const canAct = canUseStoryActions(state);
   const privateView = !!state.story.shot && state.story.shot.mode !== 'shared';
   const canChat = canSubmitConversation(state) && !privateView;
+  // Keep the active pointer target enabled through permission and recording phases.
+  const canRecord =
+    state.connected &&
+    !state.connecting &&
+    state.animation === 'live2d' &&
+    !privateView &&
+    state.voiceInput &&
+    state.voicePreview === 'idle';
   const voicePending = state.recording !== 'idle' || state.voicePreview === 'transcribing';
   const suggestions = conversationSuggestions(state, !userTurnSeen.current);
   const openingText = state.opening?.text ?? host.location.description;
@@ -258,7 +281,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     editDraft('');
   }
   function sendSuggestion(candidate: ReplySuggestion) {
-    if (host.isDisposed || draftText.current.trim()) return;
+    if (host.isDisposed || (draftText.current.trim() && !privateView)) return;
     const text = selectedConversationReply(
       host.getSnapshot(),
       suggestions,
@@ -274,11 +297,11 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     } else send(text);
   }
   function stop() {
-    pointer.current = undefined;
+    finishRecordingGesture();
     host.controller.interrupt();
   }
   function newStory() {
-    pointer.current = undefined;
+    finishRecordingGesture();
     setPanel(null);
     setExploring(false);
     host.api.persistence?.clearReading();
@@ -303,8 +326,13 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     host.controller.press();
   }
   function cancelRecording() {
-    pointer.current = undefined;
+    finishRecordingGesture();
     host.controller.cancelRecording();
+  }
+  function finishRecordingGesture() {
+    pointer.current = undefined;
+    recordingGesture.current?.finish();
+    recordingGesture.current = undefined;
   }
   function discardDraft() {
     host.controller.discardVoicePreview();
@@ -510,11 +538,34 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
         )}
         <section className="story-conversation" aria-label={`与${scene.speaker}对话`}>
           {privateView && (
-            <p className="chat-narration" role="status">
-              {state.story.shot?.mode === 'character'
-                ? `${scene.speaker}的独处片段 · 你仍在原处等候`
-                : '这一段留白 · 可选择继续或结束'}
-            </p>
+            <>
+              <p className="chat-narration" role="status">
+                {state.story.shot?.mode === 'character'
+                  ? `${scene.speaker}的独处片段 · 你仍在原处等候`
+                  : '这一段留白 · 可选择继续或结束'}
+              </p>
+              <div className="next-replies" aria-label="片段中的其他选择">
+                {groups.decisions
+                  .filter(
+                    (action) =>
+                      !suggestions.some(
+                        (item) =>
+                          item.interaction?.kind === 'action' &&
+                          item.interaction.actionId === action.id,
+                      ),
+                  )
+                  .map((action) => (
+                    <button
+                      key={action.id}
+                      type="button"
+                      disabled={!canAct}
+                      onClick={() => perform(action)}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+              </div>
+            </>
           )}
           <div
             ref={chatLog}
@@ -564,7 +615,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
               </span>
             )}
           </div>
-          {suggestions.length > 0 && !draft.trim() && (
+          {suggestions.length > 0 && (!draft.trim() || privateView) && (
             <div className="next-replies" aria-label="推荐的下一句话，点击发送">
               {suggestions.map((candidate) => (
                 <button
@@ -665,30 +716,48 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
                   type="button"
                   className="record-button"
                   aria-label="按住录音，松开后预览识别文字"
-                  disabled={!canChat || !state.voiceInput || state.voicePreview !== 'idle'}
+                  disabled={!canRecord}
                   onContextMenu={(event) => {
                     // A recording hold must not open native menus or reach WebGAL's right-click hotkey.
                     event.preventDefault();
                     event.stopPropagation();
                   }}
                   onPointerDown={(event) => {
-                    if (event.button !== 0 || pointer.current !== undefined) return;
+                    if (
+                      event.button !== 0 ||
+                      !event.isPrimary ||
+                      !canRecord ||
+                      pointer.current !== undefined ||
+                      host.getSnapshot().recording !== 'idle'
+                    )
+                      return;
                     event.preventDefault();
+                    recordingGesture.current = protectRecordingGesture(event.currentTarget);
                     pointer.current = event.pointerId;
                     pressY.current = event.clientY;
-                    event.currentTarget.setPointerCapture(event.pointerId);
+                    try {
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                    } catch {
+                      recordingGesture.current.dispose();
+                      recordingGesture.current = undefined;
+                      pointer.current = undefined;
+                      return;
+                    }
                     startRecording();
                   }}
                   onPointerUp={(event) => {
                     if (event.pointerId !== pointer.current) return;
-                    pointer.current = undefined;
+                    finishRecordingGesture();
                     if (event.currentTarget.hasPointerCapture(event.pointerId))
                       event.currentTarget.releasePointerCapture(event.pointerId);
                     host.controller.release();
                   }}
                   onPointerCancel={cancelRecording}
                   onLostPointerCapture={() => {
-                    if (pointer.current !== undefined) cancelRecording();
+                    const wasHeld = pointer.current !== undefined;
+                    finishRecordingGesture();
+                    if (wasHeld && host.getSnapshot().recording !== 'idle')
+                      host.controller.cancelRecording();
                   }}
                   onPointerMove={(event) => {
                     if (event.pointerId === pointer.current && pressY.current - event.clientY > 70)
@@ -715,7 +784,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
                         ? '识别中…'
                         : '按住录音'}
                 </button>
-                {busy && (
+                {busy && state.recording === 'idle' && state.voicePreview === 'idle' && (
                   <button
                     type="button"
                     className="story-stop-button"

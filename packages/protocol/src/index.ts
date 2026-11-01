@@ -100,7 +100,11 @@ export const SceneSchema = z
 export const CapabilitiesSchema = z.object({ voiceInput: z.boolean() }).strict();
 
 export const CreateSessionSchema = z
-  .object({ entry: z.enum(['story', 'conversation']).default('story') })
+  .object({
+    entry: z.enum(['story', 'conversation']).default('story'),
+    // Explicit restart: authenticate this existing session before replacing it.
+    replaceSessionId: IdSchema.optional(),
+  })
   .strict();
 
 /** 玩家发言；服务端可绑定当前合法动作。点击才提交，候选生成不授权执行或提交事实。 */
@@ -125,12 +129,14 @@ export const SessionOpeningSchema = z
   .strict();
 export type SessionOpening = z.infer<typeof SessionOpeningSchema>;
 
-/** 创建匿名会话的响应。短期 token 可用于浏览器刷新恢复，后续仅以鉴权头发送。 */
+/** null 表示不按时间过期；有限有效期使用 Unix 毫秒。 */
+export const SessionExpirySchema = z.number().int().positive().nullable();
+
+/** 创建匿名会话的响应。会话凭证可用于浏览器刷新恢复，后续仅以鉴权头发送。 */
 export const SessionCreatedSchema = z.object({
   sessionId: IdSchema,
   sessionToken: z.string().min(32),
-  // Unix 毫秒；到期需重建会话。
-  expiresAt: z.number(),
+  expiresAt: SessionExpirySchema,
   mode: z.enum(['mock', 'live']),
   capabilities: CapabilitiesSchema,
   scene: SceneSchema,

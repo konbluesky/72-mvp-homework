@@ -34,12 +34,14 @@ export function createLiveProviders(config: Config, fetcher: Fetch = fetch): Pro
 export function createProviders(
   config: Config,
   fetcher: Fetch = fetch,
-  mockFactory?: () => ProviderSet,
+  mockFactory?: () => Omit<ProviderSet, 'tts'>,
 ): ProviderSet {
   if (config.APP_MODE === 'mock' && !mockFactory)
     throw new Error('Mock content must be provided by the selected scenario.');
-  const providers =
-    config.APP_MODE === 'mock' ? mockFactory!() : createLiveProviders(config, fetcher);
+  const live = createLiveProviders(config, fetcher);
+  // Speech has one implementation: real Deepgram TTS. Mock may replace conversation inputs only.
+  const providers: ProviderSet =
+    config.APP_MODE === 'mock' ? { ...mockFactory!(), tts: live.tts } : live;
   if (config.STT_PROVIDER === 'disabled') return { planner: providers.planner, tts: providers.tts };
   return providers;
 }

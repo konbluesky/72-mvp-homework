@@ -33,6 +33,7 @@ export class TurnController {
   private automaticRecoveryBlocked = false;
   private rateLimitedUntil = 0;
   private browserLoaded = false;
+  private pendingRestart = false;
   private recoveryCancellation?: FrozenTurn;
   private savedPresentation?: ActiveRecovery['presentation'];
   private removeStorageListener?: () => void;
@@ -74,6 +75,7 @@ export class TurnController {
       session,
       scenarioVersion: this.api.persistence.scenario.version,
       generation: this.generation,
+      ...(this.pendingRestart ? { pendingRestart: true } : {}),
       pending: this.receipts.outbox(),
       frozenTurns: this.receipts.snapshots().filter((turn) => turn.turnId !== activeTurn?.turnId),
       outgoing: this.store.outgoing,
@@ -120,15 +122,17 @@ export class TurnController {
           this.store.outgoing = saved.outgoing ?? [];
           if (
             saved.status === 'expired' ||
-            saved.session.expiresAt <= Date.now() ||
-            saved.scenarioVersion !== this.api.persistence?.scenario.version
+            (!saved.pendingRestart &&
+              ((saved.session.expiresAt !== null && saved.session.expiresAt <= Date.now()) ||
+                saved.scenarioVersion !== this.api.persistence?.scenario.version))
           )
             throw new ApiError(
               'SESSION_EXPIRED',
               '上次会话已失效，本地对话和草稿仍保留，请重新开始。',
             );
           this.api.resume(saved.session);
-          this.sessionId = saved.session.sessionId;
+          this.pendingRestart = saved.pendingRestart ?? false;
+          this.sessionId = this.pendingRestart ? '' : saved.session.sessionId;
           this.generation = saved.generation;
           this.store.mode = saved.session.mode;
           this.receipts.restore(
@@ -141,12 +145,14 @@ export class TurnController {
         }
       }
       if (reset) {
-        this.api.persistence?.saveRecovery({ status: 'expired' });
+        this.pendingRestart = true;
         this.sessionId = '';
         this.recoveryCancellation = undefined;
         this.savedPresentation = undefined;
         this.receipts.clear();
         this.store.outgoing = [];
+        if (this.api.credentials()) this.checkpointBrowser();
+        else this.api.persistence?.saveRecovery({ status: 'expired' });
       }
       if (this.sessionId && !reset) {
         const cancelled = this.recoveryCancellation;
@@ -201,9 +207,10 @@ export class TurnController {
           this.store.opening = null;
         }
       } else {
-        this.api.clear();
-        const session = await this.api.createSession(signal);
+        if (!this.pendingRestart) this.api.clear();
+        const session = await this.api.createSession(signal, this.pendingRestart);
         if (!this.ownsConnection(epoch)) return;
+        this.pendingRestart = false;
         this.sessionId = session.sessionId;
         this.generation = 0;
         this.receipts.clear();

@@ -6,6 +6,10 @@ import ConnectionStatus from '../connection/ConnectionStatus.vue';
 import { BrowserAudio } from '../playback/audio.js';
 import { PlaybackScheduler } from '../playback/scheduler.js';
 import { TurnController } from '../interaction/turn-controller.js';
+import {
+  protectRecordingGesture,
+  type RecordingGestureGuard,
+} from '../interaction/recording-gesture.js';
 import type { LegacySceneModule } from '../webgal/scenes/legacy-module.js';
 import { PLATFORM_NAME } from './platform.js';
 import CharacterStage from '../scene/CharacterStage.vue';
@@ -184,7 +188,7 @@ watch(
 const composerHint = computed(() => {
   if (scene.recording === 'recording') return '上滑或按 Esc 取消 · 最长 15 秒';
   if (scene.recording === 'permission') return '请在浏览器中允许麦克风，松开可取消';
-  return '';
+  return inputMode.value === 'voice' ? '上滑或按 Esc 取消 · 最长 15 秒' : '';
 });
 watch(
   () => scene.transcribed,
@@ -203,6 +207,12 @@ watch(
 );
 let editEpoch = 0;
 let pointer: number | undefined;
+let recordingGesture: RecordingGestureGuard | undefined;
+function finishRecordingGesture() {
+  pointer = undefined;
+  recordingGesture?.finish();
+  recordingGesture = undefined;
+}
 let pressY = 0;
 function send() {
   const value = text.value.trim();
@@ -316,22 +326,40 @@ function startRecording() {
   controller.press();
 }
 function down(event: PointerEvent) {
-  if (event.button !== 0 || pointer !== undefined) return;
+  if (
+    event.button !== 0 ||
+    !event.isPrimary ||
+    pointer !== undefined ||
+    scene.recording !== 'idle' ||
+    !scene.connected ||
+    !scene.voiceInput ||
+    scene.voicePreview !== 'idle'
+  )
+    return;
   event.preventDefault();
+  if (!hold.value) return;
   pointer = event.pointerId;
   pressY = event.clientY;
-  hold.value?.setPointerCapture(event.pointerId);
+  recordingGesture = protectRecordingGesture(hold.value);
+  try {
+    hold.value.setPointerCapture(event.pointerId);
+  } catch {
+    recordingGesture.dispose();
+    recordingGesture = undefined;
+    pointer = undefined;
+    return;
+  }
   startRecording();
 }
 function up(event: PointerEvent) {
   if (event.pointerId !== pointer) return;
-  pointer = undefined;
+  finishRecordingGesture();
   if (hold.value?.hasPointerCapture(event.pointerId))
     hold.value.releasePointerCapture(event.pointerId);
   controller.release();
 }
 function cancel() {
-  pointer = undefined;
+  finishRecordingGesture();
   if (scene.recording !== 'idle') conversation.pauseCaption();
   controller.cancelRecording();
 }
@@ -340,7 +368,7 @@ function move(event: PointerEvent) {
 }
 function lostCapture() {
   const wasHeld = pointer !== undefined;
-  pointer = undefined;
+  finishRecordingGesture();
   // Automatic recording completion may replace the microphone with the draft editor.
   if (wasHeld && scene.recording !== 'idle') cancel();
 }
@@ -413,6 +441,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   disposed = true;
+  recordingGesture?.dispose();
   scrollEpoch += 1;
   document.removeEventListener('visibilitychange', visibility);
   document.removeEventListener('keydown', escape);
@@ -767,7 +796,12 @@ onBeforeUnmount(() => {
             ><small v-if="scene.mode === 'mock' && scene.recording === 'idle'">示例</small>
           </button>
           <button
-            v-if="inputMode === 'voice' && busy"
+            v-if="
+              inputMode === 'voice' &&
+              busy &&
+              scene.recording === 'idle' &&
+              scene.voicePreview === 'idle'
+            "
             type="button"
             class="composer-stop"
             aria-label="停止当前回复"

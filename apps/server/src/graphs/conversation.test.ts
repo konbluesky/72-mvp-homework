@@ -544,3 +544,28 @@ describe('conversational action confirmation', () => {
     }
   });
 });
+
+it('keeps a player message from becoming overheard dialogue during a private cutaway', async () => {
+  const { advance, followTo } = await import('../scenario/cafe/story.test.helpers.js');
+  const plan = vi.fn<ProviderSet['planner']['plan']>(async () => oneSegment);
+  const ctx = setup(testProviders({ plan }));
+  ctx.session.narrative = advance(followTo(cafeScenario.initial(), 'a05-2'), 'talk-a05-2');
+  ctx.session.story = cafeScenario.frame(ctx.session.narrative).story;
+  const history = [...ctx.session.history];
+  try {
+    await expect(
+      runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        { kind: 'text', text: '你在做什么？' },
+        ctx.publish,
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+    expect(plan).not.toHaveBeenCalled();
+    expect(ctx.session.history).toEqual(history);
+    expect(ctx.events.some((event) => event.type === 'audio.ready')).toBe(false);
+  } finally {
+    await ctx.cleanup();
+  }
+});

@@ -6,795 +6,668 @@
   "voices": {
     "hello": {
       "text": "窗边还有个位置。不过先说好，我已经下班了，今晚不负责叫醒睡着的客人。",
-      "file": "hello.wav",
       "emotion": "curious",
       "action": "acknowledge"
     },
     "helloNext": {
       "text": "米拉，二十六岁，空乘。职业介绍结束。接下来，你想认识哪一部分的我？",
-      "file": "helloNext.wav",
       "emotion": "curious",
       "action": "none"
     },
     "waiting": {
       "text": "今天没等谁。我本来想一个人坐到打烊，现在倒有点想改计划。",
-      "file": "waiting.wav",
       "emotion": "guarded",
       "action": "lookWindow"
     },
     "travel": {
       "text": "工作里总有人告诉我下一站在哪。休息的时候，我反而喜欢没有目的地地走走。你呢？",
-      "file": "travel.wav",
       "emotion": "curious",
       "action": "none"
     },
     "comfort": {
       "text": "那就坐吧。你不用急着找话题，我也暂时不把你当成路过。",
-      "file": "comfort.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "photo": {
       "text": "可以。这是休息时去过的一片海。画面里没有人，那天倒是很自在。",
-      "file": "photo.wav",
       "emotion": "relieved",
       "action": "offerPhoto"
     },
     "rain": {
       "text": "雨小了。奇怪，刚才还盼着它停，现在反而觉得太快。",
-      "file": "rain.wav",
       "emotion": "curious",
       "action": "none"
     },
     "refuse": {
       "text": "好，收起来。我们又不是来完成什么参观任务的，聊你想聊的。",
-      "file": "refuse.wav",
       "emotion": "curious",
       "action": "none"
     },
     "after": {
       "text": "你看那片海的时候挺认真。比起夸风景，我更想知道你刚才在想什么。",
-      "file": "after.wav",
       "emotion": "curious",
       "action": "none"
     },
     "storyDepart": {
       "text": "好，走一小段。到了路口，你再告诉我，是顺路，还是舍不得。",
-      "file": "storyDepart.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "storyLetter": {
       "text": "那今晚先到这里。我喜欢能好好说再见的人，不需要把每次相遇都变成承诺。",
-      "file": "storyLetter.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "storyStay": {
       "text": "再坐一会儿。刚才那些漂亮话先放一边，这次，说件真的。",
-      "file": "storyStay.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "letterKnown": {
       "text": "阿岚这个人，总爱替别人多想一步。不过今晚要不要留下，是我自己愿意。",
-      "file": "letterKnown.wav",
       "emotion": "relieved",
       "action": "focusProp"
     },
     "letterUnknown": {
       "text": "信封是老同事阿岚留给我的，内容还没看。别急着替我猜，先聊聊眼前的人吧。",
-      "file": "letterUnknown.wav",
       "emotion": "curious",
       "action": "none"
     },
     "gallery": {
       "text": "阿岚是老同事，墙上留的是我们休息时的一段回忆。你刚才那个表情，是在偷偷猜别的关系？",
-      "file": "gallery.wav",
       "emotion": "curious",
       "action": "none"
     },
     "washroomPause": {
       "text": "镜子里看人，好像比直接看容易一点。不过你要是有话，可以直接对我说。",
-      "file": "washroomPause.wav",
       "emotion": "curious",
       "action": "none"
     },
     "lastNight": {
       "text": "今晚是旧店最后一晚。明天搬走的是桌椅，不必连我们刚聊上的话也一起收走。",
-      "file": "lastNight.wav",
       "emotion": "curious",
       "action": "none"
     },
     "storyReadLetter": {
       "text": "这封信是给我的。既然我愿意，我们就一起看看，别替纸上的字紧张。",
-      "file": "storyReadLetter.wav",
       "emotion": "relieved",
       "action": "focusProp"
     },
     "offDuty": {
       "text": "我不缺人搭话。只是很多人问完我飞哪儿，就觉得已经认识我了。你刚才愿意坐下来，我才想多说一点。",
-      "file": "offDuty.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "spark": {
       "text": "你倒挺直接。可以，我也想认识你。不过别把我这点心动，提前写成你已经赢了。",
-      "file": "spark.wav",
       "emotion": "relieved",
       "action": "acknowledge"
     },
     "boundary": {
       "text": "好，先停在这里。你不用为了留住这个晚上，勉强接我的玩笑。我们可以好好聊天。",
-      "file": "boundary.wav",
       "emotion": "guarded",
       "action": "none"
     },
     "reopen": {
       "text": "那就重新认识一下。不是退回刚才那一步，是按我们现在都舒服的速度来。",
-      "file": "reopen.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "appointment": {
       "text": "好，下次再见。不是哪趟航班顺便，也不是等天气安排。我会专门留一点时间给你。",
-      "file": "appointment.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "leaveSpark": {
       "text": "到了路口就各走各的。你要是舍不得，可以直说，我今晚听得懂。",
-      "file": "leaveSpark.wav",
       "emotion": "curious",
       "action": "none"
     },
     "leaveQuiet": {
       "text": "谢谢你没把沉默当成冷场。有些夜晚，能安静地走一小段，已经很好。",
-      "file": "leaveQuiet.wav",
       "emotion": "curious",
       "action": "none"
     },
     "reunionSpark": {
       "text": "这次没有多出来的座位，也没有躲雨的借口。你还是来了。看来上次那点心动，不只是咖啡太浓。",
-      "file": "reunionSpark.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "reunionQuiet": {
       "text": "你来了。上次说慢一点，我记得。这次我们就从一段散步开始，不用赶上什么进度。",
-      "file": "reunionQuiet.wav",
       "emotion": "curious",
       "action": "none"
     },
     "dateMemory": {
       "text": "上次你说想认真认识我。那今晚别光顾着表现，也让我看看你不那么游刃有余的时候。",
-      "file": "dateMemory.wav",
       "emotion": "curious",
       "action": "none"
     },
     "dateMemoryPhoto": {
       "text": "上次那张海，你看得很认真。今晚没有照片了。你要是还想多看一会儿，可以看我。",
-      "file": "dateMemoryPhoto.wav",
       "emotion": "curious",
       "action": "none"
     },
     "dateMemoryQuiet": {
       "text": "上次你说先慢一点，我没有忘。今天你愿意再来，已经是另一个很好的回答。",
-      "file": "dateMemoryQuiet.wav",
       "emotion": "curious",
       "action": "none"
     },
     "dateHonest": {
       "text": "其实出门前，我也想过你会不会只是随口一约。所以今晚，我想听一句不靠玩笑撑着的真话。",
-      "file": "dateHonest.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "hand": {
       "text": "可以。手给你了，不过路要慢慢走。我还没听够你说话。",
-      "file": "hand.wav",
       "emotion": "relieved",
       "action": "acknowledge"
     },
     "dateClose": {
       "text": "我喜欢今晚的你。不是每句话都漂亮的那个，是愿意把话说清楚，也愿意听我说的那个。",
-      "file": "dateClose.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "dateFriends": {
       "text": "那就做朋友。认真认识过的人，不必非得用一种关系留下。今晚我们都不用假装。",
-      "file": "dateFriends.wav",
       "emotion": "curious",
       "action": "none"
     },
     "game": {
       "text": "来个小赌局。我不喜欢咖啡，很会认路，不太会说舍不得。三句话，只有一句是真的。你猜？",
-      "file": "game.wav",
       "emotion": "curious",
       "action": "none"
     },
     "gameRight": {
       "text": "猜中了。最后一句是真的。所以哪天我说再坐一会儿，你可以多想一点。",
-      "file": "gameRight.wav",
       "emotion": "curious",
       "action": "none"
     },
     "gameWrong": {
       "text": "猜错了。我喜欢咖啡，认路也不怎么样。只有最后一句是真的。说舍不得这件事，我还在练。",
-      "file": "gameWrong.wav",
       "emotion": "curious",
       "action": "none"
     },
     "dateMemoryGame": {
       "text": "上次的小赌局，我记得。那句不太会说舍不得，今天还算数。不过我可以先练一句：别急着走。",
-      "file": "dateMemoryGame.wav",
       "emotion": "curious",
       "action": "none"
     },
     "flirtChat": {
       "text": "你刚才看的是窗外，还是玻璃里的我？想清楚再答，我可能会当真的。",
-      "file": "flirtChat.wav",
       "emotion": "curious",
       "action": "none"
     },
     "quietChat": {
       "text": "我们可以慢慢聊。你不用急着接我的每一句，我也想听听你平常是什么样。",
-      "file": "quietChat.wav",
       "emotion": "curious",
       "action": "none"
     },
     "dateChat": {
       "text": "今晚没有航线表，也没人催我们抵达。你想聊点什么？这次我认真听。",
-      "file": "dateChat.wav",
       "emotion": "curious",
       "action": "none"
     },
     "earlyGoodnight": {
       "text": "好，路上小心。一个晚上不用非得聊到最后，才算认识过。",
-      "file": "earlyGoodnight.wav",
       "emotion": "curious",
       "action": "none"
     },
     "returnGallery": {
       "text": "你果然在这里。我走回来的时候先看了眼座位，发现你在看墙上的东西，才想起来，是我自己答应了你可以在附近等。是不是有一点好笑？原来先说不用等太久的人，也会偷偷在意。",
-      "file": "returnGallery.wav",
       "emotion": "curious",
       "action": "none"
     },
     "friendlyReturn": {
       "text": "也好，舒服的相处不一定都得赶着变成暧昧。我还是想把刚才没听完的话听完。你愿意继续讲，我就继续听。不需要为了不让我失望，临时改变你自己的意思。",
-      "file": "friendlyReturn.wav",
       "emotion": "curious",
       "action": "none"
     },
     "reunionNight": {
       "text": "见到你之前，我想过要不要装得特别轻松。可上次不是只借了一个座位。我今天愿意来，是想继续认识你，不是让哪一边给那一夜交一份说明。你也可以先说说，今天为什么想来。",
-      "file": "reunionNight.wav",
       "emotion": "curious",
       "action": "none"
     },
     "reunionSlower": {
       "text": "你来了。我记得上次说慢一点，今天仍然算数。见面不是把先前的距离全部清零，也不用突然表现得很熟。可以从一个普通的笑话开始，或者就从一句你好开始。",
-      "file": "reunionSlower.wav",
       "emotion": "curious",
       "action": "none"
     },
     "memoryNight": {
       "text": "我记得离开旧店前，我们把想做的事说清楚了。那让我知道，后来的亲近不是谁猜中了暗示，也不是谁不好意思拒绝。今天想起来，我也希望我们继续保留那种把意思说准确的认真。",
-      "file": "memoryNight.wav",
       "emotion": "curious",
       "action": "none"
     },
     "memoryGameLong": {
       "text": "我记得上次那个小赌局。你肯认真听一个不太重要的问题，我也就愿意让人看穿一点嘴硬。今天不用再猜哪句是真的。哪一句想让你记住，我会试着直接说。",
-      "file": "memoryGameLong.wav",
       "emotion": "curious",
       "action": "none"
     },
     "memoryWait": {
       "text": "我记得从洗手区回来时，你还在。那一刻才发现，出门前的玩笑已经把希望说出去了。今天补一句的话，就是我当时确实很高兴，又有点不好意思先承认。",
-      "file": "memoryWait.wav",
       "emotion": "curious",
       "action": "none"
     },
     "nightOffer": {
       "text": "我也愿意今晚和你一起离开。不是怕一个人回去，也不是用这一晚换一个以后。如果这也是你现在明确想做的，我们就一起走；要改成散步或各自回家，现在说也完全来得及。",
-      "file": "nightOffer.wav",
       "emotion": "curious",
       "action": "none"
     },
     "nightDecline": {
       "text": "好，那就不往前推。刚才愿意说清楚的那些话还算数，我们也没有谁让谁扫兴。可以再走一小段，也可以好好说晚安。你不用为了让我高兴，把一个不确定的意思答应下来。",
-      "file": "nightDecline.wav",
       "emotion": "curious",
       "action": "none"
     },
     "v3Appointment": {
       "text": "那就专门再见一次。地点就先约在旧店门前，时间等我们都方便时确认。不用再说路过，也不需要为下一次保证整段以后。我只是想把愿意见你这件事，说得让你听得懂。",
-      "file": "v3Appointment.wav",
       "emotion": "curious",
       "action": "none"
     },
     "nightLater": {
       "text": "那一夜之后，再见也仍然需要两个人都愿意。如果你是认真想再认识一点，我也愿意。我们在旧店门前碰头，时间等双方确认有空，不拿已经亲近过当成以后必须继续的理由。",
-      "file": "nightLater.wav",
       "emotion": "curious",
       "action": "none"
     },
     "hugConsent": {
       "text": "可以，抱一下。不是为了把刚才那些不太好说的话省略掉，是说清楚以后，我也更愿意靠近一点。我们不用急着把这一刻变成别的，站一会儿就很好。",
-      "file": "hugConsent.wav",
       "emotion": "curious",
       "action": "none"
     },
     "kissConsent": {
       "text": "可以。我也想这样靠近你。一个吻就先停在这里，刚才说过的真话和分寸都还算数。接下来我们仍然可以慢慢走，不需要靠更多动作证明这一晚值得记住。",
-      "file": "kissConsent.wav",
       "emotion": "curious",
       "action": "none"
     },
     "casualEnd": {
       "text": "那就按我们都明白的方式相处。轻松也可以认真，不把它假装成恋爱，也不藏着另一种期待。以后想法变了就告诉对方，谁也不用为了显得洒脱，一直装作无所谓。",
-      "file": "casualEnd.wav",
       "emotion": "curious",
       "action": "none"
     },
     "farewellEnd": {
       "text": "我有一点舍不得，但不用把舍不得硬说成我们应该继续。谢谢你今天真的来了，也谢谢我们没有为了让故事好看，就把不一样的答案藏起来。路口到了，认真说一声晚安吧。",
-      "file": "farewellEnd.wav",
       "emotion": "curious",
       "action": "none"
     },
     "pauseEnd": {
       "text": "好，今天先到这里。没有聊完的，不必趁告别前全部塞进一句话。你可以再想想，我也一样。至少今晚说过的认真，不会因为现在要走，就被当成从来没有发生。",
-      "file": "pauseEnd.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a01_1": {
       "text": "那就坐吧。窗边的位置刚好空着，不过先提醒一句，我已经下班了，今晚不负责叫醒睡着的客人。你要是准备装睡赖着不走，可得自己找个比下雨更好听的借口。",
-      "file": "long_a01_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a01_2": {
       "text": "你还挺会顺着说。可别一坐下来就太认真，我今天已经听了够多标准答案。先告诉我一件小事吧，比如进门之前，你是在犹豫去哪儿，还是单纯不想这么早结束今天？",
-      "file": "long_a01_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a01_3": {
       "text": "我今天下班前，把自己要说的话在脑子里提前说完了，回头才发现对方根本没听见。人在熟悉的事情上，也会突然不太聪明。所以今晚你要是走神，我们就算互相扯平。",
-      "file": "long_a01_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a01_4": {
       "text": "好，先把履历放一边。你不用一开始就证明自己很有趣，我也不用一直像在工作。偶尔接不住一句话，也可以喝口东西再想。一个晚上如果每句话都要考核，实在太累了。",
-      "file": "long_a01_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a02_1": {
       "text": "你看出来了，这杯其实已经没那么好喝。我一直没喝完，也不全是在等雨停。有时候一件事做完，就真的该起身走了。我今天有点懒得接受这件事，索性让杯子替我拖一会儿。",
-      "file": "long_a02_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a02_2": {
       "text": "这样听着，好像你已经认识我很久了。先别得意，我也可以这么猜人。你进门以后先找空位，再看别的地方。我当时就想，可能今天不只我一个人，暂时不想被下一件事叫走。",
-      "file": "long_a02_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a02_3": {
       "text": "那玩一个很小的赌局。我不喜欢咖啡，很会认路，不太会说舍不得。三句话，只有一句是真的。别急着看我表情，我也可能故意误导你。猜错没惩罚，猜对我就承认一点不太体面的事。",
-      "file": "long_a02_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a02_4": {
       "text": "最后一句是真的。我喜欢咖啡，认路却不怎么样。把航线记得熟，和在小巷里不迷路，完全是两件事。至于舍不得，我通常会说成再坐一会儿，显得没那么容易被人听出期待。",
-      "file": "long_a02_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a02_5": {
       "text": "正好，这回轮到你。可以说一个你愿意被人记住的小习惯，也可以让我猜一句真的。太私人的不用讲，今晚又不是背景调查。我只是觉得，不能一直让别人认识我，自己却躲在安全的地方。",
-      "file": "long_a02_5.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a02_6": {
       "text": "这点我同意。有时人费很多心思准备一个精彩开场，最后留下印象的，反而是认真听完一句不重要的话。你刚才愿意猜，我才发现，自己今天也许并没有想象中那么想一个人待着。",
-      "file": "long_a02_6.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a03_1": {
       "text": "好，过去看看。墙上的东西再过不久就要收了，我今天来，也有一点是想和这个地方告个别。不是每次回来都要找什么意义，有时只是熟悉的位置空出来，才突然舍不得它原来的样子。",
-      "file": "long_a03_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a03_2": {
       "text": "阿岚是以前一起工作的朋友。你看见那两个名字时停了半拍，我注意到了。不过不用急着解释，我也未必猜对。可能是在想我们什么关系，也可能只是在认真看那张有些旧的海报。",
-      "file": "long_a03_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a03_3": {
       "text": "这句话我挺喜欢。你可以好奇，也可以有一点在意，可不必把我过去认识的人，都变成今晚需要打败的对象。我们曾经在休息时一起去过海边，找路找了很久，最后最记得的却是坐着不赶时间。",
-      "file": "long_a03_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a03_4": {
       "text": "是啊，工作会告诉我下一站在哪里，却不会告诉我，休息的时候想把时间花给谁。所以我有时很会按时抵达，轮到自己的生活，反而慢一点才找得到方向。你也可以有不想一下摊开的部分。",
-      "file": "long_a03_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a04_1": {
       "text": "那我问一句不太好接的话。你对我有兴趣，是因为今晚聊得来，还是因为我刚下班，刚好像你想象里的某种人？你可以慢慢答，我也不是已经想好一个答案，等着判断你够不够好。",
-      "file": "long_a04_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a04_2": {
       "text": "两件事可以同时成立。我不觉得第一眼的吸引有什么不好，只是想知道，你会不会问完飞哪儿，就觉得已经认识我了。第一眼让人愿意坐下，后面的时间，才让人知道究竟想不想继续。",
-      "file": "long_a04_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a04_3": {
       "text": "比如把不喜欢的一句话，解释成你只是开不起玩笑。这种说法会让人连认真都得先道歉。我更愿意听见一句，刚才是不是说过头了。我们不一定立刻合拍，但可以商量，不必谁一直迁就谁。",
-      "file": "long_a04_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a04_4": {
       "text": "这句也对。我不能把别人以前说过的蠢话，提前记到你头上。有时我太想保护自己的兴致，也会先把一个人猜得不够好。那我们公平一点，你别替我写好人设，我也不替你猜结局。",
-      "file": "long_a04_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a04_5": {
       "text": "我不缺人搭话，只是不常遇到愿意把话重新说清楚的人。刚才如果听起来有点像盘问，是我也有些紧张。好了，今晚不用给谁打从容分。让我去整理一下，回来再把这一段好好接下去。",
-      "file": "long_a04_5.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a05_1": {
       "text": "我去整理一下。你不用站起来，真的。要是我回来发现杯子还在、人不在，我会先怪这家店的咖啡。这个笑话说完好像有点露馅了。算了，你就当我希望回来还能把话说完吧。",
-      "file": "long_a05_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a06_1": {
       "text": "等很久了？你可以说实话，我不会为了显得自己没那么在意，就假装你走了我也无所谓。刚才走回来的时候，我发现自己先看的居然是那张椅子，而不是桌上的杯子。是有一点露馅，对吧？",
-      "file": "long_a06_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a06_2": {
       "text": "我刚才对着镜子，发现自己在练一件很没必要的事。练怎么若无其事地走回来。后来觉得算了，今晚又没有人给我打分。要是回来时真的很高兴，承认一点，也不会让这个晚上变得更糟。",
-      "file": "long_a06_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a06_3": {
       "text": "你倒挺直接。可以，我也想认识你。不过别把我这点心动，提前写成你已经赢了。我有时只是接话很快，想明白自己要什么却会慢一些。你愿意的话，我们就让这两种速度都留在这里。",
-      "file": "long_a06_3.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "long_a06_4": {
       "text": "那我也说清楚。我现在继续坐在这里，确实不只是因为外面下雨。可我还不想把接下来的每一步，都提前说成理所当然。眼前的这段时间是我自己想留下来的，你只要知道这一点就好。",
-      "file": "long_a06_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a06_5": {
       "text": "好，终于有人允许我不用每句都接得漂亮了。那就聊点平常的吧，今天让你笑了一下的事，最近想学的小东西，都可以。你要是不想说自己的，我也可以先承认一件没完成的小计划。",
-      "file": "long_a06_5.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a07_1": {
       "text": "我们去吧台吧。这里快收了，不用等到别人开口催，才想起自己可以好好道别。我会自己结这杯，你要是想请下一杯，也不是不行，只是今晚大概已经没有下一杯可以点了。",
-      "file": "long_a07_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a07_2": {
       "text": "你这个提议，听起来有点像想先欠我一次见面。要真是这个意思，就别说哪天顺路。时间可以等我们都方便时再定，理由先说准确一点。我比较愿意为了想见一个人，留出自己的时间。",
-      "file": "long_a07_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a07_3": {
       "text": "这句我会认真收下。不过也不用因为说了想再见，就替以后保证太多。我们现在知道聊得来、有一点吸引，已经是个不错的起点。剩下的，可以给下一次，也可以给今晚还有余地的这一段。",
-      "file": "long_a07_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a07_4": {
       "text": "不急着说下次，也不一定代表今晚不认真。但我们得分清，是都想把眼前这一段过好，还是有人一直用模糊躲开回答。我可以慢一点决定，也会告诉你自己的意思，不让你一个人负责猜。",
-      "file": "long_a07_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a08_1": {
       "text": "到了这里，还可以各自回家，也可以再走一段。你要是只是客气，就别把话说得太漂亮。我今天好像有一点容易当真。说完这句我也知道，是我自己不太急着把这个晚上结束。",
-      "file": "long_a08_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a08_2": {
       "text": "那就不躲在借口后面了。我今晚没有必须赶回去的安排，也愿意继续和你待一会儿。但多待一会儿可以是散步、聊天，也可以有别的选择。我们说准确一点，会比互相猜省下很多紧张。",
-      "file": "long_a08_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a08_3": {
       "text": "我喜欢的是我们现在能把话说清楚。不是你答应一个很远的以后，我才肯承认今晚想靠近。你也一样，别为了留住气氛，答应自己其实不想做的事。愿意就说愿意，想先停下也可以。",
-      "file": "long_a08_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_a08_4": {
       "text": "那就把选择留给我们两个人。可以约下次，先说晚安；可以沿着街再走一小段；也可以在我们都明确愿意的情况下，一起度过今晚。没有哪一种需要拿来证明刚才的心动是真是假。",
-      "file": "long_a08_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b01_1": {
       "text": "我比约定早到了一点。原本还想说刚好经过，后来想想，这个借口上次已经用得差不多了。今天我就是来等你的，你可以稍微得意一会儿。不过别得意到忘了，也让我看看你见到我是什么心情。",
-      "file": "long_b01_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b01_2": {
       "text": "那我们今天先不比赛谁比较从容。来之前我也想过，会不会只有我把这次见面当得认真。站在这里才发现，有些话在脑子里练得很顺，真的看到人以后，反而想从一句最普通的你好说起。",
-      "file": "long_b01_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b01_3": {
       "text": "对，上次发生过的事，今天不需要装作没发生，也不用急着把它解释成一整段以后。我们可以先确认一件简单的事，就是现在还愿意站在这里，继续认识对方。对我来说，这就已经不算敷衍。",
-      "file": "long_b01_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b01_4": {
       "text": "我记得我们说过，舒服的速度不能只听一个人的。再见一次不是把之前的分寸全部清零，也不是必须表现得比上次更亲近。你今天想慢一点，可以直接说，我也会把自己的想法放在明面上。",
-      "file": "long_b01_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b01_5": {
       "text": "好，我们各挑一个上次的瞬间。不用最浪漫，选那个今天想起来还会停一下的。你先说也行，我先暴露也行。别又让我一直出题，自己却只负责笑着猜中，那样我会觉得有点吃亏。",
-      "file": "long_b01_5.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b02_1": {
       "text": "我记得的未必是最像告白的那一句。有时是一个人把话重新说清楚，有时是一个玩笑没有被敷衍过去。让我想起来还想停一下的，通常不是表现得多漂亮，而是当时确实觉得，眼前的人愿意认真在这里。",
-      "file": "long_b02_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b02_2": {
       "text": "现在补一句的话，我大概会说，那时候我也有点舍不得。不是今天为了气氛好，临时给过去加戏。只是上次不太敢承认，怕一句话说得太满，就把原本轻松的相处，变成了对方不得不接住的东西。",
-      "file": "long_b02_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b02_3": {
       "text": "那更好，我们不用靠记住同一件事，证明这个晚上有意义。你愿意说，我就听。要是对当时的理解不一样，也可以讲出来。认识一个人，可能就是慢慢发现，原来同一句话在两边留下了不同的回声。",
-      "file": "long_b02_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b02_4": {
       "text": "我也是。有些玩笑是在试探，有些是想让自己退得漂亮一点。后来发现，如果每句话都准备着随时说成只是开玩笑，真正想被听见的部分，就总是躲在最后。今天我想少留一点那样的退路。",
-      "file": "long_b02_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b02_5": {
       "text": "走吧，不用每几步就停下来总结我们是什么关系。我也想知道，两个人没那么努力表现的时候，会不会还想待在一起。很会聊天当然有趣，但总会有一段路，没想到特别好的话题，只是愿意一起走。",
-      "file": "long_b02_5.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b03_1": {
       "text": "这样就挺好。你不用一安静就担心我是不是无聊了，我也不想每次都靠提问把气氛撑起来。可以看看路边的灯，绕过一块积水，等想起一件小事再讲。不是所有舒服，都得有一句很会说的话作证。",
-      "file": "long_b03_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b03_2": {
       "text": "我休息时有时会把一天排得特别满，像怕终于停下来以后，就不知道该怎么过。可后来最记得的，常常是根本没完成计划的那一段。这么说好像有点矛盾，人就是很会安排，也很会临时后悔。",
-      "file": "long_b03_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b03_3": {
       "text": "不同也没关系。我不打算靠一句我们很像，就把不一样的地方全部省略掉。你可以喜欢提前安排，我也可以偶尔想改主意。重要的大概是，遇到不同的时候，有没有办法商量，而不是总由谁退一步。",
-      "file": "long_b03_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b03_4": {
       "text": "这点我会记住。以前我有时太习惯自己消化一件事，觉得不说就不算麻烦别人。后来才发现，对方可能只是被留在原地猜。今天我说得比较多，也是想练习，不用等到情绪堆起来，才让别人知道发生了什么。",
-      "file": "long_b03_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b03_5": {
       "text": "那就继续这样走一会儿。你可以说今天的午饭、最近没学会的小东西，或者一件完全不重要的糗事。我对这些也有兴趣。人不可能永远只用最精彩的一页和别人见面，普通的那几页，才会真的常常碰到。",
-      "file": "long_b03_5.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b04_1": {
       "text": "我喜欢现在的感觉，也确实想继续认识你。可是如果每次靠近以后，都要马上答出很远的以后，我会有一点退缩。不是想一直留在不清不楚的地方，是还想多了解一些，再认真答应，不拿兴致代替决定。",
-      "file": "long_b04_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b04_2": {
       "text": "谢谢你愿意分开听。愿意再见，不等于所有事情都已经谈好了；有过亲近，也不代表以后不能再问对方舒服不舒服。我不想因为怕扫兴，就把本来需要说的事，一直藏到谁已经很难受的时候。",
-      "file": "long_b04_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b04_3": {
       "text": "可以。你说没想清楚，我知道那是一个现在的答案。反而是一直说都可以、无所谓的时候，我有时不知道该站在哪里。你可以只想轻松一点，也可以希望稳定一点，先说真实的，我们才知道有没有同一段路。",
-      "file": "long_b04_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b04_4": {
       "text": "对，我也该回答。我的答案还不是现成的。我想继续认识你，也有一点担心，自己期待得比说出来的多。刚才如果像在盘问，是我没有把自己的部分讲够。想被认真回答的人，也不能总躲在提问后面。",
-      "file": "long_b04_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b04_5": {
       "text": "我同意。不一致的时候，可以失落，也可以再想想，不一定马上就得有人负责让对方开心。我更愿意听见一个坦白的不一样，也不想把一时让人安心的话，过后变成谁无法兑现的东西。",
-      "file": "long_b04_5.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b04_6": {
       "text": "好，不急着给结论。只要不是用不下结论，把刚才说过的话也一起作废。我们都可以想一会儿，也都不用现在就变成特别成熟的人。我至少知道，今天没有把不好回答的话，随便推到另一个人身上。",
-      "file": "long_b04_6.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b05_1": {
       "text": "这家店空下来以后，倒影变得挺清楚。第一次在里面坐着的时候，我还总看外面的街。今天站在外面，又忍不住看回原来的座位。人好像很容易这样，换一个位置，才知道刚才自己在意的是哪里。",
-      "file": "long_b05_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b05_2": {
       "text": "我知道，只是有时会下意识想，把一件事说得轻松一点，对方就比较容易接受。可轻松也会有代价，尤其当自己其实没有那么轻松的时候。今天试着少演一点，你要是觉得不够机灵，就先将就一下。",
-      "file": "long_b05_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b05_3": {
       "text": "那我也把同样的话留给你。你可以有不那么好看的答案，也可以暂时说不清。只要我们还愿意认真听，就不用把一次停顿，自动理解成对方已经后悔来见面。别总在别人开口前，先替自己宣布散场。",
-      "file": "long_b05_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b05_4": {
       "text": "换个话题也可以，刚才认真说过的不会因此作废。你看，我们现在至少已经知道，彼此不是只能在最顺利的时候相处。能不能在有一点别扭之后，还愿意慢慢走，我觉得也是认识一个人的一部分。",
-      "file": "long_b05_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b06_1": {
       "text": "我有个不太漂亮的习惯。有时在意一件事，会先装得很好商量，事情过去以后，又自己在心里想很多。刚才差一点也这样。现在说出来，是想以后早点告诉你，不把所有没有说的部分，都留给你来猜。",
-      "file": "long_b06_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b06_2": {
       "text": "你不用那样证明。我以前会误以为，别人猜到我没说的话，就是特别懂我。后来想想，那也可能是让另一个人一直紧张。想被理解，自己也要承担表达的部分。我可以慢慢练，不把这个任务全部交给你。",
-      "file": "long_b06_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b06_3": {
       "text": "比如真的忙，就说忙；不想见，就别答应完再消失。临时变卦不一定可怕，让人一直站着猜，才容易把小事慢慢变成别的东西。我希望我们能允许不同答案，而不是为了避免一句失望，后来制造更大的难受。",
-      "file": "long_b06_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b06_4": {
       "text": "这句很重要。轻松可以认真说清楚，认真也不一定马上就是恋爱。我们要确认，是彼此都喜欢现在这种方式，不是一个人觉得只是暂时，另一个人已经默默把它当成很远的以后。期待不同，可以早点知道。",
-      "file": "long_b06_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b06_5": {
       "text": "好，想法变了就告诉对方。不是谁先在意谁就输了，也不是今天说轻松，以后就再也不能认真。我更在意，我们会不会为了维持一个看起来很洒脱的样子，反而不肯承认自己真实的变化。",
-      "file": "long_b06_5.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b06_6": {
       "text": "我也很高兴你来了。不是因为今天把所有问题都解决了，而是终于不用只拿最漂亮的那一部分见面。那些不太确定、不那么会回答的地方，也能留在这个晚上。我觉得这比一直很顺，更让我想继续了解。",
-      "file": "long_b06_6.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "long_b07_1": {
       "text": "我现在有一点想靠近你，不是为了把刚才复杂的话都省掉。是因为说完以后，反而觉得更愿意在这里待着。你要是也愿意，我们可以抱一下；想继续并肩走也行，我问之前就该准备好听不同的答案。",
-      "file": "long_b07_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b07_2": {
       "text": "我敢问，就得接得住。要是你只为了不让我尴尬，临时改变自己的主意，那种靠近对两个人都不公平。我们已经聊到这里，不必再用一个动作证明这一晚足够好。愿意就靠近，不愿意就继续走。",
-      "file": "long_b07_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b07_3": {
       "text": "当然算数。我不想把见面变成一条必须不断升级的路线。今天可以和上次不一样，也可以比上次慢。值得记住的不是完成了多少动作，而是我们说过的那些话，有没有真的让彼此更自在一点。",
-      "file": "long_b07_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b07_4": {
       "text": "好，再走一小段。第一次到路口的时候，我还想问你是顺路还是舍不得。今天好像不用同一个玩笑遮着了。你已经专门来过，我也把自己的期待说出了一些，接下来可以更像两个人正常地商量。",
-      "file": "long_b07_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b08_1": {
       "text": "我也想。我们今天没有每句话都说得很漂亮，可我更喜欢这样。至少知道听见的是你，不是一套很会约会的说辞。接下来继续见面、保持轻松、做朋友，或者停在这里，都可以是认真想过的答案。",
-      "file": "long_b08_1.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b08_2": {
       "text": "我的期待是，如果继续，就别只有场面最好的时候才愿意见面。也想看看普通日子里，我们会不会同样合得来。你不用为了这个愿望立刻答应很远的事，但可以告诉我，眼下是否也想往这个方向多走一点。",
-      "file": "long_b08_2.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b08_3": {
       "text": "这句我记住了。不合适可以是真的，曾经开心也可以是真的；想继续不是谁赢了，不继续也不是谁被骗了。我不想为了让最后一幕看起来更圆满，就把两个人刚刚说清楚的不一样，又藏回去。",
-      "file": "long_b08_3.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b08_4": {
       "text": "那就说现在的选择，不用提前替未来的自己保证。继续约会，我们可以一起安排下一件小事；轻松相处，也把各自能接受的说清楚；如果只是朋友，或者今晚到这里，我也会好好和你说晚安。",
-      "file": "long_b08_4.wav",
       "emotion": "curious",
       "action": "none"
     },
     "long_b08_5": {
       "text": "好，我们已经走到这里了。不论接下来往哪边走，我都会记得你今天真的来了，也记得我们没有为了维持一个好看的故事，就把真实答案省掉。那些说清楚的话，会比一句仓促的永远，留得更稳一点。",
-      "file": "long_b08_5.wav",
       "emotion": "curious",
       "action": "none"
     },
     "friendlyCloseness": {
       "text": "刚才说过的分寸还在，不用为了第二次见面，就把每一步都走得更近。我们可以继续并肩走，或者说点轻松的事。我很高兴今天能把想法说清楚，这也可以是朋友之间很值得记住的一晚。",
-      "file": "friendlyCloseness.wav",
       "emotion": "curious",
       "action": "none"
+    },
+    "long_opening": {
+      "text": "你也来躲雨？窗边还有个位置，要不要先坐一会儿？",
+      "emotion": "curious",
+      "action": "acknowledge"
     }
   },
   "phases": ["arrival", "exploration", "decision", "epilogue"],
@@ -1319,6 +1192,13 @@
     },
     {
       "beats": ["a-closed"],
+      "requires": ["overnight"],
+      "text": "第一晚共度一夜已留白收束。没有约定时可以在场外确认是否愿意再见；有约定后才进入另一章。不要在留白画面建议自由发言，也不暗示已经恋爱。",
+      "replyActions": ["choose-reunion", "choose-appointment"],
+      "chatReplies": []
+    },
+    {
+      "beats": ["a-closed"],
       "text": "第一晚已经收束。共同过夜不代表恋爱，也不自动产生再次邀约；没有appointment先询问是否愿意再见，有明确约定后用户才能进入下一章。",
       "replyActions": ["choose-reunion", "choose-appointment"],
       "chatReplies": ["我还想聊聊这一晚留下的感觉。"]
@@ -1478,7 +1358,7 @@
     "choose-date-farewell": "第二次完整谈话后的关系选择；不由身体接触或第一晚结果自动决定。",
     "choose-date-pause": "随时结束本次见面，不强制立刻决定关系。"
   },
-  "openingVoice": "hello",
+  "openingVoice": "long_opening",
   "playerReplies": {
     "talk-waiting": "你是在等谁，还是只是想一个人坐一会儿？",
     "view-photo": "可以给我看看那张照片吗？",
@@ -1648,7 +1528,6 @@
     }
   },
   "mock": {
-    "audioRoot": "assets/mock-audio",
     "transcript": "能看看照片吗？"
   },
   "performanceActions": ["none", "lookWindow", "acknowledge", "focusProp"],

@@ -15,6 +15,26 @@ const session = {
 };
 afterEach(() => vi.unstubAllGlobals());
 describe('browser API boundary', () => {
+  it('sends the old session identity and bearer only for an explicit restart', async () => {
+    const requests: Array<{ headers: Headers; body: unknown }> = [];
+    const api = new ApiClient('http://localhost:3000', async (_input, init) => {
+      requests.push({ headers: new Headers(init?.headers), body: JSON.parse(String(init?.body)) });
+      return new Response(
+        JSON.stringify({
+          ...session,
+          sessionId: requests.length === 1 ? 's' : 'new-session',
+          expiresAt: null,
+        }),
+      );
+    });
+    await api.createSession();
+    await api.createSession(undefined, true);
+    expect(requests[0]?.headers.has('Authorization')).toBe(false);
+    expect(requests[0]?.body).toEqual({ entry: 'story' });
+    expect(requests[1]?.headers.get('Authorization')).toBe(`Bearer ${session.sessionToken}`);
+    expect(requests[1]?.body).toEqual({ entry: 'story', replaceSessionId: 's' });
+    expect(api.credentials()).toMatchObject({ sessionId: 'new-session', expiresAt: null });
+  });
   it('binds native fetch to globalThis, never to the ApiClient instance', async () => {
     const native = vi.fn(function (this: unknown) {
       if (this !== globalThis) throw new TypeError('Illegal invocation');

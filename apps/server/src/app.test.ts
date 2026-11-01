@@ -42,6 +42,49 @@ function events(payload: string) {
 }
 
 describe('Fastify API boundaries', () => {
+  it('replaces only the authenticated session and frees its slot on explicit restart', async () => {
+    const { app, created, base, headers } = await setup({ MAX_SESSIONS: '1' });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      headers,
+      payload: { entry: 'story', replaceSessionId: created.sessionId },
+    });
+    expect(response.statusCode).toBe(201);
+    const next = SessionCreatedSchema.parse(response.json());
+    expect(next.sessionId).not.toBe(created.sessionId);
+    expect(next.expiresAt).toBeNull();
+    expect(app.services.sessions.sessions.size).toBe(1);
+    expect((await app.inject({ url: base, headers })).statusCode).toBe(410);
+    const fresh = await app.inject({
+      url: `/api/sessions/${next.sessionId}`,
+      headers: { authorization: `Bearer ${next.sessionToken}` },
+    });
+    expect(fresh.json()).toMatchObject({ generation: 0, history: [] });
+  });
+  it('rejects replacement with another token without deleting the original session', async () => {
+    const { app, created, base, headers } = await setup({ MAX_SESSIONS: '1' });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      headers: { authorization: `Bearer ${'x'.repeat(43)}` },
+      payload: { replaceSessionId: created.sessionId },
+    });
+    expect(response.statusCode).toBe(401);
+    expect(app.services.sessions.sessions.size).toBe(1);
+    expect((await app.inject({ url: base, headers })).statusCode).toBe(200);
+  });
+  it('allows an explicit restart when the previous session is already gone', async () => {
+    const { app } = await setup();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      headers: { authorization: `Bearer ${'x'.repeat(43)}` },
+      payload: { replaceSessionId: 'previous-process-session' },
+    });
+    expect(response.statusCode).toBe(201);
+    expect(SessionCreatedSchema.parse(response.json()).expiresAt).toBeNull();
+  });
   it('retries a failed message with fresh request IDs without duplicating planner history', async () => {
     const { app, base, headers, providers, created } = await setup();
     const plan = vi

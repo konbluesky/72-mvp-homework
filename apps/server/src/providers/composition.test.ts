@@ -15,10 +15,11 @@ import type { Fetch } from './http.js';
 import type { ServerEvent } from '@mira/protocol';
 
 describe('provider composition', () => {
-  it('Mock never instantiates network adapters and disabled speech is reflected in both modes', async () => {
+  it('mock conversation never supplies a synthetic voice and speech always uses Deepgram', async () => {
     const http = vi.fn<Fetch>();
     const providers = createProviders(testConfig(), http, cafeScenario.mockProviders);
     expect(providers.stt?.info.provider).toBe('mock');
+    expect(providers.tts.info.provider).toBe('deepgram');
     await providers.stt?.transcribe(
       { bytes: wav(), mimeType: 'audio/wav' },
       new AbortController().signal,

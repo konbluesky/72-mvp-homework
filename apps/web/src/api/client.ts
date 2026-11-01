@@ -52,12 +52,20 @@ export class ApiClient {
     if (expectedScenario)
       this.persistence = new BrowserPersistence(this.base, sessionEntry, expectedScenario);
   }
-  async createSession(signal?: AbortSignal): Promise<SessionCreated> {
-    const session = await this.json('/api/sessions', SessionCreatedSchema, {
-      method: 'POST',
-      body: JSON.stringify({ entry: this.sessionEntry }),
-      signal,
-    });
+  async createSession(signal?: AbortSignal, replaceCurrent = false): Promise<SessionCreated> {
+    const session = await this.json(
+      '/api/sessions',
+      SessionCreatedSchema,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          entry: this.sessionEntry,
+          ...(replaceCurrent && this.session ? { replaceSessionId: this.session.sessionId } : {}),
+        }),
+        signal,
+      },
+      replaceCurrent,
+    );
     signal?.throwIfAborted();
     this.validateScenario(session.scene);
     this.session = session;

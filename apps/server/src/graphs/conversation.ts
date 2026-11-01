@@ -188,10 +188,6 @@ export async function runConversation(
       return {};
     })
     .addNode('build_context', async (state) => {
-      sessions.addUser(session, turn, state.text);
-      return {};
-    })
-    .addNode('plan_reply', async (state) => {
       const shot = scenario.frame(session.narrative).story.shot;
       if (shot && shot.mode !== 'shared')
         throw new AppError(
@@ -200,6 +196,10 @@ export async function runConversation(
           '这是独处或留白片段，请选择等候、继续或结束。',
           true,
         );
+      sessions.addUser(session, turn, state.text);
+      return {};
+    })
+    .addNode('plan_reply', async (state) => {
       logger.info({ ...turn.identity, stage: 'llm_provider', ...providers.planner.info });
       return {
         raw: await stage('llm', async () =>

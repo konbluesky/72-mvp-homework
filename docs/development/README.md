@@ -32,7 +32,7 @@ npm run dev
 
 若默认3000已被占用：`PORT=3100 API_PROXY_TARGET=http://127.0.0.1:3100 npm run dev`。不要停止不属于本项目的进程。本次宿主验收使用该覆盖，工程默认端口保持3000。
 
-当前角色是同源真实Live2D，模型与21条资源哈希通过 `npm run assets:check` 验证。加载失败可点击“重新加载角色”；浏览器需WebGL。旧 `VITE_RIVE_SRC` 已移除，不再支持旧Rive分支。替换最终Mira模型时需更新受控manifest/参数能力和对应测试，不接受模型输出提供资源URL。
+当前角色是同源真实 Live2D，模型来源与资源哈希由 `npm run assets:check` 验证；检查还覆盖公开资产库存/引用和离线 WAV。Haru 默认，WebGAL 可显式选择 Miara；加载失败可重试，浏览器需 WebGL。旧 `VITE_RIVE_SRC` 已移除，不再支持旧 Rive 分支。替换角色模型时需更新受控 manifest/参数能力和对应测试，不接受模型输出提供资源 URL。
 
 ## Ink内容编辑
 
@@ -43,6 +43,8 @@ Ink选择tag写在选择方括号内部；每个呈现beat的变量更新放在�
 默认原版聊天与WebGAL故事入口同时保留，分别使用conversation/story初始条件。调试复用用户已启动的dev服务；未经要求不要另起进程或切换运行模式。
 
 ## 演示限流
+
+会话默认不按时间过期：`SESSION_TTL_SECONDS=0`（默认）使 `expiresAt` 为 null，刷新、离开页面或暂时断网后可继续原会话。仅明确重新开始时替换并释放自己的旧会话名额。需要有限时长时设置正整数秒数，例如 `604800` 为 7 天；媒体清理和单轮超时仍独立生效。后端目前只存内存，服务重启/故事版本不兼容仍需重新开始。
 
 `NODE_ENV=development`（含未设置时）默认 `RATE_LIMIT_ENABLED=false`：不限制每 IP 每分钟创建会话次数，也不限制每会话每分钟输入次数；不会累计这两类频率计数。`production` / `test` 默认开启，仍使用 10 次创建/分钟、12 次输入/分钟，可通过环境变量显式覆盖。`apps/server/.env` 或进程环境中的 `RATE_LIMIT_ENABLED` 优先于环境默认值。
 

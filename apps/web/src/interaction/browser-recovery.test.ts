@@ -86,6 +86,79 @@ afterEach(() => vi.useRealTimers());
 describe.each(['story', 'conversation'] as const)(
   '%s connection failure classification',
   (entry) => {
+    it('restores a non-expiring session after months without creating a new one', async () => {
+      vi.useFakeTimers();
+      const saved = recovery();
+      saved.session.expiresAt = null;
+      const old = save(saved, entry);
+      old.write('draft', '下次回来继续');
+      vi.setSystemTime(Date.now() + 180 * 24 * 60 * 60 * 1000);
+      const h = harness(
+        (path) => (path === '/api/sessions/session' ? json(snapshot(2, 7)) : undefined),
+        entry,
+      );
+      await h.controller.connect();
+      expect(h.state.connected).toBe(true);
+      expect(h.state.sessionExpired).toBe(false);
+      expect(h.state.story.revision).toBe(7);
+      expect(h.api.persistence?.read('draft', DraftSchema)).toBe('下次回来继续');
+      const restored = h.api.persistence?.claimRecovery();
+      expect(restored?.status === 'active' && restored.session.expiresAt).toBeNull();
+      expect(h.requests.map((request) => request.path)).toEqual(['/api/sessions/session']);
+      await h.controller.dispose();
+    });
+    it('retries the same explicit replacement after a network failure during restart', async () => {
+      const saved = recovery();
+      saved.session.expiresAt = null;
+      save(saved, entry);
+      let creates = 0;
+      const h = harness((path) => {
+        if (path !== '/api/sessions') return undefined;
+        if (++creates === 1) return Promise.reject(new TypeError('Failed to fetch'));
+        return json({ ...session(), sessionId: 'new-session', expiresAt: null });
+      }, entry);
+      await h.controller.connect();
+      await h.controller.connect(true);
+      expect(h.state.sessionExpired).toBe(false);
+      expect(h.state.connected).toBe(false);
+      await h.controller.connect();
+      expect(h.state.connected).toBe(true);
+      const replacements = h.requests.filter((request) => request.path === '/api/sessions');
+      expect(replacements.map((request) => request.body)).toEqual([
+        { entry, replaceSessionId: 'session' },
+        { entry, replaceSessionId: 'session' },
+      ]);
+      await h.controller.dispose();
+    });
+    it('continues a requested restart after reloading during a network failure', async () => {
+      const saved = recovery();
+      saved.session.expiresAt = null;
+      save(saved, entry);
+      const first = harness(
+        (path) =>
+          path === '/api/sessions' ? Promise.reject(new TypeError('Failed to fetch')) : undefined,
+        entry,
+      );
+      await first.controller.connect();
+      await first.controller.connect(true);
+      const pending = first.api.persistence?.claimRecovery();
+      expect(pending?.status === 'active' && pending.pendingRestart).toBe(true);
+      await first.controller.dispose();
+      const reopened = harness(
+        (path) =>
+          path === '/api/sessions'
+            ? json({ ...session(), sessionId: 'new-session', expiresAt: null })
+            : undefined,
+        entry,
+      );
+      await reopened.controller.connect();
+      expect(reopened.state.connected).toBe(true);
+      expect(reopened.state.sessionExpired).toBe(false);
+      expect(reopened.requests).toEqual([
+        { path: '/api/sessions', body: { entry, replaceSessionId: 'session' } },
+      ]);
+      await reopened.controller.dispose();
+    });
     it.each(['offline', 'bad-gateway', 'unavailable'] as const)(
       'keeps the same session, draft and progress recoverable after %s',
       async (failure) => {
