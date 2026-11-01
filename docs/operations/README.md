@@ -25,11 +25,71 @@ Cloudflare Pages 项目 `72-mvp` 连接 `konbluesky/72-mvp-homework`，生产分
 
 推送到 `main` 后由 Pages Git 集成自动构建和发布；其他分支用于预览。GitHub Actions 的独立 Frontend build job 也会构建前端并保留 7 天的 `frontend-dist` 构建产物，原有完整验证 job 继续执行。Pages 构建不依赖 GitHub Actions 的完成状态。
 
-首次上线仅包含前端，后端单独部署，因此暂不配置 `VITE_API_BASE_URL`，会话、对话和语音暂不可用。后端就绪后，在 Pages 的生产构建变量中填入其 HTTPS origin，并重新部署；后端 CORS 允许 `https://72-mvp.telegrow.app`。原版入口为 `/`，WebGAL 入口为 `/webgal.html`。
+前端已发布，后端已于 2026-11-01 部署到 `my-xin-2`，见下节。正式 API origin 为 `https://api-72-mvp.telegrow.app`，Pages 生产变量 `VITE_API_BASE_URL` 已设为该地址；修改构建变量后需重新部署才会进入浏览器产物。后端 CORS 允许 `https://72-mvp.telegrow.app`。原版入口为 `/`，WebGAL 入口为 `/webgal.html`。
+
+本次通过 Pages 重试生产构建，使 API 地址生效；部署 `885594f8-12ef-48c0-a0b1-2bb765eed96a` 已成功，源码为 `main` 的 `66de54b0`。此操作没有提交或发布本地尚未提交的前端改动。
 
 云服务器构建 `infra/docker/server.Dockerfile`，由secret manager/env_file注入后端配置（勿把真实env加入镜像）。只运行一个Node进程/副本，绑定回环端口或私有容器网络。使用 [nginx示例](nginx-production.conf) 终止TLS，禁用SSE buffering/cache，保持心跳及140秒read timeout。公开部署前核验域名、证书、代理信任IP/CIDR与防火墙；配置明确允许的origin，不能通配所有Pages预览域。
 
 `GET /healthz` 只查存活，`GET /readyz` 只查已加载模式；都不产生模型费用。Live凭证不完整启动失败，探针不证明远程账户可用。
+
+### my-xin-2 后端部署
+
+2026-11-01 首次部署后端，基础提交为 `66de54b0`，首发包含当时未提交的场景编译脚本修正。后续自动发布使用 GitHub 上已提交的源码。独立安装 Node 26.13.0 / npm 11.20.0，不替换其他业务使用的 Node；系统安装 FFmpeg。
+
+| 项目             | 位置或配置                                                                                                                              |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| SSH / 部署根目录 | `ssh my-xin-2` / `/home/ubuntu/work/72-mvp-homework`                                                                                    |
+| 当前版本         | `current` 指向已发布的 `releases/<commit>-<run_id>-<attempt>`；`current/release.json` 记录提交与 Actions 运行标识                       |
+| 进程             | `72-mvp-api.service`，单实例，以 `ubuntu` 运行，开机自启、失败重启                                                                      |
+| API 监听         | `127.0.0.1:3072`；服务器已有业务占用 3000                                                                                               |
+| 运行配置         | `shared/production.env`；Live 凭证在权限为 0600 的 `shared/server.env`，由 `apps/server/.env` 软链接加载                                |
+| 私有媒体         | `shared/media`，独立于发布版本；不部署本地录音或媒体数据                                                                                |
+| Nginx            | `/etc/nginx/conf.d/72-mvp-api.conf`；HTTPS 代理到 3072，关闭 SSE buffering/cache/gzip，读取超时 140 秒，上传限制 5 MiB                  |
+| 正式入口         | `https://api-72-mvp.telegrow.app`；HTTP/IP 请求跳转到正式 HTTPS 域名                                                                    |
+| DNS              | Cloudflare A 记录 `api-72-mvp` → `13.140.169.32`，仅 DNS，由源站终止 TLS                                                                |
+| HTTPS            | Let's Encrypt，证书位于 `/etc/letsencrypt/live/api-72-mvp.telegrow.app/`；首次证书到期日 2027-01-30                                     |
+| 证书续期         | `certbot.timer` 已启用；webroot 为 `/var/www/72-mvp-acme`，续期后 `/etc/letsencrypt/renewal-hooks/deploy/72-mvp-nginx` 校验并重载 Nginx |
+
+生产配置启用限流，仅信任回环代理，CORS 仅允许 `https://72-mvp.telegrow.app`。运行配置中的 `PUBLIC_API_BASE_URL` 为正式 HTTPS origin；凭证仅留在后端，不加入 Pages 变量。
+
+本次完成服务器 `npm ci`、`npm run build:server`、`npm run scenarios:check`、systemd 单元校验、`nginx -t`、证书签发与续期定时器检查，以及进程直连、Nginx 和公网 HTTPS 的无费用存活/就绪检查、生产 origin 的 CORS 预检与 HTTP 跳转核验。未运行功能、运行时或 E2E 测试，也未调用付费 Provider；Live 就绪只证明配置已加载。
+
+运维命令：
+
+```sh
+ssh my-xin-2
+sudo systemctl status 72-mvp-api.service
+sudo journalctl -u 72-mvp-api.service -n 80 --no-pager
+sudo systemctl restart 72-mvp-api.service
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+后续发布在新的 `releases/<版本>` 目录安装依赖并构建，链接 `apps/server/.env` 到共享配置，再切换 `current` 并重启服务；不要覆盖正在运行的版本。回滚时将 `current` 切回保留的旧版本并重启；重启会丢失当前内存会话。
+
+### GitHub Actions 自动发布后端
+
+[Backend deploy](../../.github/workflows/backend.yml) 在推送 `main` 时自动执行，也支持在 Actions 中选择 `main` 后手动运行。涉及后端或发布配置的 PR 仅执行构建，不访问生产凭证或部署服务器。
+
+后端门禁依次执行 `npm ci`、发布脚本语法检查、`npm run build:server`、`npm run scenarios:check` 和 `npm run contracts:check`。这些门禁通过后，打包已编译的服务端与协议、生产安装所需的包清单/锁文件，以及仓库内的 Mock 音频资产；不打包 `.env`、本地媒体、源码或 `node_modules`。
+
+这是独立的后端发布门禁，不依赖原有 `verify` 工作流。配置时原有综合 CI 仍有 52 项测试失败，不能把后端发布成功解释为这些测试已修复。后端工作流不运行功能、运行时或 E2E 测试，也不调用付费 Provider。
+
+生产任务使用 `backend-production` GitHub Environment，分支策略只允许 `main`。环境变量为 `BACKEND_DEPLOY_HOST`、`BACKEND_DEPLOY_USER`、`BACKEND_DEPLOY_PORT`；环境 Secrets 为专用的 `BACKEND_DEPLOY_SSH_KEY` 与固定服务器主机公钥的 `BACKEND_DEPLOY_KNOWN_HOSTS`。模型、Deepgram 等业务凭证仍只保存在服务器共享配置中。
+
+专用公钥通过 OpenSSH `restrict,command="/usr/local/libexec/72-mvp-deploy"` 限制，只能发布此项目或查询版本，不能获取普通 SSH shell、PTY 或端口转发。服务器入口由 root 持有，源码见 [receive-server.sh](../../infra/deploy/receive-server.sh)；首次配置及修改入口时，由管理员用现有 SSH 连接安装该脚本，CI 本身不能替换它。
+
+每次发布验证压缩包的 SHA-256、路径白名单、大小上限和提交/运行标识，再在新版本目录用锁文件安装生产依赖。准备完成后，原子切换 `current` 并重启单个服务；检查进程工作目录属于新版本、存活/就绪状态和本机 Nginx HTTPS。切换后的任何失败都会恢复上一版本并重启；若管理员已将 `current` 切到别处，旧任务不会覆盖新的指向。
+
+Actions 对同一分支串行执行发布，服务器另有 `flock` 锁防止交叉切换。发布前再次确认提交仍是 `main` 最新版本；落后的运行会跳过，由新提交的运行接替。旧版本保留在 `releases/`，支持手动回滚；后端重启会使内存会话失效。
+
+查询最新发布和手动运行：
+
+```sh
+gh workflow run backend.yml --repo konbluesky/72-mvp-homework --ref main
+gh run list --repo konbluesky/72-mvp-homework --workflow backend.yml
+ssh my-xin-2 'cat /home/ubuntu/work/72-mvp-homework/current/release.json'
+```
 
 ## 页面连接监测与自动恢复
 

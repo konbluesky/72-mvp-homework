@@ -1,0 +1,127 @@
+name: Backend deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - '.github/workflows/backend.yml'
+      - 'infra/deploy/**'
+      - 'apps/server/**'
+      - 'packages/protocol/**'
+      - 'assets/mock-audio/**'
+      - 'scripts/compile-scenario.ts'
+      - 'scripts/openapi.ts'
+      - 'docs/contracts/openapi.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'apps/web/package.json'
+      - 'packages/webgal-parser/package.json'
+      - 'tsconfig.base.json'
+      - '.nvmrc'
+      - '.npmrc'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Backend build and contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm install -g npm@11.20.0
+      - run: npm ci
+      - name: Check deployment script syntax
+        run: bash -n infra/deploy/package-server.sh infra/deploy/receive-server.sh
+      - run: npm run build:server
+      - run: npm run scenarios:check
+      - run: npm run contracts:check
+      - name: Package compiled backend
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_RUN: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: bash infra/deploy/package-server.sh "$RELEASE_SHA" "$RELEASE_RUN" artifact
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: artifact/
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Publish backend
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: backend-production
+      url: https://api-72-mvp.telegrow.app
+    steps:
+      - name: Confirm this commit is still main
+        id: head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          latest=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq '.object.sha')
+          if [[ "$latest" == "$RELEASE_SHA" ]]; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'current=false' >> "$GITHUB_OUTPUT"
+            echo 'A newer main commit exists; this deployment was skipped.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/download-artifact@v4
+        if: steps.head.outputs.current == 'true'
+        with:
+          name: backend-dist
+          path: artifact
+      - name: Publish over restricted SSH
+        if: steps.head.outputs.current == 'true'
+        env:
+          DEPLOY_HOST: ${{ vars.BACKEND_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.BACKEND_DEPLOY_USER }}
+          DEPLOY_PORT: ${{ vars.BACKEND_DEPLOY_PORT }}
+          DEPLOY_KEY: ${{ secrets.BACKEND_DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.BACKEND_DEPLOY_KNOWN_HOSTS }}
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_RUN: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_HOST:?Missing BACKEND_DEPLOY_HOST}"
+          : "${DEPLOY_USER:?Missing BACKEND_DEPLOY_USER}"
+          : "${DEPLOY_PORT:?Missing BACKEND_DEPLOY_PORT}"
+          : "${DEPLOY_KEY:?Missing BACKEND_DEPLOY_SSH_KEY}"
+          : "${DEPLOY_KNOWN_HOSTS:?Missing BACKEND_DEPLOY_KNOWN_HOSTS}"
+          (cd artifact && sha256sum --check server.tar.gz.sha256)
+          digest=$(sha256sum artifact/server.tar.gz | cut -d ' ' -f 1)
+          umask 077
+          key="$RUNNER_TEMP/backend-deploy.key"
+          hosts="$RUNNER_TEMP/backend-known-hosts"
+          trap 'rm -f "$key" "$hosts"' EXIT
+          printf '%s\n' "$DEPLOY_KEY" > "$key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$hosts"
+          unset DEPLOY_KEY DEPLOY_KNOWN_HOSTS
+          ssh -T -i "$key" -p "$DEPLOY_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$hosts" -o ConnectTimeout=15 \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "deploy $RELEASE_SHA $RELEASE_RUN $digest" < artifact/server.tar.gz
+          printf 'Published `%s` to [backend production](https://api-72-mvp.telegrow.app/healthz).\n' \
+            "$RELEASE_SHA" >> "$GITHUB_STEP_SUMMARY"
