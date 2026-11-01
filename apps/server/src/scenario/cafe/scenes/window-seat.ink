@@ -14,6 +14,7 @@
 ~ companionship = true
 # cue:beat:companionship
 # voice:comfort
+# thought:company
 她给你留出位置。窗上倒影多了一个，沉默也没有刚才那么空。
 -> menu
 

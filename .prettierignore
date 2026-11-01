@@ -27,6 +27,6 @@ packages/webgal-parser/package.upstream.json
 # Deterministic SVG generator output and its source hashes.
 apps/web/public/assets/cafe-story
 
-apps/server/src/scenario/cafe/compiled.json
+apps/server/src/scenario/*/compiled.json
 
 **/manifest.generated.json

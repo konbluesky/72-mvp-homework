@@ -28,6 +28,7 @@
 ~ location = "counter"
 # cue:location:counter
 # voice:storyLetter
+# thought:letter
 她回到吧台，用一张便笺给今晚留下自己的落款。
 ~ reply_left = true
 # cue:prop:reply
@@ -48,6 +49,7 @@
 ~ location = "window-seat"
 # cue:location:window-seat
 # voice:storyStay
+# thought:stay
 你们回到窗边，多留一会儿。那些互相逗弄的话，也给真诚让出一个位置。
 ~ ambience = "last-lamp"
 # cue:ambience:last-lamp

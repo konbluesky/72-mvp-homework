@@ -14,9 +14,11 @@
 # cue:beat:reunion
 {boundary_set && not boundary_repaired:
     # voice:reunionQuiet
+    # thought:reunion-quiet
     她先叫住你，语气比上次熟悉，脚步却没有急着缩短你们之间的距离。
 - else:
     # voice:reunionSpark
+    # thought:reunion-spark
     她已经在雨棚下，看见你时没有立刻开口。那一点像是松了口气的笑，比招呼来得早。
 }
 -> menu
@@ -30,10 +32,12 @@
 - else:
     {game_answered:
         # voice:dateMemoryGame
+        # thought:memory-game
         她重新提起那个小赌局，第一次把“舍不得”说成一句不打算收回的玩笑。
     - else:
         {photo_seen:
             # voice:dateMemoryPhoto
+            # thought:memory-photo
             她记得你们确实一起看过那片海，把目光从照片的回忆带回眼前。
         - else:
             # voice:dateMemory
@@ -48,6 +52,7 @@
 ~ phase = 2
 # cue:beat:date-honesty
 # voice:dateHonest
+# thought:honesty
 她说到一半停了停，像是也在挑一句不那么漂亮、却更真实的话。
 -> menu
 
@@ -55,6 +60,7 @@
 ~ handheld = true
 # cue:beat:hand-consent
 # voice:hand
+# thought:hand
 在你问过、她也答应之后，她的手轻轻落进你掌心。雨声里，留下一点刚好的安静。
 -> menu
 
@@ -70,6 +76,7 @@
 ~ phase = 3
 # cue:ending:closer
 # voice:dateClose
+# thought:closer
 {handheld:《这次，不是顺路》：路口就在前面，你们却都没有把这段路走快。|《下一次，还是想见你》：有些靠近，是一句终于没有藏在玩笑后面的话。}
 -> menu
 
@@ -82,5 +89,6 @@
 ~ phase = 3
 # cue:ending:friends
 # voice:dateFriends
+# thought:friends
 《好好认识，也好好告别》：你们走到路口，各自带走一个认识过的人，和一段不必后悔的夜晚。
 -> menu

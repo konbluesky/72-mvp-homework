@@ -19,3 +19,5 @@
 
 - Scenario logic lives in `apps/server/src/scenario/cafe/` as Ink and validated JSON. `runtime/` adapts inkjs; SessionManager alone commits receipt-confirmed checkpoints. Do not restore production keyword routing or duplicate prop canon in the frontend.
 - After editing `.ink` or scenario JSON, run `npm run scenarios:build`; `npm run scenarios:check` validates the artifact. Generated `compiled.json` is ignored and rebuilt by dev/typecheck/build preparation. Keep existing dev services running; do not launch them for debugging unless requested.
+
+- The application is named 角色互动平台. Authored identities, dialogue, story facts and scene assets/styles belong to scene packages; composition roots select packages. Shared UI, sessions, Graph and protocol define platform capabilities only. `npm run modules:check` audits production import/content boundaries; `npm run assets:check` also audits public provenance/references and offline WAV catalogs without running the application.

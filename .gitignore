@@ -48,6 +48,8 @@
 !/docs/architecture/narrative-runtime-design.md
 !/docs/architecture/webgal-interaction-design.md
 !/docs/architecture/scene-modules.md
+!/docs/architecture/program-interactions.md
+!/docs/architecture/program-interactions.puml
 /docs/contracts/*
 !/docs/contracts/README.md
 !/docs/contracts/openapi.json
@@ -108,4 +110,4 @@ Thumbs.db
 *.pfx
 
 # Ink bytecode is reproduced by scenarios:build, then copied by the server build.
-/apps/server/src/scenario/cafe/compiled.json
+/apps/server/src/scenario/*/compiled.json

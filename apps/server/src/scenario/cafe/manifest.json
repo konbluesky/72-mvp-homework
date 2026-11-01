@@ -1,6 +1,6 @@
 {
   "id": "last-lamp",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "inkVersion": "2.4.0",
   "entry": "menu",
   "voices": {
@@ -522,5 +522,25 @@
     "audioRoot": "assets/mock-audio",
     "transcript": "能看看照片吗？"
   },
-  "performanceActions": ["none", "lookWindow", "acknowledge", "focusProp"]
+  "performanceActions": ["none", "lookWindow", "acknowledge", "focusProp"],
+  "thoughts": {
+    "company": "原来真愿意留下。好，别表现得像等了很久。",
+    "off-duty": "这次没有人追问航线。我竟然有点不知道，接下来该怎么介绍自己。",
+    "spark": "糟了，答得是不是太快了。刚才明明还想再逗一会儿。",
+    "slower": "收住。能让人自在地留下，比把一句玩笑接到底更要紧。",
+    "reopened": "别急着高兴。先把这次的话听完，再慢慢往前走。",
+    "appointment": "我刚才说的是专门留时间。听见了吧，这回可不是客套。",
+    "game-right": "偏偏猜中了这句。再装作完全不在意，好像就有点假了。",
+    "game-wrong": "猜得还挺认真。算了，今天就让人看穿一点，也没什么。",
+    "reunion-spark": "来了。刚才练过的那句轻松开场，怎么突然想不起来了。",
+    "reunion-quiet": "来了就好。把期待藏稳一点，不用急着把距离也一起缩短。",
+    "memory-game": "上次还能说是个游戏。今天再说别急着走，就该算我认真了。",
+    "memory-photo": "这句好像有点太主动。算了，都说完了，别先移开目光。",
+    "honesty": "再绕一句漂亮话，就又把自己藏回去了。这次试着直说。",
+    "hand": "原来，先说可以的是我，先紧张的也是我。别把手收得太急。",
+    "closer": "不用马上给以后起名字。现在知道彼此还想再见，已经很动人。",
+    "friends": "好，不用猜了。能把话说清楚的人，值得认真说一声晚安。",
+    "stay": "原来不急着找下一句话的时候，也能这么自在。",
+    "letter": "写个名字就好。有些晚上，轻轻落款反而更舍不得翻过去。"
+  }
 }

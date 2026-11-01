@@ -23,7 +23,7 @@
   "assetRoot": "/assets/cafe-story/",
   "minimumBackgrounds": 8,
   "id": "last-lamp",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "locations": {
     "street-wide": "街角远景",
     "cafe-front": "门头雨棚",
