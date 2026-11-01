@@ -17,7 +17,7 @@ docker compose --profile demo down
 
 ## CF Pages + 云服务器
 
-Pages仓库根构建：`npm ci && npm run build:web`；输出 `apps/web/dist`。构建环境 `NODE_VERSION=26.13.0`、`VITE_API_BASE_URL=https://api.example.com`，示例域名需替换。`public/_redirects` 提供 SPA 回退。每个预览环境显式配置API origin，后端CORS只列可信的完整origin。生产前端不使用Pages Functions。
+Pages仓库根构建：`npm ci && npm run build:web`；输出 `apps/web/dist`。构建环境 `NODE_VERSION=26.13.0`、`VITE_API_BASE_URL=https://api.example.com`，示例域名需替换。不提供顶层 `404.html` 时使用 Pages 内置 SPA 回退；不要再添加 `/* /index.html 200`，该规则会被 Pages 的 HTML 路径规范化判定为循环并忽略。每个预览环境显式配置API origin，后端CORS只列可信的完整origin。生产前端不使用Pages Functions。
 
 ### 72-mvp 前端持续部署
 
