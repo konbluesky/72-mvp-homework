@@ -2,7 +2,7 @@ import metadata from '../manifest.generated.json';
 import type { LocationDefinition } from '../../location.js';
 export const streetWalk: LocationDefinition = {
   label: metadata.locations['street-walk'],
-  description: '走到路灯下，再回头看一眼旧店。',
+  description: '路灯映着湿路面。并肩走一段，把舍不得和接下来的选择慢慢说清楚。',
   x: 1680,
   y: 1440,
   height: 1320,

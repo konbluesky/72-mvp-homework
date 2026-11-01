@@ -118,6 +118,12 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
         throw new Error(`Invalid guided reply reference: ${key}`);
   if (manifest.openingVoice && !manifest.voices[manifest.openingVoice])
     throw new Error('Undeclared opening voice');
+  // Publish only the opening already visible when a session starts, never the voice catalogue.
+  const opening = manifest.openingVoice
+    ? z
+        .object({ text: z.string().trim().min(1).max(160) })
+        .parse(manifest.voices[manifest.openingVoice]).text
+    : undefined;
   const diagnostics: string[] = [];
   const compiler = new Compiler(
     sources['main.ink'],
@@ -162,6 +168,7 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
         version: manifest.version,
         locations: manifest.locations,
         resources: manifest.resources,
+        ...(opening ? { opening } : {}),
       },
       null,
       2,

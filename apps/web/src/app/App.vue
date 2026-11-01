@@ -363,10 +363,14 @@ function cancel() {
   if (scene.recording !== 'idle') conversation.pauseCaption();
   controller.cancelRecording();
 }
+function cancelPointer(event: PointerEvent) {
+  if (event.pointerId === pointer) cancel();
+}
 function move(event: PointerEvent) {
   if (event.pointerId === pointer && pressY - event.clientY > 70) cancel();
 }
-function lostCapture() {
+function lostCapture(event: PointerEvent) {
+  if (event.pointerId !== pointer) return;
   const wasHeld = pointer !== undefined;
   finishRecordingGesture();
   // Automatic recording completion may replace the microphone with the draft editor.
@@ -452,6 +456,10 @@ onBeforeUnmount(() => {
   conversation.pauseCaption();
   connectionMonitor.dispose();
   void controller.dispose();
+});
+
+watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
+  if (mode !== 'voice' || phase !== 'idle') finishRecordingGesture();
 });
 </script>
 <template>
@@ -776,7 +784,7 @@ onBeforeUnmount(() => {
             @contextmenu.prevent.stop
             @pointerdown="down"
             @pointerup="up"
-            @pointercancel="cancel"
+            @pointercancel="cancelPointer"
             @pointermove="move"
             @lostpointercapture="lostCapture"
             @keydown="keyboardDown"

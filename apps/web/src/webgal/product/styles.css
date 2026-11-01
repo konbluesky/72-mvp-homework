@@ -733,7 +733,7 @@ body {
   font-size: 11px;
   color: #d5b994;
   line-height: 1.8;
-  margin: 10px 0 0;
+  margin: 0 0 10px;
 }
 .story-dialog {
   position: fixed;

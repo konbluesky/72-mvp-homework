@@ -20,7 +20,7 @@
 
 `packages/protocol/src/story.ts` 仅约束有界ID、DTO与容量。地点、道具、结局、阶段与公开事实不再枚举咖啡馆内容。活动Ink包校验地点/环境/结局/资源成员；道具正文仍由后端Lore授权，不复制到前端。
 
-manifest声明公开presentation、phaseLabels、资源绑定、环境变体及资源最低要求。`runtime/content-schema.ts` 为编译器与服务端加载提供同一份呈现/资源校验，公开投影只保留环境变体的 value；解锁条件 requires 留在服务端并核对已声明标记。`scenarios:build`发现scenario下有manifest的内容目录，编译Ink并生成前端 `manifest.generated.json`。该产物只含严格校验的公开呈现字段与资源引用，不含Ink字节码、Lore正文、语音台词、私有标记或存档。`scenarios:check`同时校验两个产物，前端与服务端场景ID/版本不匹配时拒绝混用。
+manifest声明公开presentation、phaseLabels、资源绑定、环境变体及资源最低要求。`runtime/content-schema.ts` 为编译器与服务端加载提供同一份呈现/资源校验，公开投影只保留环境变体的 value；解锁条件 requires 留在服务端并核对已声明标记。`scenarios:build`发现scenario下有manifest的内容目录，编译Ink并生成前端 `manifest.generated.json`。该产物只含严格校验的公开呈现字段与资源引用，开场文字opening仅从后端声明的openingVoice中选取已公开的一句；不含Ink字节码、Lore正文、其他台词或完整语音目录、私有标记或存档。`scenarios:check`同时校验两个产物，前端与服务端场景ID/版本不匹配时拒绝混用。
 
 隐藏内容仍留在服务端。编译器的EXTERNAL禁用、标签白名单、内容引用校验和预算继续保留。默认故事名称可以出现在组合入口和故事包中，不能在通用运行时内兜底。
 

@@ -48,6 +48,9 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
   const pointer = useRef<number>();
   const recordingGesture = useRef<RecordingGestureGuard>();
   const pressY = useRef(0);
+  useEffect(() => {
+    if (inputMode !== 'voice' || state.voicePreview !== 'idle') finishRecordingGesture();
+  }, [inputMode, state.voicePreview]);
 
   useEffect(() => {
     if (host.isDisposed) {
@@ -165,9 +168,14 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       if (pointer.current !== undefined || host.getSnapshot().recording !== 'idle')
         cancelRecording();
     };
+    const visibility = () => {
+      if (document.hidden) blur();
+    };
     window.addEventListener('blur', blur);
+    document.addEventListener('visibilitychange', visibility);
     return () => {
       window.removeEventListener('blur', blur);
+      document.removeEventListener('visibilitychange', visibility);
       recordingGesture.current?.dispose();
     };
   }, [host]);
@@ -640,6 +648,11 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
               </button>
             </div>
           )}
+          {state.voiceInputError && (
+            <p className="voice-input-error" role="alert">
+              {state.voiceInputError}
+            </p>
+          )}
           <form
             className={`story-composer ${state.recording === 'recording' ? 'is-recording' : ''}`}
             onSubmit={(event) => {
@@ -752,8 +765,11 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
                       event.currentTarget.releasePointerCapture(event.pointerId);
                     host.controller.release();
                   }}
-                  onPointerCancel={cancelRecording}
-                  onLostPointerCapture={() => {
+                  onPointerCancel={(event) => {
+                    if (event.pointerId === pointer.current) cancelRecording();
+                  }}
+                  onLostPointerCapture={(event) => {
+                    if (event.pointerId !== pointer.current) return;
                     const wasHeld = pointer.current !== undefined;
                     finishRecordingGesture();
                     if (wasHeld && host.getSnapshot().recording !== 'idle')
@@ -797,11 +813,6 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
               </>
             )}
           </form>
-          {state.voiceInputError && (
-            <p className="voice-input-error" role="alert">
-              {state.voiceInputError}
-            </p>
-          )}
         </section>
       </section>
       <StoryPanels

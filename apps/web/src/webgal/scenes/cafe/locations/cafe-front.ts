@@ -2,7 +2,7 @@ import metadata from '../manifest.generated.json';
 import type { LocationDefinition } from '../../location.js';
 export const cafeFront: LocationDefinition = {
   label: metadata.locations['cafe-front'],
-  description: '门铃旁贴着旧店最后营业日的告示。',
+  description: '门铃、雨棚和营业牌。进门、告别，或另一次专门的见面，都从这里开始。',
   x: 1650,
   y: 1440,
   height: 1410,

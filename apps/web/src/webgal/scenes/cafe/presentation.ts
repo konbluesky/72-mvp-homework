@@ -7,7 +7,7 @@ import type { InteractiveState } from '../../../interaction/state.js';
 import type { VisualEngineLease } from '../../runtime/engine-adapter';
 import { CharacterDriver } from '../../characters/driver';
 import { cafeLocation, stageScene } from './definition';
-import { cafeResource } from './resources';
+import { cafeResource, CAFE_PHOTO_DESCRIPTION } from './resources';
 
 type Scope = { revision: number; abort: AbortController };
 export class CafePresentation implements PresentationPort {
@@ -261,8 +261,8 @@ export class CafePresentation implements PresentationPort {
     this.furniture(this.story);
     await this.painted(scope, signal);
     this.store.photo = 'visible';
-    this.store.documentTitle = '那年海边，天空很亮';
-    this.store.documentText = '海岸风景：明亮的天空、蓝绿色海面与沿岸浪花。照片没有人物。';
+    this.store.documentTitle = CAFE_PHOTO_DESCRIPTION.title;
+    this.store.documentText = CAFE_PHOTO_DESCRIPTION.text;
   }
   environment(event: Extract<PresentationEvent, { type: 'environment' }>, signal: AbortSignal) {
     return this.transition(this.story, event.environment, signal);

@@ -3,7 +3,7 @@ import { drawWindowSeat } from './foreground.js';
 import type { LocationDefinition } from '../../location.js';
 export const windowSeat: LocationDefinition = {
   label: metadata.locations['window-seat'],
-  description: '咖啡、雨窗和倒影。刚好容得下两个人慢慢说话。',
+  description: '放凉的咖啡、雨窗上的倒影。玩笑、试探和真心话，都可以慢慢说。',
   x: 1640,
   y: 2130,
   height: 1810,

@@ -32,7 +32,7 @@ export const cafeSceneModule: SceneModule = {
   },
   assets: CAFE_ASSETS,
   initialView: {
-    story: initialStory({ location: 'street-wide', ambience: 'open', phase: 'arrival' }),
+    story: initialStory({ location: 'lobby', ambience: 'open', phase: 'exploration' }),
     environment: metadata.environment.default,
   },
   location: cafeLocation,

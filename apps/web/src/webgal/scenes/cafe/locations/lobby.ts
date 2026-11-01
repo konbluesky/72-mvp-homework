@@ -2,7 +2,7 @@ import metadata from '../manifest.generated.json';
 import type { LocationDefinition } from '../../location.js';
 export const lobby: LocationDefinition = {
   label: metadata.locations['lobby'],
-  description: '搬迁纸箱靠在吧台边。米拉用一句玩笑，给你留了个位置。',
+  description: '搬迁纸箱靠在吧台边。刚下班的米拉邀你坐坐，话题从一个轻巧的玩笑开始。',
   x: 1190,
   y: 1440,
   height: 1420,
