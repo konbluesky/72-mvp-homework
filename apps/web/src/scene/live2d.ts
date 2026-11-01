@@ -187,6 +187,10 @@ export function createLive2DRenderer(
           );
           for (const id of HARU_MANIFEST.parameters) {
             const target = values[id];
+            const authoredGaze =
+              projection.interaction === 'thinking' &&
+              projection.action === 'none' &&
+              (id === 'ParamEyeBallX' || id === 'ParamEyeBallY');
             const weight =
               id.startsWith('ParamBrow') || id.startsWith('ParamEye') || id === 'ParamMouthForm'
                 ? faceBlend
@@ -195,6 +199,7 @@ export function createLive2DRenderer(
               id === 'ParamMouthOpenY' ||
               id === 'ParamEyeLOpen' ||
               id === 'ParamEyeROpen' ||
+              authoredGaze ||
               id.startsWith('ParamArm') ||
               id.startsWith('ParamHand')
                 ? target

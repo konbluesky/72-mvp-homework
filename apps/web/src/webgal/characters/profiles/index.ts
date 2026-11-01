@@ -76,8 +76,8 @@ const vividInteractions: Readonly<Record<Interaction, InteractionPose>> = {
     bodyX: 0,
     bodyY: 0,
     bodyZ: 0.03,
-    gazeX: 0.55,
-    gazeY: 0.55,
+    gazeX: -0.95,
+    gazeY: 1,
   },
   speaking: {
     angleX: -0.06,
@@ -180,16 +180,17 @@ export interface CharacterPose extends InteractionPose, ExpressionProfile {
   breath: number;
 }
 
-// Short eye movements separated by holds read as considering something, rather than rolling eyes.
+// Look clearly up-left and up-right, with short shifts and readable holds at each side.
 const thinkingGaze = [
-  { at: 0, x: 0.55, y: 0.55 },
-  { at: 1.1, x: 0.55, y: 0.55 },
-  { at: 1.45, x: -0.35, y: 0.65 },
-  { at: 2.5, x: -0.35, y: 0.65 },
-  { at: 2.85, x: 0.1, y: 0.35 },
-  { at: 3.5, x: 0.1, y: 0.35 },
-  { at: 3.85, x: 0.55, y: 0.55 },
-  { at: 4.6, x: 0.55, y: 0.55 },
+  { at: 0, x: -0.95, y: 1 },
+  { at: 0.3, x: -0.95, y: 1 },
+  { at: 0.5, x: 0.95, y: 1 },
+  { at: 1.1, x: 0.95, y: 1 },
+  { at: 1.34, x: -0.95, y: 1 },
+  { at: 2, x: -0.95, y: 1 },
+  { at: 2.24, x: 0.95, y: 1 },
+  { at: 2.9, x: 0.95, y: 1 },
+  { at: 3.14, x: -0.95, y: 1 },
 ] as const;
 
 function thinkingEyes(seconds: number) {

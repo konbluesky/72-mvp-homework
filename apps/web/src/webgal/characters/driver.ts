@@ -210,8 +210,13 @@ export class CharacterDriver {
       : center + (value >= 0 ? r.max - center : center - r.min) * value;
     // Cubism reloads saved motion parameters every update. Keep blend state outside that reset.
     const previous = this.values.get(id) ?? r.defaultValue;
-    const weight =
-      unit && id.startsWith('ParamEye')
+    const authoredGaze =
+      this.frame.interaction === 'thinking' &&
+      this.frame.action === 'none' &&
+      (id === 'ParamEyeBallX' || id === 'ParamEyeBallY');
+    const weight = authoredGaze
+      ? 1
+      : unit && id.startsWith('ParamEye')
         ? 0.68
         : id.startsWith('ParamBrow') || id.startsWith('ParamEyeBall') || id === 'ParamMouthForm'
           ? 0.42
