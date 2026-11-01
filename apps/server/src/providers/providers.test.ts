@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
 import { ReplyPlanSchema } from '@mira/protocol';
 import { z } from 'zod';
@@ -305,13 +304,6 @@ describe('mock conversation content without a speech implementation', () => {
           await provider.planner.plan({ text: input, history: [], facts: [] }, signal()),
         ).success,
       ).toBe(true);
-    const manifest: unknown = JSON.parse(
-      await readFile(
-        new URL('../../../../assets/mock-audio/manifest.json', import.meta.url),
-        'utf8',
-      ),
-    );
-    expect(manifest).toBeTruthy();
   });
   it('refusal does not reveal media and confirmed history changes the branch', () => {
     expect(mockPlan('我不想看照片', []).segments.flatMap((s) => s.events)).toEqual([]);

@@ -15,6 +15,8 @@
 
 ## 架构与契约
 
+- [剧情导演与LLM会话分离（初步设计，待审阅）](architecture/llm-directed-story-design.md)：固定脚本与动态推荐的职责、补妆前后流程、涉及文件、调用成本与迁移边界；尚未实施。
+
 - [当前程序组件与交互时序](architecture/program-interactions.md)：两个前端入口、WebGAL/Live2D、Ink、LangGraph、协议、LLM/Deepgram 的职责边界，以及聊天、动作、语音预览和打断时序；附标准 PlantUML 源文件。
 
 - [场景模块边界](architecture/scene-modules.md)：故事包、地点呈现、角色 profiles、公开 manifest 生成，以及新增地点需要修改的范围。

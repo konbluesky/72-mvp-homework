@@ -1,24 +1,23 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { toneWav } from '../../../../tests/fixtures/audio.js';
 import { loadConfig } from '../config/index.js';
 import { normalizeRecording } from './audio-input.js';
 
 const exec = promisify(execFile);
 const config = loadConfig({});
-const source = fileURLToPath(new URL('../../../../assets/mock-audio/hello.wav', import.meta.url));
+const source = toneWav();
 const signal = () => new AbortController().signal;
-async function encode(format: string, codec: string, extra: string[] = []) {
-  const result = await exec(
+async function encode(format: string, codec: string, extra: string[] = [], bytes = source) {
+  const pending = exec(
     config.FFMPEG_PATH,
     [
       '-hide_banner',
       '-loglevel',
       'error',
       '-i',
-      source,
+      'pipe:0',
       '-c:a',
       codec,
       ...extra,
@@ -28,7 +27,8 @@ async function encode(format: string, codec: string, extra: string[] = []) {
     ],
     { encoding: 'buffer', timeout: 5000, maxBuffer: 4 * 1024 * 1024 },
   );
-  return result.stdout;
+  pending.child.stdin?.end(bytes);
+  return (await pending).stdout;
 }
 
 describe('actual recording decode boundary (requires ffmpeg, never a provider key)', () => {
@@ -52,7 +52,7 @@ describe('actual recording decode boundary (requires ffmpeg, never a provider ke
     },
   );
   it('accepts actual short WAV but rejects false MIME and truncated/malformed data', async () => {
-    const bytes = await readFile(source);
+    const bytes = source;
     expect(
       (await normalizeRecording({ bytes, mimeType: 'audio/wav' }, config, signal())).durationMs,
     ).toBeGreaterThan(4000);
@@ -67,32 +67,13 @@ describe('actual recording decode boundary (requires ffmpeg, never a provider ke
     ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
   });
   it('rejects a 16-second recording regardless of client duration claims', async () => {
-    const { stdout } = await exec(
-      config.FFMPEG_PATH,
-      [
-        '-hide_banner',
-        '-loglevel',
-        'error',
-        '-stream_loop',
-        '4',
-        '-i',
-        source,
-        '-t',
-        '16',
-        '-c:a',
-        'libopus',
-        '-f',
-        'webm',
-        'pipe:1',
-      ],
-      { encoding: 'buffer', timeout: 5000, maxBuffer: 4 * 1024 * 1024 },
-    );
+    const bytes = await encode('webm', 'libopus', [], toneWav(16000));
     await expect(
-      normalizeRecording({ bytes: stdout, mimeType: 'audio/webm' }, config, signal()),
+      normalizeRecording({ bytes, mimeType: 'audio/webm' }, config, signal()),
     ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
   });
   it('caps decoder concurrency and kills a running decode on cancellation', async () => {
-    const bytes = await readFile(source);
+    const bytes = source;
     const controller = new AbortController();
     const a = normalizeRecording({ bytes, mimeType: 'audio/wav' }, config, controller.signal);
     const b = normalizeRecording({ bytes, mimeType: 'audio/wav' }, config, signal());
@@ -103,7 +84,7 @@ describe('actual recording decode boundary (requires ffmpeg, never a provider ke
     await expect(b).resolves.toMatchObject({ mimeType: 'audio/wav' });
   });
   it('cancellation rejects before decoding and missing executables fail safely', async () => {
-    const bytes = await readFile(source);
+    const bytes = source;
     const controller = new AbortController();
     controller.abort();
     await expect(

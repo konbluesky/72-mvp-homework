@@ -1,11 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import { test, expect } from '@playwright/test';
 import { createApp } from '../../apps/server/src/app.js';
 import { createLiveProviders } from '../../apps/server/src/providers/index.js';
 import { testConfig, testMedia } from '../../apps/server/test/helpers.js';
 import { MOCK_LINES } from '../../apps/server/src/scenario/cafe/mock.js';
 import { plannerResponse, transcriptResponse } from '../fixtures/provider-http.js';
+import { toneWav } from '../fixtures/audio.js';
 import type { Fetch } from '../../apps/server/src/providers/http.js';
 
 test('real recorder to Deepgram STT adapter, GPT graph, Deepgram TTS adapter and actual browser playback', async ({
@@ -21,16 +21,8 @@ test('real recorder to Deepgram STT adapter, GPT graph, Deepgram TTS adapter and
   });
   const mp3 = execFileSync(
     config.FFMPEG_PATH,
-    [
-      '-v',
-      'error',
-      '-i',
-      fileURLToPath(new URL('../../assets/mock-audio/hello.wav', import.meta.url)),
-      '-f',
-      'mp3',
-      'pipe:1',
-    ],
-    { maxBuffer: 1048576, timeout: 5000 },
+    ['-v', 'error', '-i', 'pipe:0', '-f', 'mp3', 'pipe:1'],
+    { input: toneWav(), maxBuffer: 1048576, timeout: 5000 },
   );
   const stages: string[] = [];
   const fetcher: Fetch = async (url, request) => {

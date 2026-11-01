@@ -12,7 +12,6 @@
 | `.github/`、`infra/`、`compose.yaml`                     | CI、Docker 与反向代理源码                                             |
 | `.vscode/`                                               | 共享调试任务及被 `npm run dev` 引用的启动脚本，不是个人缓存           |
 | 三份 `.env*.example`                                     | 无真实凭证的公开配置模板                                              |
-| `assets/mock-audio/`                                     | 无密钥演示需要的固定语音素材及来源 manifest                           |
 | `apps/web/public/assets/`                                | 页面图片、Live2D 模型/纹理、固定运行库与全部适用条款                  |
 | 文档白名单                                               | 当前配置、架构、契约、开发、部署及验收摘要                            |
 
@@ -40,6 +39,8 @@ git ls-files
 检查实际暂存 blob 中的凭证、私人路径、异常大文件与禁止目录；新增资产时运行 `npm run assets:check`。`.gitignore` 不会保护已被追踪的文件，因此后续仍需检查暂存内容。
 
 本次仓库整理仅运行静态检查、资产哈希检查与 Git 暂存内容检查，没有新增功能/运行时/E2E测试结果。此类测试须按 `AGENTS.md` 在用户明确要求后执行；CI 依照既有工作流运行其门禁。
+
+2026-11-01：原离线 Mock WAV 与 manifest 已移除，后端打包和测试源码不再读取它们。音频测试信号由 `tests/fixtures/audio.ts` 在内存中生成，不提交二进制音频或用户录音。
 
 八场景接入新增 `apps/web/public/assets/cafe-story/` 的原创 SVG/来源清单、离线故事 WAV、`scripts/create-cafe-art.py`、角色/场景/宿主代码与测试源码；`docs/acceptance/miara-webgal-story.md` 显式加入文档白名单。`outputs/miara-implementation/` 的手动调试截图继续排除，未加入真实音频或凭证。
 
