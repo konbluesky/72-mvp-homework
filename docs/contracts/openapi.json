@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Mira interaction API",
+    "title": "角色互动平台 API",
     "version": "1.0.0"
   },
   "components": {
@@ -958,6 +958,96 @@
                           "type": "string",
                           "minLength": 1,
                           "maxLength": 120
+                        },
+                        "interaction": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "move"
+                                },
+                                "location": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80,
+                                  "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "location"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "inspect"
+                                },
+                                "prop": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80,
+                                  "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "prop"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "choose"
+                                },
+                                "ending": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80,
+                                  "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "ending"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "action"
+                                },
+                                "actionId": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80,
+                                  "pattern": "^[a-z0-9-]+$"
+                                },
+                                "revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "actionId",
+                                "revision"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -1258,6 +1348,96 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 120
+                },
+                "interaction": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "move"
+                        },
+                        "location": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80,
+                          "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "location"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "inspect"
+                        },
+                        "prop": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80,
+                          "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "prop"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "choose"
+                        },
+                        "ending": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80,
+                          "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "ending"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "action"
+                        },
+                        "actionId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80,
+                          "pattern": "^[a-z0-9-]+$"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "actionId",
+                        "revision"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
                 }
               },
               "required": [
@@ -2670,6 +2850,104 @@
                                 "type": "string",
                                 "minLength": 1,
                                 "maxLength": 120
+                              },
+                              "interaction": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "move"
+                                        ]
+                                      },
+                                      "location": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 80,
+                                        "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "location"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "inspect"
+                                        ]
+                                      },
+                                      "prop": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 80,
+                                        "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "prop"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "choose"
+                                        ]
+                                      },
+                                      "ending": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 80,
+                                        "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "ending"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "action"
+                                        ]
+                                      },
+                                      "actionId": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 80,
+                                        "pattern": "^[a-z0-9-]+$"
+                                      },
+                                      "revision": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "actionId",
+                                      "revision"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -11500,6 +11778,96 @@
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 120
+                                  },
+                                  "interaction": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "move"
+                                          },
+                                          "location": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 80,
+                                            "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "location"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "inspect"
+                                          },
+                                          "prop": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 80,
+                                            "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "prop"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "choose"
+                                          },
+                                          "ending": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 80,
+                                            "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "ending"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "action"
+                                          },
+                                          "actionId": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 80,
+                                            "pattern": "^[a-z0-9-]+$"
+                                          },
+                                          "revision": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "actionId",
+                                          "revision"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
                                   }
                                 },
                                 "required": [

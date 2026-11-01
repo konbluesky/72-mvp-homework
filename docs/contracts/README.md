@@ -47,9 +47,9 @@ SSE正常完成不会中断有效播放。异常断线取消该stream拥有的�
 
 ## 用户发言推荐
 
-`ReplyPlan` 现在必须包含 `suggestions`，由 planner 与 `segments` 同次生成。建议2–3个不同方向，必要时允许空数组；最多3项，每项严格为 `{ label, draft }`（分别最多20、120字符）。它是用户下一条自然发言候选，不参与TTS，也不直接写入会话历史或剧情事实。
+`ReplyPlan` 现在必须包含 `suggestions`，由 planner 与 `segments` 同次生成。建议2–3个不同方向，必要时允许空数组；最多3项，每项严格为 `{ label, draft, interaction? }`（文字分别最多20、120字符）。它是用户下一条自然发言候选，不参与TTS，也不直接写入会话历史或剧情事实。
 
-现有 `reply.done.payload` 同时返回 `{ segmentCount, suggestions }`，不新增推荐HTTP接口或第二次常规LLM调用。客户端校验轮次后暂存，全部播放/呈现完成才显示；取消、新轮或过期立即清除，视觉失败不显示。WebGAL 点击候选即把 draft 作为玩家发言发送，走正常 begin/input 链路，与手写和确认后的语音文字采用同一意图校验。候选本身不授权动作；兼容 Vue 宿主仍可先填入编辑，不影响候选的可提交文字语义。`suggestions` 在SSE接收schema中为可选，兼容旧服务端缺失时不展示候选；当前服务端始终发送该字段。部署时先更新服务端planner/schema，再更新前端。
+现有 `reply.done.payload` 同时返回 `{ segmentCount, suggestions }`，不新增推荐HTTP接口或第二次常规LLM调用。客户端校验轮次后暂存，全部播放/呈现完成才显示；取消、新轮或过期立即清除，视觉失败不显示。闲聊候选走正常文字 begin/input 链路；服务端故事包编写的明确行动候选可绑定带 revision 的 interaction，用户点击后走已有 interaction 分支，服务端再次检查当前合法动作。模型输出 schema 不包含 interaction，模型关联动作仅能换成故事包编写的候选后获得此绑定。Vue 先填入编辑，仅在文字未改且动作/版本仍匹配时保留绑定，否则按普通文字输入判断。生成候选不执行动作、不提交事实；所有剧情仍由呈现回执确认。严格旧客户端需与后端同时更新并刷新。`suggestions` 在SSE接收schema中为可选，兼容旧服务端缺失时不展示候选；当前服务端始终发送该字段。部署时先更新服务端planner/schema，再更新前端。
 
 ## 语音草稿预览与确认
 
