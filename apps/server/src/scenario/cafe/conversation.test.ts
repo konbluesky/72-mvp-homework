@@ -26,11 +26,10 @@ it('keeps photo and rain receipts separate in the original page without changing
 it('offers a continuous authored story route and rejects a recommendation from an old checkpoint', () => {
   let checkpoint = cafeScenario.initial('story');
   const route = [
-    'talk-waiting',
-    'view-photo',
     'talk-companionship',
-    'move-counter',
-    'inspect-letter',
+    'talk-game',
+    'talk-game-third',
+    'talk-off-duty',
     'choose-depart',
   ];
   const opening = cafeScenario.suggestions!(checkpoint)[0]!;

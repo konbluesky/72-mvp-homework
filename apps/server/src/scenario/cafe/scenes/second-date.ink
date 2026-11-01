@@ -10,7 +10,7 @@
 另一个双方确认能见面的雨夜。米拉来到已关闭的旧店门前，你也如约出现。
 ~ rain_softened = false
 # cue:environment:rain
-同一条街又下起雨。上次渐歇的雨没有被当成永远不变的天气。
+同一条街又下起雨，雨线在路灯下亮起来。
 # cue:beat:reunion
 {boundary_set && not boundary_repaired:
     # voice:reunionQuiet
@@ -28,12 +28,17 @@
     # voice:dateMemoryQuiet
     她提起上次说好的慢节奏。路灯落在肩侧，今晚有足够长的一段路，可以不用急。
 - else:
-    {photo_seen:
-        # voice:dateMemoryPhoto
-        她记得你们确实一起看过那片海，把目光从照片的回忆带回眼前。
+    {game_answered:
+        # voice:dateMemoryGame
+        她重新提起那个小赌局，第一次把“舍不得”说成一句不打算收回的玩笑。
     - else:
-        # voice:dateMemory
-        她把上次的那句心动还给你，带着一点笑，也带着这次不想全靠玩笑遮住的认真。
+        {photo_seen:
+            # voice:dateMemoryPhoto
+            她记得你们确实一起看过那片海，把目光从照片的回忆带回眼前。
+        - else:
+            # voice:dateMemory
+            她把上次的那句心动还给你，带着一点笑，也带着这次不想全靠玩笑遮住的认真。
+        }
     }
 }
 -> menu
@@ -69,6 +74,9 @@
 -> menu
 
 === ending_friends ===
+~ location = "street-walk"
+# cue:location:street-walk
+你们沿着街道走到路口，把想说的话好好说完。
 ~ date_finished = true
 ~ ending = "friends"
 ~ phase = 3

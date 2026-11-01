@@ -17,7 +17,6 @@
 -> reflect_letter
 
 === reflect_letter ===
-~ letter_reflected = true
 # cue:beat:letter-reflection
 # voice:letterKnown
 她读完，笑了一下，再抬眼看你。纸上那句“多坐一会儿”，忽然有点像故意的。

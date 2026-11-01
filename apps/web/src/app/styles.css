@@ -1294,6 +1294,7 @@ dialog::backdrop {
 
 .scene-narration {
   margin: 0 0 12px;
+  white-space: pre-wrap;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.65;

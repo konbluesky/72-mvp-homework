@@ -198,7 +198,7 @@ export class MockPlanner implements ReplyPlanner {
           }
         : undefined,
     );
-    if (frame.success && /(阿岚|信件|那封信|她来过|等谁)/u.test(input.text)) {
+    if (frame.success && /(阿岚|信件|那封信|她来过)/u.test(input.text)) {
       const line = frame.data.revealed.includes('letter')
         ? MOCK_LINES.letterKnown
         : MOCK_LINES.letterUnknown;
@@ -223,6 +223,28 @@ export class MockPlanner implements ReplyPlanner {
       };
     }
     const plan = mockPlan(photoRequested(input.text) ? '旅行' : input.text, input.facts);
+    // Only authored scene milestones change the offline tone; no turn-count progression.
+    const milestones = new Set(frame.success ? frame.data.milestones : []);
+    const ordinaryChat =
+      !/(照片|相片|海边|旅行|空乘|空姐|航班|工作|下班|阿岚|信件|那封信|等谁|等什么|在等|雨|天气)/u.test(
+        input.text,
+      );
+    if (ordinaryChat && frame.success) {
+      const line = milestones.has('date_finished')
+        ? frame.data.ending === 'friends'
+          ? MOCK_LINES.dateFriends
+          : MOCK_LINES.dateClose
+        : milestones.has('boundary_set') && !milestones.has('boundary_repaired')
+          ? MOCK_LINES.quietChat
+          : milestones.has('second_date')
+            ? MOCK_LINES.dateChat
+            : milestones.has('chemistry')
+              ? MOCK_LINES.flirtChat
+              : milestones.has('companionship')
+                ? MOCK_LINES.quietChat
+                : undefined;
+      if (line) plan.segments = [segment(line, 'curious')];
+    }
     const offered = ReplySuggestionsSchema.safeParse(
       input.scene && typeof input.scene === 'object' && 'replyCandidates' in input.scene
         ? input.scene.replyCandidates

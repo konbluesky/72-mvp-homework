@@ -1,4 +1,5 @@
 import { expressiveCharacterPose } from '../webgal/characters/profiles/index.js';
+import { HARU_HAND_PARAMETERS, haruHands } from '../webgal/characters/profiles/haru-hands.js';
 import type { CharacterFrame } from './character.js';
 import type { CubismParameters } from './live2d-types.js';
 
@@ -39,6 +40,7 @@ export const HARU_MANIFEST = {
     'ParamEyeLOpen',
     'ParamEyeROpen',
     'ParamMouthOpenY',
+    ...HARU_HAND_PARAMETERS,
   ],
 } as const;
 export type HaruParameter = (typeof HARU_MANIFEST.parameters)[number];
@@ -87,6 +89,7 @@ export function poseParameters(
   const phase = seconds % 5.7;
   const blink = !reducedMotion && phase < 0.19 ? Math.abs(phase / 0.095 - 1) : 1;
   return {
+    ...haruHands(frame, interactionSeconds, reducedMotion).parameters,
     ParamAngleX: pose.angleX * 30,
     ParamAngleY: pose.angleY * 30,
     ParamAngleZ: pose.angleZ * 30,

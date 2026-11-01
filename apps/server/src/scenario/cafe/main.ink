@@ -4,10 +4,8 @@ VAR ambience = "open"
 VAR ending = ""
 VAR phase = 1
 VAR met = false
-VAR waiting_heard = false
 VAR companionship = false
 VAR letter_read = false
-VAR letter_reflected = false
 VAR notice_read = false
 VAR exhibition_read = false
 VAR reply_left = false
@@ -23,6 +21,8 @@ VAR date_reflected = false
 VAR date_honest = false
 VAR handheld = false
 VAR date_finished = false
+VAR game_played = false
+VAR game_answered = false
 -> menu
 
 INCLUDE scenes/street-wide.ink
@@ -50,6 +50,16 @@ INCLUDE endings.ink
 -> menu
 
 === menu ===
++ { view_mode == "story" && not second_date && ending == "" } [今晚先说晚安 # action:choose-farewell # explicit ]
+    -> early_goodnight
++ { companionship && not game_played && not second_date && ending == "" } [来个三句话的小赌局 # action:talk-game ]
+    -> play_game
++ { game_played && not game_answered && not second_date && ending == "" } [猜她不爱咖啡 # action:talk-game-first ]
+    -> game_first
++ { game_played && not game_answered && not second_date && ending == "" } [猜她很会认路 # action:talk-game-second ]
+    -> game_second
++ { game_played && not game_answered && not second_date && ending == "" } [猜她不太会说舍不得 # action:talk-game-third ]
+    -> game_third
 + { view_mode == "story" && location != "street-wide" } [回望街角 # action:move-street-wide ]
     -> enter_street_wide
 + { view_mode == "story" && location != "cafe-front" } [到雨棚下站一会儿 # action:move-cafe-front ]
@@ -76,7 +86,7 @@ INCLUDE endings.ink
     -> inspect_reply
 + { met && not second_date && ending == "" && location != "street-wide" } [看看那张海岸照片 # action:view-photo ]
     -> view_photo
-+ { met && not waiting_heard && not second_date && ending == "" && location != "street-wide" } [你今晚是在等谁吗 # action:talk-waiting ]
++ { met && not second_date && ending == "" && location != "street-wide" } [你今晚是在等谁吗 # action:talk-waiting ]
     -> hear_waiting
 + { met && not companionship && ending == "" && location != "street-wide" } [坐下来陪她聊聊 # action:talk-companionship ]
     -> offer_companionship
@@ -88,8 +98,6 @@ INCLUDE endings.ink
     -> talk_boundary
 + { trust && boundary_set && not boundary_repaired && ending == "" } [明确重新愿意约会 # action:talk-reopen # explicit ]
     -> talk_reopen
-+ { letter_read && not letter_reflected && not second_date && ending == "" } [听听她读信后的想法 # action:talk-letter-reflection ]
-    -> reflect_letter
 + { view_mode == "story" && trust && chemistry && (not boundary_set || boundary_repaired) && not appointment && not second_date } [专门再约一次见面 # action:choose-appointment # explicit ]
     -> make_appointment
 + { view_mode == "story" && trust && not second_date && ending == "" } [一起出去走一小段 # action:choose-depart # explicit ]

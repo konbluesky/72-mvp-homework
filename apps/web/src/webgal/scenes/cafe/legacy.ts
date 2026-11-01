@@ -20,7 +20,8 @@ export const cafeLegacyScene: LegacySceneModule = {
   },
   about: {
     title: '一场雨，一次偶遇。',
-    description: '旧店最后营业的雨夜，刚下班的米拉独自坐在窗边。一句带点坏笑的招呼，让这个晚上有了临时改变的余地。',
+    description:
+      '旧店最后营业的雨夜，刚下班的米拉独自坐在窗边。一句带点坏笑的招呼，让这个晚上有了临时改变的余地。',
     attribution:
       'Haru 为 Live2D 官方样例，作为原创成年角色米拉的表演替身。当前照片为独立场景道具，样例不含专用递照片动作。',
   },

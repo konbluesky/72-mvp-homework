@@ -15,7 +15,8 @@ describe('Ink authored cafe story', () => {
     expect(frame.story.phase).toBe('exploration');
     expect(frame.story.location).toBe('lobby');
     expect(cafeScenario.opening?.(state)?.suggestions.length).toBeGreaterThanOrEqual(2);
-    expect(frame.story.actions.some((action) => action.kind === 'choose')).toBe(false);
+    expect(frame.story.actions.some((action) => action.id === 'choose-appointment')).toBe(false);
+    expect(frame.story.actions.some((action) => action.id === 'choose-farewell')).toBe(true);
     expect(cafeScenario.frame(JSON.parse(JSON.stringify(state)))).toEqual(frame);
     expect(() => cafeScenario.propose('choose-depart', state)).toThrow();
   });
@@ -23,10 +24,10 @@ describe('Ink authored cafe story', () => {
     const state = run('talk-companionship', cafeScenario.initial());
     const replies = cafeScenario.suggestions?.(state) ?? [];
     expect(replies).toHaveLength(2);
-    expect(replies.map((reply) => reply.draft)).toContain('说说你最难忘的一次旅行吧。');
-    expect(replies.map((reply) => reply.draft)).toContain('我们去吧台聊聊吧。');
+    expect(replies[0]?.interaction).toMatchObject({ actionId: 'talk-game' });
+    expect(replies.some((reply) => !reply.interaction)).toBe(true);
   });
-  it('only exposes the letter after presentation and separates the subsequent response milestone', () => {
+  it('only exposes the letter after presentation without substituting it for personal trust', () => {
     let state = cafeScenario.initial();
     state = run('move-counter', state);
     expect(cafeScenario.frame(state).known.some((entry) => entry.id === 'letter')).toBe(false);
@@ -36,11 +37,14 @@ describe('Ink authored cafe story', () => {
     expect(cafeScenario.frame(state).known.some((entry) => entry.id === 'letter')).toBe(true);
     expect(cafeScenario.frame(state).story.phase).toBe('exploration');
     state = cafeScenario.accept(state, beats[1]!.checkpoint);
-    expect(cafeScenario.frame(state).story.phase).toBe('decision');
+    expect(cafeScenario.frame(state).story.phase).toBe('exploration');
+    expect(cafeScenario.frame(state).story.milestones).not.toContain('trust');
   });
   it('allows companionship without reading and keeps an interrupted ending at its confirmed prefix', () => {
     let state = cafeScenario.initial();
     state = run('talk-companionship', state);
+    expect(cafeScenario.frame(state).story.phase).toBe('exploration');
+    state = run('talk-off-duty', state);
     expect(cafeScenario.frame(state).story.phase).toBe('decision');
     expect(cafeScenario.frame(state).known.some((entry) => entry.id === 'letter')).toBe(false);
     const beats = cafeScenario.propose('choose-depart', state);

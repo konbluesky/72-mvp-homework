@@ -1,5 +1,6 @@
 import type { Emotion, Interaction } from '@mira/protocol';
 import type { CharacterFrame } from '../../../scene/character.js';
+import { HARU_HAND_PARAMETERS } from './haru-hands.js';
 
 const face = [
   'ParamAngleX',
@@ -153,7 +154,13 @@ export const CHARACTERS = {
     label: 'Haru',
     model: '/assets/live2d/haru/Haru.model3.json',
     attribution: 'Haru © Live2D Inc. · 官方技术样例',
-    parameters: [...face, 'ParamBodyAngleY', 'ParamEyeLSmile', 'ParamEyeRSmile'],
+    parameters: [
+      ...face,
+      'ParamBodyAngleY',
+      'ParamEyeLSmile',
+      'ParamEyeRSmile',
+      ...HARU_HAND_PARAMETERS,
+    ],
     motionGroups: [],
     expressions: vividExpressions,
     interactions: vividInteractions,

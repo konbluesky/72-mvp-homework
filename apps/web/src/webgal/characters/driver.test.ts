@@ -28,6 +28,10 @@ function model() {
     getParameterMinimumValue: () => -30,
     getParameterMaximumValue: () => 30,
     getParameterDefaultValue: () => 0,
+    getPartCount: () => 4,
+    getPartIndex: (id: string) =>
+      ['Part01ArmRA001', 'Part01ArmLA001', 'Part01ArmRB001', 'Part01ArmLB001'].indexOf(id),
+    setPartOpacityByIndex: vi.fn(),
   };
   const fake = Object.assign(container, {
     internalModel: {

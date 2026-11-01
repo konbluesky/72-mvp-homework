@@ -6,6 +6,7 @@ import { HARU_MANIFEST, bindHaruParameters, poseParameters } from './live2d-mani
 import type { CharacterFrame } from './character.js';
 import type {
   CubismParameters,
+  CubismParts,
   Live2DApplication,
   Live2DModelPort,
   Live2DRuntime,
@@ -18,7 +19,7 @@ const frame: CharacterFrame = {
   mouthOpen: 0.7,
   photoInHand: false,
 };
-function core(): CubismParameters & { values: Map<string, number> } {
+function core(): CubismParameters & CubismParts & { values: Map<string, number> } {
   const values = new Map<string, number>();
   return {
     values,
@@ -26,6 +27,10 @@ function core(): CubismParameters & { values: Map<string, number> } {
     getParameterIndex: (id) => HARU_MANIFEST.parameters.findIndex((name) => name === id),
     getParameterMinimumValue: () => -30,
     getParameterMaximumValue: () => 30,
+    getPartCount: () => 4,
+    getPartIndex: (id) =>
+      ['Part01ArmRA001', 'Part01ArmLA001', 'Part01ArmRB001', 'Part01ArmLB001'].indexOf(id),
+    setPartOpacityByIndex() {},
     setParameterValueById: (id, value) => {
       values.set(id, value);
     },

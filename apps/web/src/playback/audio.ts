@@ -39,12 +39,15 @@ export class BrowserAudio implements AudioPort {
         const source = context.createBufferSource();
         const gain = context.createGain();
         const analyser = context.createAnalyser();
-        analyser.fftSize = 256;
+        // Average a speech-sized window instead of following individual waveform fluctuations.
+        analyser.fftSize = 2048;
         const samples = new Float32Array(analyser.fftSize);
         source.buffer = buffer;
         source.connect(analyser).connect(gain).connect(context.destination);
         let frame = 0;
         let stopped = false;
+        let envelope = 0;
+        let measuredAt = context.currentTime;
         const cleanup = () => {
           cancelAnimationFrame(frame);
           source.onended = null;
@@ -53,6 +56,7 @@ export class BrowserAudio implements AudioPort {
           source.disconnect();
           analyser.disconnect();
           gain.disconnect();
+          envelope = 0;
           energy(0);
         };
         const stop = () => {
@@ -71,7 +75,14 @@ export class BrowserAudio implements AudioPort {
           const rms = Math.sqrt(
             samples.reduce((sum, value) => sum + value * value, 0) / samples.length,
           );
-          energy(Math.min(1, rms * 6));
+          const now = context.currentTime;
+          const elapsed = Math.max(0, Math.min(0.1, now - measuredAt));
+          measuredAt = now;
+          const target = rms < 0.008 ? 0 : Math.min(1, rms * 6);
+          // Follow syllables with a softer release; stop/ended still close the mouth synchronously.
+          const response = target > envelope ? 0.07 : 0.12;
+          envelope += (target - envelope) * (1 - Math.exp(-elapsed / response));
+          energy(envelope < 0.01 ? 0 : envelope);
           frame = requestAnimationFrame(measure);
         };
         source.onended = () => {

@@ -6,6 +6,11 @@ export interface CubismParameters {
   getParameterMaximumValue(index: number): number;
   setParameterValueById(id: string, value: number): void;
 }
+export interface CubismParts {
+  getPartCount(): number;
+  getPartIndex(id: string): number;
+  setPartOpacityByIndex(index: number, value: number): void;
+}
 export interface Live2DTexture {
   destroyed?: boolean;
   destroy(baseTexture?: boolean): void;
@@ -14,7 +19,7 @@ export interface Live2DModelPort {
   internalModel?: {
     originalWidth: number;
     originalHeight: number;
-    coreModel: CubismParameters;
+    coreModel: CubismParameters & CubismParts;
     motionManager: { stopAllMotions(): void };
     on(event: 'beforeModelUpdate', callback: () => void): void;
     off(event: 'beforeModelUpdate', callback: () => void): void;

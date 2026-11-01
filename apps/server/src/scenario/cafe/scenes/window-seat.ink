@@ -5,7 +5,6 @@
 -> menu
 
 === hear_waiting ===
-~ waiting_heard = true
 # cue:beat:off-duty-arrival
 # voice:waiting
 她望了一眼原本空着的座位，再看回来，像是临时决定把今晚的安排改一改。

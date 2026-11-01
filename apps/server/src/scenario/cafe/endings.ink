@@ -57,3 +57,14 @@
 # cue:ending:stay
 《今晚没有返程》：桌灯留下一小圈暖光。这一晚剩下的时间，暂时不用拿来赶路。
 -> menu
+
+=== early_goodnight ===
+~ location = "cafe-front"
+# cue:location:cafe-front
+你来到门头。暖光还在玻璃后面，檐下的雨声比进门时清楚一些。
+~ ending = "letter"
+~ phase = 3
+# cue:ending:letter
+# voice:earlyGoodnight
+《先说一声晚安》：这一段相遇，到这里也可以刚刚好。
+-> menu

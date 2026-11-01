@@ -207,14 +207,57 @@
       "file": "dateFriends.wav",
       "emotion": "curious",
       "action": "none"
+    },
+    "game": {
+      "text": "来个小赌局。我不喜欢咖啡，很会认路，不太会说舍不得。三句话，只有一句是真的。你猜？",
+      "file": "game.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "gameRight": {
+      "text": "猜中了。最后一句是真的。所以哪天我说再坐一会儿，你可以多想一点。",
+      "file": "gameRight.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "gameWrong": {
+      "text": "猜错了。我喜欢咖啡，认路也不怎么样。只有最后一句是真的。说舍不得这件事，我还在练。",
+      "file": "gameWrong.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "dateMemoryGame": {
+      "text": "上次的小赌局，我记得。那句不太会说舍不得，今天还算数。不过我可以先练一句：别急着走。",
+      "file": "dateMemoryGame.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "flirtChat": {
+      "text": "你刚才看的是窗外，还是玻璃里的我？想清楚再答，我可能会当真的。",
+      "file": "flirtChat.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "quietChat": {
+      "text": "我们可以慢慢聊。你不用急着接我的每一句，我也想听听你平常是什么样。",
+      "file": "quietChat.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "dateChat": {
+      "text": "今晚没有航线表，也没人催我们抵达。你想聊点什么？这次我认真听。",
+      "file": "dateChat.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "earlyGoodnight": {
+      "text": "好，路上小心。一个晚上不用非得聊到最后，才算认识过。",
+      "file": "earlyGoodnight.wav",
+      "emotion": "curious",
+      "action": "none"
     }
   },
-  "phases": [
-    "arrival",
-    "exploration",
-    "decision",
-    "epilogue"
-  ],
+  "phases": ["arrival", "exploration", "decision", "epilogue"],
   "locations": {
     "street-wide": "街角远景",
     "cafe-front": "门头雨棚",
@@ -228,10 +271,8 @@
   "projection": {
     "flags": [
       "met",
-      "waiting_heard",
       "companionship",
       "letter_read",
-      "letter_reflected",
       "notice_read",
       "exhibition_read",
       "reply_left",
@@ -246,7 +287,9 @@
       "date_reflected",
       "date_honest",
       "handheld",
-      "date_finished"
+      "date_finished",
+      "game_played",
+      "game_answered"
     ],
     "revealed": {
       "notice": "notice_read",
@@ -262,188 +305,116 @@
   },
   "directorNotes": [
     {
-      "requires": [
-        "date_finished"
-      ],
+      "requires": ["date_finished"],
       "text": "这次见面已经收束。按当前 ending 承接：closer 是双方愿意继续了解，friends 是明确做朋友。可以闲聊，不重复邀约、不假装已经恋爱，不自动重开章节。",
-      "chatReplies": [
-        "今晚这段路，我会记得。",
-        "我们再聊一会儿，不急着说再见。"
-      ]
+      "chatReplies": ["今晚这段路，我会记得。", "我们再聊一会儿，不急着说再见。"]
     },
     {
-      "requires": [
-        "second_date",
-        "boundary_set"
-      ],
+      "requires": ["second_date", "boundary_repaired", "date_honest"],
+      "text": "用户在此前放慢后，已经明确重新愿意约会；第二次见面也谈过真心。仍按慢节奏相处，接触另行确认，可不牵手而继续约会。",
+      "replyActions": ["choose-date-close", "choose-hand", "choose-date-friends"],
+      "chatReplies": ["我们就按现在都舒服的速度走。"]
+    },
+    {
+      "requires": ["second_date", "boundary_repaired"],
+      "text": "用户主动重新愿意约会，此前的分寸仍保留。先回顾真实发生的第一次见面，再谈赴约感受，不把重新开启当全部接触的许可。",
+      "replyActions": ["talk-date-memory", "talk-date-honest"],
+      "chatReplies": ["这次我想把话说清楚，也把时间留够。"]
+    },
+    {
+      "requires": ["second_date", "boundary_set"],
       "text": "第二次见面已开始，曾明确要求慢下来。boundary_repaired 只有用户主动重新愿意约会后才成立；没有它时保持朋友距离，不主动推荐牵手。回顾实际共同经历，仍可真诚谈话或体面做朋友。",
-      "replyActions": [
-        "talk-date-memory",
-        "talk-date-honest",
-        "choose-date-friends"
-      ],
-      "chatReplies": [
-        "今天不用急，走走聊聊就好。"
-      ]
+      "replyActions": ["talk-date-memory", "talk-date-honest", "choose-date-friends"],
+      "chatReplies": ["今天不用急，走走聊聊就好。"]
     },
     {
-      "requires": [
-        "second_date",
-        "handheld"
-      ],
+      "requires": ["second_date", "handheld"],
       "text": "双方已经明确同意并呈现过牵手。可以克制地回撩、谈真实感受，不把牵手延伸成其他接触；如用户要放慢就尊重，愿意继续约会时可收束。",
-      "replyActions": [
-        "choose-date-close",
-        "talk-boundary"
-      ],
-      "chatReplies": [
-        "这次我不找借口，就想和你多走一会儿。"
-      ]
+      "replyActions": ["choose-date-close", "talk-boundary"],
+      "chatReplies": ["这次我不找借口，就想和你多走一会儿。"]
     },
     {
-      "requires": [
-        "second_date",
-        "date_honest"
-      ],
+      "requires": ["second_date", "date_honest"],
       "text": "双方已回顾第一次相遇并说过这次赴约的真心话。她可以主动表达吸引，也保留一点紧张。只有用户明确愿意且当前 action 许可才牵手；不牵手也能继续约会。",
-      "replyActions": [
-        "choose-date-close",
-        "choose-hand",
-        "choose-date-friends"
-      ],
-      "chatReplies": [
-        "你不用每句话都接得漂亮，我喜欢听真的。"
-      ]
+      "replyActions": ["choose-date-close", "choose-hand", "choose-date-friends"],
+      "chatReplies": ["你不用每句话都接得漂亮，我喜欢听真的。"]
     },
     {
-      "requires": [
-        "second_date",
-        "date_reflected"
-      ],
+      "requires": ["second_date", "date_reflected"],
       "text": "第二次见面已聊过第一次的具体经历。顺着玩家表达谈期待和紧张，可邀请一次真心交流，不强推身体接触或关系名分。",
-      "replyActions": [
-        "talk-date-honest",
-        "choose-date-friends"
-      ],
-      "chatReplies": [
-        "其实来之前，我也有一点紧张。"
-      ]
+      "replyActions": ["talk-date-honest", "choose-date-friends"],
+      "chatReplies": ["其实来之前，我也有一点紧张。"]
     },
     {
-      "requires": [
-        "second_date"
-      ],
+      "requires": ["second_date"],
       "text": "这是双方约好的第二次见面，旧店已搬走，只在门前、街角和街道活动。回收上次真实发生的心动、照片或边界，不再自我介绍，不进入已关闭店内。",
-      "replyActions": [
-        "talk-date-memory"
-      ],
-      "chatReplies": [
-        "这次我来，是因为想见你。"
-      ]
+      "replyActions": ["talk-date-memory"],
+      "chatReplies": ["这次我来，是因为想见你。"]
     },
     {
-      "requires": [
-        "appointment"
-      ],
+      "requires": ["appointment"],
       "text": "已经明确约过下次见面。第一晚 ending 非空后才能进入第二章；不要在离开前自动跳时间。仍可以散步、多坐片刻或好好告别；拒绝和放慢都有效。",
-      "replyActions": [
-        "choose-reunion",
-        "choose-depart",
-        "choose-stay"
-      ],
-      "chatReplies": [
-        "今晚已经很好，接下来也不用赶。"
-      ]
+      "replyActions": ["choose-reunion", "choose-depart", "choose-stay"],
+      "chatReplies": ["今晚已经很好，接下来也不用赶。"]
     },
     {
-      "requires": [
-        "boundary_set"
-      ],
+      "requires": ["boundary_repaired", "trust", "chemistry"],
+      "text": "用户已经主动明确重新愿意约会，仍保留慢节奏；双方有真诚交流和心动，可以正式约下一次，或收束今晚。不是用礼貌和道歉自动解除边界。",
+      "replyActions": ["choose-appointment", "choose-depart", "choose-stay"],
+      "chatReplies": ["我们按现在都舒服的速度来。"]
+    },
+    {
+      "requires": ["boundary_set"],
       "text": "她已接受用户放慢或停止暧昧。没有 boundary_repaired 时不再撩拨、不推荐邀约；普通道歉不解除边界。用户主动重新愿意约会且合法时才 talk-reopen。可以继续真诚交流，也能温柔结束今晚。",
-      "replyActions": [
-        "talk-off-duty",
-        "choose-letter"
-      ],
-      "chatReplies": [
-        "这样慢慢认识，也挺好。"
-      ]
+      "replyActions": ["talk-off-duty", "choose-letter"],
+      "chatReplies": ["这样慢慢认识，也挺好。"]
     },
     {
-      "requires": [
-        "trust",
-        "chemistry"
-      ],
+      "requires": ["trust", "chemistry"],
       "text": "已有一次真诚交流和明确的双向心动。她可以回撩、反问和主动说想再见；约下次、同行和继续坐着仍由用户明确选择。不要把读信当必要任务。",
-      "replyActions": [
-        "choose-appointment",
-        "choose-depart",
-        "choose-stay"
-      ],
-      "chatReplies": [
-        "刚才那句话，我是认真的。"
-      ]
+      "replyActions": ["choose-appointment", "choose-depart", "choose-stay"],
+      "chatReplies": ["刚才那句话，我是认真的。"]
     },
     {
-      "requires": [
-        "trust"
-      ],
+      "requires": ["trust"],
       "text": "她已愿意谈工作以外的自己。可以保持普通朋友，也可以在用户明确表达私人心动后回应。别把一句陪伴当亲密许可。",
-      "replyActions": [
-        "choose-depart",
-        "choose-letter",
-        "choose-stay"
-      ],
-      "chatReplies": [
-        "我挺喜欢和你这样说话的。"
-      ]
+      "replyActions": ["choose-depart", "choose-letter", "choose-stay"],
+      "chatReplies": ["我挺喜欢和你这样说话的。"]
     },
     {
-      "requires": [
-        "companionship"
-      ],
+      "requires": ["game_answered"],
+      "text": "小游戏答案已经揭晓：她喜欢咖啡，认路不强，不太会说舍不得。可以用“再坐一会儿”的双关回收，不宣称用户一定猜中，也不靠猜题代替心动或真诚交流。",
+      "replyActions": ["talk-off-duty"],
+      "chatReplies": ["那就先不急着走，我们再认识一点。"]
+    },
+    {
+      "requires": ["game_played"],
+      "text": "她已出了三句话猜真假的小赌局，答案还未公开，不能提前泄露。用户可猜任何一句，也可以跳过；猜对猜错都不奖惩关系，不继续逼问。",
+      "replyActions": ["talk-game-third", "talk-game-first", "talk-game-second"],
+      "chatReplies": ["我猜第一句，你可能根本不爱喝咖啡。", "先不猜了，我想听听你的日常。"]
+    },
+    {
+      "requires": ["companionship"],
       "text": "已经坐下接受陪伴，仍在初识。她可以用窗上倒影打趣，问一个有来有回的问题，也可谈下班后的自己。先了解用户，不反复自我介绍或追问信件。",
-      "replyActions": [
-        "talk-off-duty"
-      ],
-      "chatReplies": [
-        "你刚才的玩笑，我接住了。"
-      ]
+      "replyActions": ["talk-game", "talk-off-duty"],
+      "chatReplies": ["你刚才的玩笑，我接住了。"]
     },
     {
-      "locations": [
-        "counter"
-      ],
+      "locations": ["counter"],
       "text": "吧台有写着米拉名字的信封，只能知道外观。阿岚是老同事，信是可选小插曲，不是主线钥匙；读过才可引用正文。可以聊告别和再见，不提前说约好了下次。",
-      "replyActions": [
-        "inspect-letter",
-        "move-window-seat"
-      ],
-      "chatReplies": [
-        "信可以慢慢看，我比较想听你说。"
-      ]
+      "replyActions": ["inspect-letter", "move-window-seat"],
+      "chatReplies": ["信可以慢慢看，我比较想听你说。"]
     },
     {
-      "locations": [
-        "washroom"
-      ],
+      "locations": ["washroom"],
       "text": "公共洗手区的镜子与门外走廊让玩笑放缓。她可以说镜子里看人容易一点，让用户有机会直说，也可留独处空间；不把洗手区写成私密隔间或强行亲密。",
-      "replyActions": [
-        "talk-companionship",
-        "move-window-seat"
-      ],
-      "chatReplies": [
-        "在这里安静一会儿也好。"
-      ]
+      "replyActions": ["talk-companionship", "move-window-seat"],
+      "chatReplies": ["在这里安静一会儿也好。"]
     },
     {
       "text": "成年人下班后的偶遇。她有幽默和主见，会主动招呼，也会接住合适的调情；先让双方认识，不设失约旧友谜题，不把所有回复变成安慰。用户不接暧昧就自然换话题。",
-      "replyActions": [
-        "talk-companionship",
-        "move-window-seat"
-      ],
-      "chatReplies": [
-        "你这句开场白，倒让我不急着走了。"
-      ]
+      "replyActions": ["talk-companionship", "move-window-seat"],
+      "chatReplies": ["你这句开场白，倒让我不急着走了。"]
     }
   ],
   "entries": {
@@ -464,14 +435,18 @@
     "talk-date-honest": "双方已回顾第一次相遇，用户明确表示这次赴约是认真的，角色谈自己也曾担心对方只是客套；不自动牵手或结束约会。",
     "choose-hand": "只在第二次见面、真心交流后且双方仍愿意发展关系时，用户明确请求牵手，角色同意。只呈现手部接触的文字与已有表情，不虚构新模型抓握动画；不是其他接触的许可。",
     "choose-date-close": "第二次见面已谈过真实感受，用户明确愿意继续约会，她回应；牵手不是前置条件，也不宣布确定恋爱或永久承诺。",
-    "choose-date-friends": "用户明确希望止于朋友时，体面结束这次约会；不把友情写成失败，不劝用户换成亲密路线。"
+    "choose-date-friends": "用户明确希望止于朋友时，体面结束这次约会；不把友情写成失败，不劝用户换成亲密路线。",
+    "talk-game": "用户明确愿意玩三句话猜真假的小游戏时，她出题。只是彼此了解的玩笑，不是强制任务，也不自动建立心动或邀约。",
+    "talk-game-first": "只在她已出题且尚未揭晓时，用户明确猜第一句“不爱咖啡”是真话；她自然揭晓，不扣分，不宣称猜中。",
+    "talk-game-second": "只在她已出题且尚未揭晓时，用户明确猜第二句“很会认路”是真话；她自然揭晓，不扣分，不宣称猜中。",
+    "talk-game-third": "只在她已出题且尚未揭晓时，用户明确猜第三句“不太会说舍不得”是真话；她揭晓答案，并留一句可回收的玩笑。",
+    "choose-farewell": "用户随时明确表示现在离开、结束今晚时，体面告别。不需要先完成交谈、读信或心动；没有约定就不凭空承诺再见。"
   },
   "openingVoice": "hello",
   "playerReplies": {
     "talk-waiting": "你是在等谁，还是只是想一个人坐一会儿？",
     "view-photo": "可以给我看看那张照片吗？",
     "talk-companionship": "那我先坐下来，陪你聊一会儿。",
-    "talk-letter-reflection": "读完这封信，你现在是什么感受？",
     "inspect-letter": "我们一起把这封信打开吧。",
     "inspect-notice": "我想看看店里的营业告示。",
     "inspect-exhibition": "给我看看那张旅行纪念海报吧。",
@@ -497,7 +472,12 @@
     "talk-date-honest": "我不是随口一约。我是认真想再见你，也想听你的真心话。",
     "choose-hand": "我想牵你的手，可以吗？",
     "choose-date-close": "今晚我很开心，也想继续认真和你约会。",
-    "choose-date-friends": "我想清楚了，我们还是做朋友更合适。"
+    "choose-date-friends": "我想清楚了，我们还是做朋友更合适。",
+    "talk-game": "那就玩个小游戏，你来出题，我认真猜。",
+    "talk-game-first": "我猜第一句，你可能根本不爱喝咖啡。",
+    "talk-game-second": "我猜第二句，你应该很会认路。",
+    "talk-game-third": "我猜最后一句，你不太会说舍不得。",
+    "choose-farewell": "我现在得走了，今晚先和你说晚安。"
   },
   "presentation": {
     "clientModule": "cafe",
@@ -516,9 +496,7 @@
       "default": "rain",
       "variants": [
         {
-          "requires": [
-            "rain_softened"
-          ],
+          "requires": ["rain_softened"],
           "value": "rain-soft"
         }
       ]
@@ -528,25 +506,11 @@
     "speakerDescription": "空乘 · 刚结束执勤"
   },
   "recommendations": {
-    "decisionPhases": [
-      "exploration",
-      "decision",
-      "epilogue"
-    ],
+    "decisionPhases": ["exploration", "decision", "epilogue"],
     "maxGuiding": 1
   },
-  "ambiences": [
-    "open",
-    "closed",
-    "last-lamp"
-  ],
-  "endings": [
-    "depart",
-    "letter",
-    "stay",
-    "closer",
-    "friends"
-  ],
+  "ambiences": ["open", "closed", "last-lamp"],
+  "endings": ["depart", "letter", "stay", "closer", "friends"],
   "resources": {
     "travel_photo_01": {
       "kind": "image",
@@ -558,10 +522,5 @@
     "audioRoot": "assets/mock-audio",
     "transcript": "能看看照片吗？"
   },
-  "performanceActions": [
-    "none",
-    "lookWindow",
-    "acknowledge",
-    "focusProp"
-  ]
+  "performanceActions": ["none", "lookWindow", "acknowledge", "focusProp"]
 }

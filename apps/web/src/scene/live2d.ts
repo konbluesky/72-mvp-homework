@@ -6,6 +6,7 @@ import {
   type HaruParameter,
 } from './live2d-manifest.js';
 import { loadRuntime, prepareModel, type PreparedModel } from './live2d-loader.js';
+import { bindHaruArmParts, haruHands } from '../webgal/characters/profiles/haru-hands.js';
 import type { Live2DApplication, Live2DModelPort, Live2DRuntime } from './live2d-types.js';
 
 export interface Live2DOptions {
@@ -66,6 +67,7 @@ export function createLive2DRenderer(
       assetsCleaned = false;
     let projection = neutral();
     let write: ReturnType<typeof bindHaruParameters> | undefined;
+    let writeArmParts: ReturnType<typeof bindHaruArmParts> | undefined;
     let beforeUpdate: (() => void) | undefined;
     let frameTime = performance.now();
     let interactionAt = frameTime;
@@ -167,6 +169,7 @@ export function createLive2DRenderer(
         )
           throw new Error('LIVE2D_MODEL_BOUNDS');
         write = bindHaruParameters(internal.coreModel);
+        writeArmParts = bindHaruArmParts(internal.coreModel);
         internal.motionManager.stopAllMotions();
         app.stage.addChild(model);
         beforeUpdate = () => {
@@ -189,12 +192,19 @@ export function createLive2DRenderer(
                 ? faceBlend
                 : blend;
             const value =
-              id === 'ParamMouthOpenY' || id === 'ParamEyeLOpen' || id === 'ParamEyeROpen'
+              id === 'ParamMouthOpenY' ||
+              id === 'ParamEyeLOpen' ||
+              id === 'ParamEyeROpen' ||
+              id.startsWith('ParamArm') ||
+              id.startsWith('ParamHand')
                 ? target
                 : (smoothed.get(id) ?? target) + (target - (smoothed.get(id) ?? target)) * weight;
             smoothed.set(id, value);
             write(id, value);
           }
+          writeArmParts?.(
+            haruHands(projection, (now - interactionAt) / 1000, reduced.matches).weight,
+          );
         };
         internal.on('beforeModelUpdate', beforeUpdate);
         const resize = () => {
@@ -226,6 +236,8 @@ export function createLive2DRenderer(
               mouthOpen: Number.isFinite(frame.mouthOpen) ? frame.mouthOpen : 0,
             };
             if (projection.interaction !== 'speaking') write?.('ParamMouthOpenY', 0);
+            if (projection.interaction !== 'thinking' || projection.action !== 'none')
+              writeArmParts?.(0);
           },
           cancel() {
             if (!active) return;
@@ -240,6 +252,7 @@ export function createLive2DRenderer(
             internal.motionManager.stopAllMotions();
             smoothed.clear();
             write?.('ParamMouthOpenY', 0);
+            writeArmParts?.(0);
           },
           dispose,
         };

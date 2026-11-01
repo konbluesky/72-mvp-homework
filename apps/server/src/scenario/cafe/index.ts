@@ -8,7 +8,11 @@ import type { ScenarioDefinition } from '../ports.js';
 import { createMockProviders } from './mock.js';
 import { InkScenario } from '../runtime/ink.js';
 import { scenarioContext, validateReply } from '../runtime/context.js';
-import { ScenarioPresentationSchema, ScenarioResourceSchema } from '../runtime/content-schema.js';
+import {
+  ScenarioPresentationSchema,
+  ScenarioResourceSchema,
+  ScenarioThoughtsSchema,
+} from '../runtime/content-schema.js';
 
 const flag = z
   .string()
@@ -62,6 +66,7 @@ const manifest = z
         })
         .strict(),
     ),
+    thoughts: ScenarioThoughtsSchema,
     projection: z
       .object({
         flags: z.array(flag).max(20),
@@ -144,6 +149,7 @@ const runtime = new InkScenario({
   projection: manifest.projection,
   directorNotes: manifest.directorNotes,
   voices: manifest.voices,
+  thoughts: manifest.thoughts,
   actionDescriptions: manifest.actionDescriptions,
   playerReplies: manifest.playerReplies,
   documents: lore,

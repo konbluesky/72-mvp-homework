@@ -5,6 +5,7 @@ import type PixiStage from '../../engine/webgal/Core/controller/stage/pixi/PixiC
 import type { CharacterFrame } from '../../scene/character.js';
 
 import { characterProfile, expressiveCharacterPose, type CharacterId } from './profiles/index.js';
+import { bindHaruArmParts, haruHands } from './profiles/haru-hands.js';
 export type { CharacterId } from './profiles/index.js';
 let coreLoad: Promise<void> | undefined;
 function coreReady(): Promise<void> {
@@ -80,6 +81,7 @@ export class CharacterDriver {
   private actionAt = performance.now();
   private interactionAt = this.actionAt;
   private ranges = new Map<string, ParameterRange>();
+  private writeArmParts?: ReturnType<typeof bindHaruArmParts>;
   private target = { x: 0, y: 0, height: 1, visible: false, lookDirection: 0 };
   private selected?: CharacterId;
   private readonly key = `interactive-character-${crypto.randomUUID()}`;
@@ -108,10 +110,12 @@ export class CharacterDriver {
     return [...this.ranges.values()];
   }
   update(frame: CharacterFrame) {
+    if (this.disposed || !this.owner()) return;
     if (frame.action !== this.frame.action) this.actionAt = performance.now();
     if (frame.interaction !== this.frame.interaction) this.interactionAt = performance.now();
     if (frame.interaction !== 'idle' || frame.action !== 'none') this.stopPreview();
     this.frame = { ...frame };
+    if (frame.interaction !== 'thinking' || frame.action !== 'none') this.writeArmParts?.(0);
   }
   layout(target: Omit<typeof this.target, 'lookDirection'> & { lookDirection?: number }) {
     this.target = { ...target, lookDirection: target.lookDirection ?? 0 };
@@ -160,6 +164,7 @@ export class CharacterDriver {
     try {
       const core = candidate.internalModel.coreModel;
       const ranges = bindParameters(core, characterProfile(id).parameters);
+      const writeArmParts = id === 'haru' ? bindHaruArmParts(core) : undefined;
       candidate.internalModel.motionManager.stopAllMotions();
       candidate.internalModel.setBlinkParam({
         ...sdk.baseBlinkParam,
@@ -177,6 +182,7 @@ export class CharacterDriver {
       this.values.clear();
       this.model = candidate;
       this.selected = id;
+      this.writeArmParts = writeArmParts;
       this.gestureParameters = [
         ...new Set(
           Object.values(characterProfile(id).gestures).flatMap((gesture) => Object.keys(gesture)),
@@ -348,6 +354,14 @@ export class CharacterDriver {
     }
     const r = this.ranges.get('ParamMouthOpenY')!;
     core.setParameterValueByIndex(r.index, r.min + (r.max - r.min) * pose.mouthOpen);
+    if (id === 'haru' && !this.rawUntil) {
+      const hands = haruHands(f, (performance.now() - this.interactionAt) / 1000, reduced);
+      for (const [parameter, value] of Object.entries(hands.parameters)) {
+        const range = this.ranges.get(parameter)!;
+        core.setParameterValueByIndex(range.index, Math.max(range.min, Math.min(range.max, value)));
+      }
+      this.writeArmParts?.(hands.weight);
+    }
     for (const part of this.presentation.hiddenParts?.[id] ?? []) {
       const index = core.getPartIndex(part);
       if (Number.isInteger(index) && index >= 0 && index < core.getPartCount())
@@ -362,5 +376,6 @@ export class CharacterDriver {
     this.model?.destroy({ children: true, texture: false, baseTexture: false });
     this.root.destroy({ children: true });
     this.model = undefined;
+    this.writeArmParts = undefined;
   }
 }

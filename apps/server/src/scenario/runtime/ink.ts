@@ -40,6 +40,7 @@ export interface InkContent {
     chatReplies?: string[];
   }>;
   voices: Record<string, { text: string; emotion: string; action: string }>;
+  thoughts?: Record<string, string>;
   presentation: {
     character: string;
     environment: { default: string; variants: Array<{ requires: string[]; value: string }> };
@@ -251,10 +252,21 @@ export class InkScenario {
     while (story.canContinue) {
       if (++steps > 32 || beats.length >= 10)
         throw new AppError('INVALID_PLAN', 500, '故事片段过长。');
-      const caption = story.Continue()?.trim() ?? '';
-      if (!caption) continue;
-      if (caption.length > 240) throw new AppError('INVALID_PLAN', 500, '故事片段过长。');
+      const narration = story.Continue()?.trim() ?? '';
+      if (!narration) continue;
       const tags: string[] = (story.currentTags ?? []).map((tag: string) => tag.trim());
+      const thoughts = tags.filter((tag) => tag.startsWith('thought:'));
+      if (thoughts.length > 1)
+        throw new AppError('INVALID_PLAN', 500, '故事片段包含重复心声。');
+      const thoughtId = thoughts[0]?.slice(8);
+      const thought =
+        thoughtId && Object.hasOwn(this.content.thoughts ?? {}, thoughtId)
+          ? this.content.thoughts![thoughtId]
+          : undefined;
+      if (thoughtId && !thought)
+        throw new AppError('INVALID_PLAN', 500, '心声没有准备好。');
+      const caption = thought ? `旁白｜${narration}\n\n心声｜${thought}` : narration;
+      if (caption.length > 240) throw new AppError('INVALID_PLAN', 500, '故事片段过长。');
       const cues = tags.filter((tag) => tag.startsWith('cue:'));
       if (cues.length !== 1) throw new AppError('INVALID_PLAN', 500, '故事片段缺少呈现锚点。');
       const [, type, value] = cues[0]!.split(':');

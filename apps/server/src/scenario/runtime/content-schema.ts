@@ -7,6 +7,12 @@ export const ScenarioContentIdSchema = z
   .max(80)
   .regex(/^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$/);
 
+/** Authored, audience-only text; never part of the browser's public manifest. */
+export const ScenarioThoughtsSchema = z
+  .record(ScenarioContentIdSchema, z.string().trim().min(1).max(120))
+  .refine((thoughts) => Object.keys(thoughts).length <= 64)
+  .default({});
+
 const environmentVariant = z.object({ value: ScenarioContentIdSchema }).strict();
 const environment = z
   .object({

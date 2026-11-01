@@ -3,7 +3,7 @@ import { drawCounter } from './foreground.js';
 import type { LocationDefinition } from '../../location.js';
 export const counter: LocationDefinition = {
   label: metadata.locations['counter'],
-  description: '托盘旁放着一封写给米拉的信。',
+  description: '托盘里有写给米拉的信，也可以留下一句晚安或下一次的约定。',
   x: 1040,
   y: 1700,
   height: 1750,
