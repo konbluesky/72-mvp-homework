@@ -1,3 +1,5 @@
+import { defaultScenario } from './scenario/index.js';
+import type { ScenarioDefinition } from './scenario/ports.js';
 import Fastify, { type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
@@ -16,11 +18,12 @@ import {
   ReceiptsRequestSchema,
   ReceiptsResponseSchema,
   SessionCreatedSchema,
+  CreateSessionSchema,
   SessionSnapshotSchema,
   RouteParamsSchema,
   TurnParamsSchema,
   MediaParamsSchema,
-  TextInputSchema,
+  JsonInputSchema,
   AudioInputMetadataSchema,
   HealthSchema,
   ConnectionProbeSchema,
@@ -44,6 +47,7 @@ import { abortable } from './graphs/abortable.js';
 import { transcribeRecording } from './graphs/transcription.js';
 
 export interface AppOptions {
+  scenario?: ScenarioDefinition;
   config?: Config;
   providers?: ProviderSet;
   media?: MediaService;
@@ -69,9 +73,11 @@ const errors = {
 
 export async function createApp(options: AppOptions = {}) {
   const config = options.config ?? loadConfig();
-  const providers = options.providers ?? createProviders(config);
   const media = options.media ?? createMediaService(config);
-  const sessions = options.sessions ?? new SessionManager(config);
+  const scenario = options.scenario ?? options.sessions?.scenario ?? defaultScenario;
+  const providers = options.providers ?? createProviders(config, fetch, scenario.mockProviders);
+  const sessions = options.sessions ?? new SessionManager(config, { scenario });
+  if (sessions.scenario !== scenario) throw new Error('Session and Graph scenario must match.');
   const app = Fastify({
     logger:
       options.logger === false
@@ -121,7 +127,7 @@ export async function createApp(options: AppOptions = {}) {
           requestBody: {
             required: true,
             content: {
-              'application/json': { schema: z.toJSONSchema(TextInputSchema) },
+              'application/json': { schema: z.toJSONSchema(JsonInputSchema) },
               'multipart/form-data': {
                 schema: {
                   type: 'object',
@@ -318,18 +324,25 @@ export async function createApp(options: AppOptions = {}) {
   }));
   app.post(
     '/api/sessions',
-    { schema: { response: { 201: SessionCreatedSchema, ...errors } } },
+    {
+      schema: {
+        body: CreateSessionSchema.optional(),
+        response: { 201: SessionCreatedSchema, ...errors },
+      },
+    },
     async (request, reply) => {
       const now = Date.now();
       const times = (creationTimes.get(request.ip) ?? []).filter((time) => time > now - 60_000);
-      if (times.length >= config.MAX_SESSIONS_PER_MINUTE)
+      if (config.RATE_LIMIT_ENABLED && times.length >= config.MAX_SESSIONS_PER_MINUTE)
         throw new AppError('RATE_LIMITED', 429, '来访有些频繁，请稍后再试。', true);
-      if (creationTimes.size >= 1000 && !creationTimes.has(request.ip))
+      if (config.RATE_LIMIT_ENABLED && creationTimes.size >= 1000 && !creationTimes.has(request.ip))
         throw new AppError('CAPACITY_EXCEEDED', 503, '店里暂时有些忙，请稍后再来。', true);
-      creationTimes.set(request.ip, [...times, now]);
-      return reply
-        .status(201)
-        .send({ ...sessions.create(), capabilities: { voiceInput: Boolean(providers.stt) } });
+      const created = sessions.create(request.body?.entry ?? 'story');
+      if (config.RATE_LIMIT_ENABLED) creationTimes.set(request.ip, [...times, now]);
+      return reply.status(201).send({
+        ...created,
+        capabilities: { voiceInput: Boolean(providers.stt) },
+      });
     },
   );
   const security = [{ sessionToken: [] }];
@@ -480,7 +493,7 @@ export async function createApp(options: AppOptions = {}) {
       schema: {
         security,
         params: TurnParamsSchema,
-        body: TextInputSchema.nullish(),
+        body: JsonInputSchema.nullish(),
         description:
           'POST SSE. The ready event precedes business events. reply.done means generation ended, never presentation. Multipart accepts metadata JSON and one audio file.',
         response: {
@@ -500,6 +513,9 @@ export async function createApp(options: AppOptions = {}) {
         input.generation,
         input.inputId,
         input.digest,
+        {
+          expectAudio: input.input.kind !== 'interaction',
+        },
       );
       turn.abort.signal.addEventListener(
         'abort',
@@ -533,7 +549,7 @@ export async function createApp(options: AppOptions = {}) {
       });
       try {
         await runConversation(
-          { config, providers, media, sessions, logger: request.log },
+          { config, providers, media, sessions, logger: request.log, scenario },
           session,
           turn,
           input.input,
@@ -576,5 +592,5 @@ export async function createApp(options: AppOptions = {}) {
     await media.close();
   });
   await app.ready();
-  return Object.assign(app, { services: { config, providers, media, sessions } });
+  return Object.assign(app, { services: { config, providers, media, sessions, scenario } });
 }

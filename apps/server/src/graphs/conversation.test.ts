@@ -1,3 +1,4 @@
+import { cafeScenario } from '../scenario/cafe/index.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Receipt, ServerEvent } from '@mira/protocol';
 import { runConversation } from './conversation.js';
@@ -16,13 +17,20 @@ import type { Fetch } from '../providers/http.js';
 
 function setup(providers: ProviderSet, overrides: Record<string, string> = {}) {
   const config = testConfig(overrides);
-  const sessions = new SessionManager(config);
+  const sessions = new SessionManager(config, { scenario: cafeScenario });
   const created = sessions.create();
   const session = sessions.authenticate(created.sessionId, `Bearer ${created.sessionToken}`);
   sessions.begin(session, { generation: 1, turnId: 'turn', receipts: [], frozenTurns: [] });
   const turn = sessions.startInput(session, 'turn', 1, 'input', 'digest');
   const media = testMedia(config);
-  const dependencies = { config, providers, sessions, media, logger: { info: () => undefined } };
+  const dependencies = {
+    scenario: cafeScenario,
+    config,
+    providers,
+    sessions,
+    media,
+    logger: { info: () => undefined },
+  };
   const events: Array<Pick<ServerEvent, 'type' | 'payload'>> = [];
   const publish = async (event: Pick<ServerEvent, 'type' | 'payload'>) => {
     events.push(event);
@@ -258,47 +266,68 @@ describe('real LangGraph orchestration', () => {
     expect(ctx.session.history.filter((entry) => entry.role === 'assistant')).toHaveLength(2);
     await ctx.cleanup();
   });
-  it('waits for actual photo presentation and removes the environment event after photo failure', async () => {
-    const plan = {
-      suggestions: [],
-      segments: [
-        {
-          text: '给你看照片。',
-          emotion: 'relieved',
-          action: 'offerPhoto',
-          events: [{ type: 'photo', resourceId: 'travel_photo_01' }],
-        },
-        {
-          text: '我们继续聊吧。',
-          emotion: 'relieved',
-          action: 'none',
-          events: [{ type: 'environment', environment: 'rain-soft' }],
-        },
-      ],
-    };
-    const ctx = setup(testProviders({ plan: async () => plan }));
+  it('resolves structured navigation inside LangGraph without invoking a paid planner or TTS', async () => {
+    const planner = vi.fn(async () => oneSegment),
+      tts = vi.fn(async () => ({ bytes: wav(), mimeType: 'audio/wav' }));
+    const ctx = setup(testProviders({ plan: planner, synthesize: tts }));
     await runConversation(
       ctx.dependencies,
       ctx.session,
       ctx.turn,
-      { kind: 'text', text: '能看看照片吗？' },
-      async (event) => {
-        await ctx.publish(event);
-        if (event.type === 'audio.ready' && event.payload.events[0]?.type === 'photo') {
-          const receipt: Receipt = {
-            ...ctx.turn.identity,
-            receiptId: 'photo-failed',
-            targetId: event.payload.events[0].eventId,
-            kind: 'photo',
-            status: 'failed',
-          };
-          ctx.dependencies.sessions.receipts(ctx.session, [receipt]);
-        }
-      },
+      { kind: 'interaction', interaction: { kind: 'move', location: 'counter' } },
+      ctx.publish,
     );
-    const second = ctx.events.filter((event) => event.type === 'audio.ready')[1];
-    expect(second?.payload).toMatchObject({ events: [] });
-    expect(ctx.session.facts.rain_softened).toBe(false);
+    expect(planner).not.toHaveBeenCalled();
+    expect(tts).not.toHaveBeenCalled();
+    expect(ctx.events[0]).toMatchObject({
+      type: 'presentation.ready',
+      payload: {
+        events: expect.arrayContaining([
+          expect.objectContaining({ type: 'location', location: 'counter' }),
+        ]),
+      },
+    });
+    expect(ctx.session.story.location).toBe('lobby');
+    expect(ctx.events.at(-1)).toMatchObject({ type: 'reply.done', payload: { segmentCount: 0 } });
+    await ctx.cleanup();
+  });
+  it('rejects model world mutations and resolves a natural-language action with one planner call', async () => {
+    const invalid = vi.fn(async () => ({
+      ...oneSegment,
+      segments: [
+        { ...oneSegment.segments[0], events: [{ type: 'photo', resourceId: 'travel_photo_01' }] },
+      ],
+    }));
+    const bad = setup(testProviders({ plan: invalid }));
+    await expect(
+      runConversation(
+        bad.dependencies,
+        bad.session,
+        bad.turn,
+        { kind: 'text', text: '你好' },
+        bad.publish,
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID_PLAN' });
+    expect(invalid).toHaveBeenCalledTimes(2);
+    expect(bad.events).toHaveLength(0);
+    await bad.cleanup();
+    const plan = vi.fn(async () => ({
+      actionId: 'move-counter',
+      actionRequest: { quote: '去吧台吧', confirmed: true },
+      segments: [],
+      suggestions: [],
+    }));
+    const ctx = setup(testProviders({ plan }));
+    await runConversation(
+      ctx.dependencies,
+      ctx.session,
+      ctx.turn,
+      { kind: 'text', text: '去吧台吧' },
+      ctx.publish,
+    );
+    expect(plan).toHaveBeenCalledOnce();
+    expect(ctx.events.map((event) => event.type)).toEqual(['presentation.ready', 'reply.done']);
+    expect(ctx.session.story.location).toBe('lobby');
     await ctx.cleanup();
   });
   it('transcribes real uploaded bytes inside the graph and labels simulated recognition', async () => {
@@ -363,4 +392,151 @@ it('clears the first budget after audio readiness and independently bounds the n
   await rejected;
   expect(ctx.events).toHaveLength(1);
   await ctx.cleanup();
+});
+
+// Regression sources only: runtime execution requires explicit user authorization.
+describe('conversational action confirmation', () => {
+  const text = '我们一起把这封信打开吧。';
+  const proposal = {
+    actionId: 'inspect-letter',
+    actionRequest: { quote: text, confirmed: true },
+    segments: [],
+    suggestions: [],
+  };
+  function atCounter(providers: ProviderSet) {
+    const ctx = setup(providers);
+    for (const beat of cafeScenario.propose('move-counter', ctx.session.narrative))
+      ctx.session.narrative = cafeScenario.accept(ctx.session.narrative, beat.checkpoint);
+    ctx.session.story = cafeScenario.frame(ctx.session.narrative).story;
+    return ctx;
+  }
+  it('reviews explicit text intent inside Graph, then commits only receipt-confirmed beats', async () => {
+    const plan = vi.fn<ProviderSet['planner']['plan']>(async () => proposal);
+    const ctx = atCounter(testProviders({ plan }));
+    const presented = async (event: Pick<ServerEvent, 'type' | 'payload'>) => {
+      await ctx.publish(event);
+      const targets =
+        event.type === 'audio.ready'
+          ? [
+              {
+                targetId: (event.payload as import('@mira/protocol').AudioReadyPayload).segmentId,
+                kind: 'segment' as const,
+                mode: 'audio' as const,
+              },
+            ]
+          : event.type === 'presentation.ready'
+            ? (event.payload as import('@mira/protocol').PresentationReadyPayload).events.map(
+                (item) => ({ targetId: item.eventId, kind: item.type }),
+              )
+            : [];
+      ctx.dependencies.sessions.receipts(
+        ctx.session,
+        targets.map((target, index) => ({
+          ...ctx.turn.identity,
+          ...target,
+          receiptId: `receipt-${ctx.events.length}-${index}`,
+          status: 'presented',
+        })),
+      );
+    };
+    try {
+      await runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        { kind: 'text', text },
+        presented,
+      );
+      expect(plan).toHaveBeenCalledTimes(2);
+      expect(plan.mock.calls[1]?.[0]).toMatchObject({
+        allowedActions: [expect.objectContaining({ id: 'inspect-letter' })],
+      });
+      expect(ctx.session.story.revealed).toContain('letter');
+      expect(ctx.events.at(-1)?.type).toBe('reply.done');
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+  it('turns an unconfirmed or ambiguous proposal into character dialogue without a world event', async () => {
+    const ambiguous = '好';
+    const plan = vi
+      .fn<ProviderSet['planner']['plan']>()
+      .mockResolvedValueOnce({ ...proposal, actionRequest: { quote: ambiguous, confirmed: true } })
+      .mockResolvedValueOnce({ ...oneSegment, actionId: null, actionRequest: null });
+    const ctx = atCounter(testProviders({ plan }));
+    try {
+      await runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        { kind: 'text', text: ambiguous },
+        ctx.publish,
+      );
+      expect(ctx.events.some((event) => event.type === 'presentation.ready')).toBe(false);
+      expect(ctx.session.story.revealed).not.toContain('letter');
+      expect(ctx.events.at(-1)?.type).toBe('reply.done');
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+  it('cannot execute an approval returned after a newer turn superseded confirmation', async () => {
+    const reviewing = deferred<void>();
+    const late = deferred<unknown>();
+    const plan = vi
+      .fn<ProviderSet['planner']['plan']>()
+      .mockResolvedValueOnce(proposal)
+      .mockImplementationOnce(async () => {
+        reviewing.resolve();
+        return late.promise;
+      });
+    const ctx = atCounter(testProviders({ plan }));
+    try {
+      const task = runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        { kind: 'text', text },
+        ctx.publish,
+      );
+      const rejected = expect(task).rejects.toMatchObject({ code: 'TURN_CANCELLED' });
+      await reviewing.promise;
+      ctx.dependencies.sessions.begin(ctx.session, {
+        generation: 2,
+        turnId: 'newer',
+        receipts: [],
+        frozenTurns: [],
+      });
+      late.resolve(proposal);
+      await rejected;
+      expect(ctx.session.current?.identity.turnId).toBe('newer');
+      expect(ctx.events).toHaveLength(0);
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+  it('rejects an action if its planning revision changed during confirmation', async () => {
+    const ctx = atCounter(testProviders());
+    let calls = 0;
+    ctx.dependencies.providers.planner.plan = async () => {
+      if (++calls === 2) {
+        const beat = cafeScenario.propose('move-window-seat', ctx.session.narrative)[0]!;
+        ctx.session.narrative = cafeScenario.accept(ctx.session.narrative, beat.checkpoint);
+      }
+      return proposal;
+    };
+    try {
+      await expect(
+        runConversation(
+          ctx.dependencies,
+          ctx.session,
+          ctx.turn,
+          { kind: 'text', text },
+          ctx.publish,
+        ),
+      ).rejects.toMatchObject({ code: 'STALE_TURN' });
+      expect(ctx.events).toHaveLength(0);
+    } finally {
+      await ctx.cleanup();
+    }
+  });
 });

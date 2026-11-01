@@ -76,6 +76,113 @@ const tick = async () => {
 };
 afterEach(() => vi.useRealTimers());
 describe('single playback scheduler', () => {
+  it('removes unconfirmed narration when a pending milestone is interrupted', async () => {
+    const pending = deferred<void>();
+    const view: Partial<PlaybackView> = {};
+    const receipt = vi.fn();
+    const scheduler = new PlaybackScheduler({
+      audio: {
+        prepare: async () => ({ start: () => () => undefined }),
+        unlock: async () => undefined,
+        dispose: async () => undefined,
+      },
+      presentation: {
+        photo: async () => undefined,
+        environment: async () => undefined,
+        execute: () => pending.promise,
+        clear: () => undefined,
+      },
+      view: (next) => Object.assign(view, next),
+      receipt,
+      failure: vi.fn(),
+    });
+    scheduler.begin(turn(1));
+    scheduler.enqueuePresentation(turn(1), {
+      presentationId: 'p',
+      caption: '尚未确认的剧情回应',
+      events: [{ type: 'beat', beatId: 'pending', eventId: 'e' }],
+    });
+    await tick();
+    scheduler.cancel();
+    pending.resolve();
+    await tick();
+    expect(view.narration).toBe('');
+    expect(receipt).not.toHaveBeenCalled();
+  });
+  it('keeps generated suggestions hidden until all audio and visual presentation completes', async () => {
+    const h = harness();
+    const visual = deferred<void>();
+    h.photo.mockImplementationOnce(() => visual.promise);
+    const choices = [{ label: '聊聊海边', draft: '那片海对你有什么特别的意义？' }];
+    h.scheduler.begin(turn(1));
+    h.scheduler.enqueue(
+      turn(1),
+      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'travel_photo_01' }]),
+    );
+    h.scheduler.generationDone(turn(1), choices);
+    h.ready('one');
+    await tick();
+    expect(h.view.suggestions).toEqual([]);
+    h.ended.get('one')?.();
+    await tick();
+    expect(h.view.suggestions).toEqual([]);
+    visual.resolve();
+    await tick();
+    expect(h.view.suggestions).toEqual(choices);
+    h.scheduler.cancel();
+    expect(h.view.suggestions).toEqual([]);
+  });
+  it('does not revive suggestions from an interrupted turn or a late generation-done event', async () => {
+    const h = harness();
+    const choices = [{ label: '继续聊', draft: '后来发生了什么？' }];
+    h.scheduler.begin(turn(1));
+    h.scheduler.enqueue(turn(1), segment('old'));
+    h.scheduler.generationDone(turn(1), choices);
+    h.ready('old');
+    await tick();
+    h.scheduler.begin(turn(2));
+    h.ended.get('old')?.();
+    h.scheduler.generationDone(turn(1), choices);
+    await tick();
+    expect(h.view.suggestions).toEqual([]);
+    h.scheduler.cancel();
+  });
+  it('withholds recommendations after a visual event fails even when its sentence finishes', async () => {
+    const h = harness();
+    h.photo.mockRejectedValueOnce(new Error('PHOTO_FAILED'));
+    h.scheduler.begin(turn(1));
+    h.scheduler.enqueue(
+      turn(1),
+      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'travel_photo_01' }]),
+    );
+    h.scheduler.generationDone(turn(1), [{ label: '继续聊', draft: '能说说这次旅行吗？' }]);
+    h.ready('one');
+    await tick();
+    h.ended.get('one')?.();
+    await tick();
+    expect(h.view.playback).toBe('idle');
+    expect(h.view.suggestions).toEqual([]);
+    h.scheduler.cancel();
+  });
+  it('shows suggestions after explicit text confirmation rather than before the user continues', async () => {
+    const h = harness();
+    const choices = [{ label: '继续聊', draft: '你愿意再说一点吗？' }];
+    h.scheduler.begin(turn(1));
+    h.scheduler.enqueue(turn(1), segment('one'));
+    h.scheduler.generationDone(turn(1), choices);
+    h.waiting.get('/api/media/one')?.resolve({
+      start: () => {
+        throw new Error('BLOCKED');
+      },
+    });
+    await tick();
+    await h.scheduler.useText();
+    expect(h.view.suggestions).toEqual([]);
+    await h.scheduler.continueText();
+    await tick();
+    expect(h.view.suggestions).toEqual(choices);
+    h.scheduler.cancel();
+  });
   it('removes the abort listener even when native audio start throws', async () => {
     const h = harness();
     h.scheduler.begin(turn(1));
@@ -154,7 +261,7 @@ describe('single playback scheduler', () => {
     expect(h.receipt).not.toHaveBeenCalled();
     h.scheduler.cancel();
   });
-  it('failed photo never becomes a presented fact and blocks environment across sentences', async () => {
+  it('failed photo never becomes a fact and independent weather is not coupled to photos', async () => {
     const h = harness();
     h.photo.mockRejectedValue(new Error('decode failed'));
     h.scheduler.begin(turn(1));
@@ -171,7 +278,7 @@ describe('single playback scheduler', () => {
     await tick();
     h.ended.get('one')?.();
     await tick();
-    expect(h.environment).not.toHaveBeenCalled();
+    expect(h.environment).toHaveBeenCalledOnce();
     expect(h.receipt.mock.calls.map((call) => call[0])).toContainEqual({
       targetId: 'photo1',
       kind: 'photo',
@@ -229,4 +336,36 @@ describe('single playback scheduler', () => {
     expect(h.receipt).not.toHaveBeenCalled();
     h.scheduler.cancel();
   });
+});
+
+it('keeps a no-audio navigation pending after generation completion and ignores its late callback after cancellation', async () => {
+  const pending = deferred<void>(),
+    receipt = vi.fn(),
+    view: Partial<PlaybackView> = {};
+  const scheduler = new PlaybackScheduler({
+    audio: { prepare: vi.fn(), unlock: async () => undefined, dispose: async () => undefined },
+    presentation: {
+      photo: async () => undefined,
+      environment: async () => undefined,
+      execute: () => pending.promise,
+      clear: vi.fn(),
+    },
+    receipt,
+    view: (next) => Object.assign(view, next),
+    failure: vi.fn(),
+  });
+  scheduler.begin(turn(1));
+  scheduler.enqueuePresentation(turn(1), {
+    presentationId: 'navigation',
+    caption: '来到吧台',
+    events: [{ eventId: 'location', type: 'location', location: 'counter' }],
+  });
+  scheduler.generationDone(turn(1));
+  expect(view.playback).toBe('buffering');
+  scheduler.begin(turn(2));
+  pending.resolve();
+  await tick();
+  expect(receipt).not.toHaveBeenCalled();
+  expect(view.narration).toBe('');
+  scheduler.cancel();
 });

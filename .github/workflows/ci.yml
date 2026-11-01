@@ -1,16 +1,38 @@
 name: verify
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  check:
-    runs-on: ubuntu-latest
+  web:
+    name: Frontend build
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 26.13.0
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm install -g npm@11.20.0
+      - run: npm ci
+      - run: npm run build:web
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: apps/web/dist
+          if-no-files-found: error
+          retention-days: 7
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
           cache: npm
       - run: npm install -g npm@11.20.0
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg

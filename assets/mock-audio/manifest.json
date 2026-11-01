@@ -88,6 +88,87 @@
       "durationMs": 4818,
       "sampleRate": 22050,
       "sha256": "e062c487ea041b26071ffc16d24d9664e817dd11bcc9bac44d691a69cf46eda8"
+    },
+    {
+      "id": "storyDepart",
+      "text": "好。这次，我想自己选下一站。",
+      "file": "storyDepart.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 3890,
+      "sampleRate": 22050,
+      "sha256": "23852ce5ce1241be80cb6a280dd0d6788cdf54811cb49e8e0c5514d2b9946af6"
+    },
+    {
+      "id": "storyLetter",
+      "text": "有些话，可以慢慢说。我想先给她留下回信。",
+      "file": "storyLetter.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 5253,
+      "sampleRate": 22050,
+      "sha256": "f6fa11e5c442c9d3cdf1df97ede4de802d1f3e2aa4758758616372d93a7946f4"
+    },
+    {
+      "id": "storyStay",
+      "text": "好。今晚，我们不急着回答所有问题。",
+      "file": "storyStay.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 4291,
+      "sampleRate": 22050,
+      "sha256": "c6c5e90f3a70a36e97e5d523800c1b20e8dc1a33891bcb053b8a374c4296d659"
+    },
+    {
+      "id": "letterKnown",
+      "text": "原来，阿岚下午来过。她给我的照片留了一面墙，我想重新和她联系。",
+      "file": "letterKnown.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 7557,
+      "sampleRate": 22050,
+      "sha256": "02feb13b30de9a3811eeab8a880a390b79cdb57e3d60fd9f394406f049110bfa"
+    },
+    {
+      "id": "letterUnknown",
+      "text": "我在等阿岚。但她今天来没来过，我还不确定。",
+      "file": "letterUnknown.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 5143,
+      "sampleRate": 22050,
+      "sha256": "ab728da1dc5ebe4685cd75231430c65faa509b3aaecb1bb9899c1768df9c0c38"
+    },
+    {
+      "id": "gallery",
+      "text": "那是我们一起办过的摄影展。后来，各自去了不同的地方。",
+      "file": "gallery.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 6140,
+      "sampleRate": 22050,
+      "sha256": "2c1fe42f9f8a7c571a70cac02148ddb79423f3929788f2ab9b719465d64346e6"
+    },
+    {
+      "id": "washroomPause",
+      "text": "我带来了照片，却一直没有想好，重新联系她的第一句话。",
+      "file": "washroomPause.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 6307,
+      "sampleRate": 22050,
+      "sha256": "846110f269865e27ea09ae459e8b5fb4e45ca350c4ad071d1d810e6f91a1d7c3"
+    },
+    {
+      "id": "lastNight",
+      "text": "今晚是旧店最后一晚营业。明天，这些桌椅就要搬走了。",
+      "file": "lastNight.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 6385,
+      "sampleRate": 22050,
+      "sha256": "6a4aea45e5f11f181b64a792b181c9de5251b45ba9d6bf70433a52691e12e8c8"
+    },
+    {
+      "id": "storyReadLetter",
+      "text": "这封信，写着我的名字。你陪我一起看看吧。",
+      "file": "storyReadLetter.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 4805,
+      "sampleRate": 22050,
+      "sha256": "3705a3af92f1199a5d0a305be793e814567b7b2a6b90376caadee18cd936a453"
     }
   ]
 }

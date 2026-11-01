@@ -5,8 +5,12 @@ import {
   type Emotion,
   type Interaction,
   type PresentationEvent,
+  type PresentationReadyPayload,
   type Receipt,
+  type ReplySuggestion,
   type TurnIdentity,
+  type StoryState,
+  type Facts,
 } from '@mira/protocol';
 import type { AudioPort, PreparedAudio } from './audio.js';
 import { abortable } from './abortable.js';
@@ -15,10 +19,15 @@ export type PlaybackMode = 'idle' | 'buffering' | 'audio' | 'audio-error' | 'tex
 export interface PlaybackView {
   interaction: Interaction;
   subtitle: string;
+  narration: string;
   emotion: Emotion;
   action: Action;
   mouthOpen: number;
   playback: PlaybackMode;
+  suggestions: ReplySuggestion[];
+  story: StoryState;
+  facts: Facts;
+  environment: string;
 }
 export interface PresentationPort {
   photo(event: Extract<PresentationEvent, { type: 'photo' }>, signal: AbortSignal): Promise<void>;
@@ -26,6 +35,13 @@ export interface PresentationPort {
     event: Extract<PresentationEvent, { type: 'environment' }>,
     signal: AbortSignal,
   ): Promise<void>;
+  execute?(
+    event: Exclude<PresentationEvent, { type: 'photo' | 'environment' }>,
+    signal: AbortSignal,
+  ): Promise<void>;
+  previewScene?(zoom: number, weather: string, signal: AbortSignal): Promise<void>;
+  previewMotion?(group: string): void;
+  errorMessage?(event: PresentationEvent): string;
   clear(): void;
 }
 interface SchedulerOptions {
@@ -35,6 +51,7 @@ interface SchedulerOptions {
   receipt(value: Omit<Receipt, keyof TurnIdentity | 'receiptId'>, turn: TurnIdentity): void;
   failure(message: string): void;
   expired?(turn: TurnIdentity): void;
+  cancelled?(turn: TurnIdentity): void;
   now?: () => number;
   timing?(name: string, durationMs: number): void;
   loadTimeoutMs?: number;
@@ -45,21 +62,25 @@ type PreparedResult = { ok: true; audio: PreparedAudio } | { ok: false };
 export class PlaybackScheduler {
   private turn?: TurnIdentity;
   private cancellation = new AbortController();
-  private queue: AudioReadyPayload[] = [];
+  private queue: Array<AudioReadyPayload | PresentationReadyPayload> = [];
   private prepared = new Map<string, Promise<PreparedResult>>();
   private stop?: () => void;
   private draining = 0;
   private sequence = 0;
   private completed = false;
+  private suggestions: ReplySuggestion[] = [];
+  private presentationFailed = false;
+  private confirmedNarration = '';
   private blocked?: AudioReadyPayload;
   private text?: AudioReadyPayload;
-  private textVisual?: Promise<void>;
+  private textVisual?: Promise<boolean>;
   private lifetime?: ReturnType<typeof setTimeout>;
   private received = new Set<string>();
-  private photoBlocked = false;
   private now: () => number;
   private inputAt?: number;
   private firstStarted = false;
+  private previewAbort?: AbortController;
+  private previewTimer?: ReturnType<typeof setTimeout>;
   private readyAt = new Map<string, number>();
 
   constructor(private readonly options: SchedulerOptions) {
@@ -74,8 +95,9 @@ export class PlaybackScheduler {
     this.turn = turn;
     this.cancellation = new AbortController();
     this.completed = false;
-    this.photoBlocked = false;
-    this.options.view({ interaction: 'thinking', playback: 'buffering' });
+    this.presentationFailed = false;
+    this.confirmedNarration = '';
+    this.options.view({ interaction: 'thinking', playback: 'buffering', narration: '' });
   }
 
   applyLifetime(turn: TurnIdentity, remainingMs: number): void {
@@ -103,16 +125,24 @@ export class PlaybackScheduler {
 
   enqueue(turn: TurnIdentity, segment: AudioReadyPayload): void {
     if (!this.current(turn) || this.received.has(segment.segmentId)) return;
-    if (this.received.size >= 4) throw new Error('PLAYBACK_QUEUE_LIMIT');
+    if (this.readyAt.size >= 4) throw new Error('PLAYBACK_QUEUE_LIMIT');
     this.received.add(segment.segmentId);
     this.readyAt.set(segment.segmentId, this.now());
     this.queue.push(segment);
     this.prefetch();
     void this.pump(turn);
   }
-  generationDone(turn: TurnIdentity): void {
+  enqueuePresentation(turn: TurnIdentity, payload: PresentationReadyPayload): void {
+    if (!this.current(turn) || this.received.has(payload.presentationId)) return;
+    if (this.received.size >= 12) throw new Error('PLAYBACK_QUEUE_LIMIT');
+    this.received.add(payload.presentationId);
+    this.queue.push(payload);
+    void this.pump(turn);
+  }
+  generationDone(turn: TurnIdentity, suggestions: ReplySuggestion[] = []): void {
     if (!this.current(turn)) return;
     this.completed = true;
+    this.suggestions = suggestions.map((suggestion) => ({ ...suggestion }));
     this.finishIfEmpty();
   }
 
@@ -167,6 +197,9 @@ export class PlaybackScheduler {
     void this.pump(turn);
   }
   cancel(): void {
+    clearTimeout(this.previewTimer);
+    this.previewAbort?.abort();
+    this.previewAbort = undefined;
     const interrupted = !!this.turn;
     const started = this.now();
     this.turn = undefined;
@@ -179,6 +212,7 @@ export class PlaybackScheduler {
     this.prepared.clear();
     this.received.clear();
     this.readyAt.clear();
+    this.suggestions = [];
     this.inputAt = undefined;
     this.firstStarted = false;
     this.blocked = undefined;
@@ -192,8 +226,37 @@ export class PlaybackScheduler {
       action: 'none',
       mouthOpen: 0,
       playback: 'idle',
+      suggestions: [],
+      narration: this.confirmedNarration,
     });
     if (interrupted) this.options.timing?.('interrupt-stop', this.now() - started);
+  }
+  preview(action: Action, interaction: Interaction = 'idle', motion?: string): void {
+    this.cancel();
+    const owner = this.sequence;
+    this.options.view({ interaction, action, mouthOpen: 0, emotion: 'curious' });
+    if (motion) this.options.presentation.previewMotion?.(motion);
+    this.previewTimer = setTimeout(
+      () => {
+        if (owner !== this.sequence || this.turn) return;
+        this.options.presentation.clear();
+        this.options.view({ interaction: 'idle', action: 'none', mouthOpen: 0 });
+      },
+      motion ? 5400 : 3000,
+    );
+  }
+  previewScene(zoom: number, weather: string): void {
+    this.cancel();
+    const owner = this.sequence;
+    this.previewAbort = new AbortController();
+    void this.options.presentation
+      .previewScene?.(zoom, weather, this.previewAbort.signal)
+      .catch(() => {
+        if (owner === this.sequence) this.options.failure('舞台预览未完成，已保留故事状态。');
+      });
+    this.previewTimer = setTimeout(() => {
+      if (owner === this.sequence) this.cancel();
+    }, 5000);
   }
   async dispose(): Promise<void> {
     this.cancel();
@@ -206,7 +269,7 @@ export class PlaybackScheduler {
   private prefetch(): void {
     // The current sentence and only its immediate successor may hold decoded audio.
     for (const segment of this.queue.slice(0, 2)) {
-      if (this.prepared.has(segment.segmentId)) continue;
+      if ('presentationId' in segment || this.prepared.has(segment.segmentId)) continue;
       const signal = AbortSignal.any([
         this.cancellation.signal,
         AbortSignal.timeout(this.options.loadTimeoutMs ?? 12_000),
@@ -231,6 +294,40 @@ export class PlaybackScheduler {
     }
     const owner = ++this.sequence;
     this.draining = owner;
+    if ('presentationId' in segment) {
+      this.options.view({
+        interaction: 'thinking',
+        playback: 'buffering',
+        mouthOpen: 0,
+        subtitle: '',
+        ...(segment.events.some((event) => event.type === 'beat' || event.type === 'ending')
+          ? { narration: segment.caption }
+          : {}),
+      });
+      const success = await this.present(segment.events, turn, this.cancellation.signal);
+      if (!this.current(turn) || this.draining !== owner) return;
+      if (!success) {
+        this.cancel();
+        this.options.cancelled?.(turn);
+        return;
+      }
+      this.confirmedNarration = segment.caption;
+      this.options.view({
+        narration: segment.caption,
+        ...(segment.environmentAfter ? { environment: segment.environmentAfter } : {}),
+        ...(segment.storyAfter ? { story: segment.storyAfter } : {}),
+        ...(segment.factsAfter
+          ? {
+              facts: segment.factsAfter,
+            }
+          : {}),
+      });
+      this.queue.shift();
+      this.draining = 0;
+      this.prefetch();
+      void this.pump(turn);
+      return;
+    }
     this.options.view({ interaction: 'thinking', playback: 'buffering' });
     const prepared = await this.prepared.get(segment.segmentId);
     if (!this.current(turn) || this.draining !== owner) return;
@@ -239,7 +336,7 @@ export class PlaybackScheduler {
       return;
     }
     const signal = this.cancellation.signal;
-    let visual: Promise<void> = Promise.resolve();
+    let visual: Promise<boolean> = Promise.resolve(true);
     let finish = () => {};
     try {
       const ended = new Promise<void>((resolve) => {
@@ -312,27 +409,35 @@ export class PlaybackScheduler {
     events: PresentationEvent[],
     turn: TurnIdentity,
     signal: AbortSignal,
-  ): Promise<void> {
+  ): Promise<boolean> {
+    let success = true;
     for (const event of events) {
-      if (!this.current(turn)) return;
+      if (!this.current(turn)) return false;
       try {
+        if (!success) throw new Error('PREREQUISITE_FAILED');
         if (event.type === 'photo') await this.options.presentation.photo(event, signal);
-        else {
-          if (this.photoBlocked) throw new Error('PHOTO_NOT_PRESENTED');
+        else if (event.type === 'environment')
           await this.options.presentation.environment(event, signal);
-        }
-        if (!this.current(turn)) return;
+        else if (this.options.presentation.execute)
+          await this.options.presentation.execute(event, signal);
+        else throw new Error('PRESENTATION_UNSUPPORTED');
+        if (!this.current(turn)) return false;
         this.options.receipt(
           { targetId: event.eventId, kind: event.type, status: 'presented' },
           turn,
         );
       } catch {
-        if (!this.current(turn)) return;
-        if (event.type === 'photo') this.photoBlocked = true;
+        if (!this.current(turn)) return false;
+        success = false;
+        this.presentationFailed = true;
         this.options.receipt({ targetId: event.eventId, kind: event.type, status: 'failed' }, turn);
-        this.options.failure('照片暂时打不开，可以继续对话或再请她拿出照片。');
+        this.options.failure(
+          this.options.presentation.errorMessage?.(event) ??
+            '场景呈现未完成，已保留最后成功的状态。可以重试或继续对话。',
+        );
       }
     }
+    return success;
   }
   private finishIfEmpty(): void {
     if (this.completed && !this.queue.length && !this.draining && !this.blocked && !this.text) {
@@ -343,6 +448,8 @@ export class PlaybackScheduler {
         subtitle: '',
         action: 'none',
         mouthOpen: 0,
+        // Generated choices belong to the complete reply; never expose an unheard future branch.
+        suggestions: this.presentationFailed ? [] : this.suggestions,
       });
     }
   }

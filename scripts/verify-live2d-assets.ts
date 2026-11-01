@@ -88,6 +88,48 @@ for (const texture of model.FileReferences.Textures) {
   if (bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a')
     throw new Error('Invalid PNG texture');
 }
+const motionEntry = z.object({ File: localPath }).strict();
+const originalMotionGroup = z.array(motionEntry).length(1);
+const miaraSchema = manifestSchema.extend({
+  FileReferences: manifestSchema.shape.FileReferences.omit({ Pose: true, UserData: true })
+    .extend({
+      Motions: z
+        .object({ Idle: originalMotionGroup, Tap: originalMotionGroup, Flic: originalMotionGroup })
+        .strict(),
+    })
+    .strict(),
+});
+const miara = miaraSchema.parse(
+  JSON.parse(await readFile(path('miara/miara_pro_t03.model3.json'), 'utf8')) as unknown,
+);
+const miaraMotions = Object.values(miara.FileReferences.Motions).flat();
+for (const reference of [
+  miara.FileReferences.Moc,
+  ...miara.FileReferences.Textures,
+  miara.FileReferences.Physics,
+  miara.FileReferences.DisplayInfo,
+  ...miaraMotions.map((motion) => motion.File),
+]) {
+  const relative = `miara/${reference}`;
+  if (!paths.has(relative) || !(await stat(path(relative))).isFile())
+    throw new Error(`Missing Miara asset or provenance: ${reference}`);
+}
+const miaraMoc = await readFile(path(`miara/${miara.FileReferences.Moc}`));
+if (miaraMoc.subarray(0, 4).toString('ascii') !== 'MOC3')
+  throw new Error('Invalid Miara Cubism model binary');
+for (const texture of miara.FileReferences.Textures) {
+  const bytes = await readFile(path(`miara/${texture}`));
+  if (bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a')
+    throw new Error('Invalid Miara PNG texture');
+}
+const motionSchema = z.object({
+  Version: z.literal(3),
+  Meta: z.object({ Duration: z.number().finite().positive(), Loop: z.boolean() }),
+  Curves: z.array(z.unknown()).min(1),
+});
+for (const motion of miaraMotions) {
+  motionSchema.parse(JSON.parse(await readFile(path(`miara/${motion.File}`), 'utf8')) as unknown);
+}
 for (const required of [
   'vendor/pixi.min.js',
   'vendor/cubism4.min.js',
@@ -102,5 +144,8 @@ for (const required of [
   if (!paths.has(required)) throw new Error(`Missing runtime provenance: ${required}`);
 await stat(path('NOTICE.md'));
 process.stdout.write(
-  `Live2D assets verified: ${paths.size} SHA-256 records; local model references; no sample audio/motions.\n`,
+  `Live2D assets verified: ${paths.size} SHA-256 records; Haru + Miara local references; ${miaraMotions.length} Miara motions; no sample audio.\n`,
 );
+
+// Scene packages own their own catalogs and minimum background requirements.
+await (await import('./verify-scene-assets.js')).verifySceneAssets();

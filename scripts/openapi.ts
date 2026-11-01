@@ -3,7 +3,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 import SwaggerParser from '@apidevtools/swagger-parser';
-import { ServerEventSchema, ReplyPlanSchema, AudioInputMetadataSchema } from '@mira/protocol';
+import {
+  ServerEventSchema,
+  ReplyPlanSchema,
+  AudioInputMetadataSchema,
+  ConnectionEventSchema,
+  ConnectionProbeSchema,
+} from '@mira/protocol';
 import { createApp } from '../apps/server/src/app.js';
 import { loadConfig } from '../apps/server/src/config/index.js';
 
@@ -20,6 +26,8 @@ try {
   // JSON Schema comes from the same validators used by the stream and Graph.
   Object.assign(document.components.schemas, {
     ServerEvent: z.toJSONSchema(ServerEventSchema),
+    ConnectionEvent: z.toJSONSchema(ConnectionEventSchema),
+    ConnectionProbe: z.toJSONSchema(ConnectionProbeSchema),
     ReplyPlan: z.toJSONSchema(ReplyPlanSchema),
     AudioInputMetadata: z.toJSONSchema(AudioInputMetadataSchema),
   });

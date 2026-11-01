@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { FastifyRequest } from 'fastify';
-import { AudioInputMetadataSchema, TextInputSchema } from '@mira/protocol';
+import { AudioInputMetadataSchema, JsonInputSchema } from '@mira/protocol';
 import type { Config } from '../config/index.js';
 import type { TurnInput } from '../graphs/conversation.js';
 import { AppError } from './errors.js';
@@ -22,13 +22,16 @@ export interface ParsedInput {
 
 export async function readInput(request: FastifyRequest, config: Config): Promise<ParsedInput> {
   if (!request.isMultipart()) {
-    const parsed = TextInputSchema.safeParse(request.body);
+    const parsed = JsonInputSchema.safeParse(request.body);
     if (!parsed.success) throw new AppError('INVALID_REQUEST', 400, '请输入一段简短的话。');
     return {
       generation: parsed.data.generation,
       inputId: parsed.data.inputId,
-      digest: createHash('sha256').update(`text:${parsed.data.text}`).digest('hex'),
-      input: { kind: 'text', text: parsed.data.text },
+      digest: createHash('sha256').update(JSON.stringify(parsed.data)).digest('hex'),
+      input:
+        'interaction' in parsed.data
+          ? { kind: 'interaction', interaction: parsed.data.interaction }
+          : { kind: 'text', text: parsed.data.text },
     };
   }
   let metadata: unknown;

@@ -32,6 +32,7 @@ export class RecordingController {
   private lease?: CaptureLease;
   private recorder?: RecorderPort;
   private timer?: ReturnType<typeof setTimeout>;
+  private finalizationTimer?: ReturnType<typeof setTimeout>;
   private permissionTimer?: ReturnType<typeof setTimeout>;
   private startedAt = 0;
   private stoppedAt?: number;
@@ -50,13 +51,18 @@ export class RecordingController {
     this.setPhase('permission');
     this.permissionTimer = setTimeout(() => {
       if (intent !== this.intent || this.phase !== 'permission') return;
+      const report = this.options.isCurrent() && this.options.visible();
       this.cancel();
-      this.options.fail('麦克风授权等待太久了，可以重新按住说话，或先打字。');
+      if (report) this.options.fail('麦克风授权等待太久了，可以重新按住说话，或先打字。');
     }, this.options.permissionMs ?? 30_000);
     try {
       const lease = await this.options.acquire();
       if (!this.valid(intent) || !this.held) {
         lease.stop();
+        if (intent === this.intent) {
+          this.held = false;
+          this.releaseResources();
+        }
         return;
       }
       clearTimeout(this.permissionTimer);
@@ -74,11 +80,20 @@ export class RecordingController {
         },
         stopped: () => {
           lease.stop();
-          if (!this.valid(intent)) return;
+          if (!this.valid(intent)) {
+            if (intent === this.intent) {
+              this.held = false;
+              this.intent += 1;
+              this.releaseResources();
+            }
+            return;
+          }
           const durationMs = Math.min(
             this.options.maxMs ?? 15_000,
             Math.round((this.stoppedAt ?? this.now()) - this.startedAt),
           );
+          this.intent += 1;
+          this.held = false;
           this.releaseResources();
           const blob = new Blob(chunks, { type: recorder.mimeType });
           if (durationMs < 300 || blob.size === 0) {
@@ -116,20 +131,40 @@ export class RecordingController {
       this.cancel();
       return;
     }
-    if (this.phase !== 'recording') return;
+    if (this.phase !== 'recording' || this.stoppedAt !== undefined) return;
     this.stoppedAt = this.now();
     clearTimeout(this.timer);
-    this.recorder?.stop();
-    this.lease?.stop();
-    this.setPhase('idle');
+    const intent = this.intent;
+    this.finalizationTimer = setTimeout(() => {
+      if (intent !== this.intent || this.recorder === undefined) return;
+      const report = this.options.isCurrent() && this.options.visible();
+      this.cancel();
+      if (report) this.options.fail('录音未能完成，请重新录制或先使用文字。');
+    }, 2_000);
+    // MediaRecorder emits its final dataavailable before stop. Keep tracks alive until then.
+    try {
+      this.recorder?.stop();
+    } catch {
+      this.cancel();
+      this.options.fail('录音未能完成，请重新录制或先使用文字。');
+    }
   }
 
   cancel(): void {
     this.intent += 1;
     this.held = false;
-    this.recorder?.stop();
-    this.lease?.stop();
-    this.releaseResources();
+    const recorder = this.recorder;
+    const lease = this.lease;
+    try {
+      recorder?.stop();
+    } catch {
+      /* Cancel must still release the input device. */
+    }
+    try {
+      lease?.stop();
+    } finally {
+      this.releaseResources();
+    }
   }
 
   private valid(intent: number): boolean {
@@ -142,6 +177,7 @@ export class RecordingController {
   private releaseResources(): void {
     clearTimeout(this.timer);
     clearTimeout(this.permissionTimer);
+    clearTimeout(this.finalizationTimer);
     this.lease = undefined;
     this.recorder = undefined;
     this.stoppedAt = undefined;
@@ -156,8 +192,21 @@ export async function acquireMicrophone(): Promise<CaptureLease> {
     audio: { echoCancellation: true, noiseSuppression: true },
     video: false,
   });
+  const audioTracks = stream.getAudioTracks();
+  if (
+    !audioTracks.length ||
+    audioTracks.every((track) => track.readyState === 'ended' || !track.enabled)
+  ) {
+    stream.getTracks().forEach((track) => track.stop());
+    throw new Error('MIC_NO_LIVE_TRACK');
+  }
+  let stopped = false;
   return {
-    stop: () => stream.getTracks().forEach((track) => track.stop()),
+    stop: () => {
+      if (stopped) return;
+      stopped = true;
+      stream.getTracks().forEach((track) => track.stop());
+    },
     recorder: (callbacks) => {
       const mimeType = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4'].find(
         (type) => MediaRecorder.isTypeSupported(type),

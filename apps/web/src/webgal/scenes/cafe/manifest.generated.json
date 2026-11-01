@@ -1,0 +1,47 @@
+{
+  "clientModule": "cafe",
+  "character": "mira",
+  "title": "雨停之前",
+  "subtitle": "最后一盏灯",
+  "speaker": "米拉",
+  "speakerDescription": "旅行摄影师",
+  "defaultCharacter": "haru",
+  "phaseLabels": {
+    "arrival": "序章",
+    "exploration": "探索",
+    "decision": "抉择",
+    "epilogue": "尾声"
+  },
+  "environment": {
+    "default": "rain",
+    "variants": [
+      {
+        "requires": [
+          "rain_softened"
+        ],
+        "value": "rain-soft"
+      }
+    ]
+  },
+  "assetRoot": "/assets/cafe-story/",
+  "minimumBackgrounds": 8,
+  "id": "last-lamp",
+  "version": "1.1.0",
+  "locations": {
+    "street-wide": "街角远景",
+    "cafe-front": "门头雨棚",
+    "lobby": "入口大堂",
+    "window-seat": "窗边座位",
+    "photo-corridor": "照片墙走廊",
+    "washroom": "公共洗手区",
+    "counter": "吧台结账台",
+    "street-walk": "店外街道"
+  },
+  "resources": {
+    "travel_photo_01": {
+      "kind": "image",
+      "asset": "travel-photo",
+      "url": "/assets/travel-photo.svg"
+    }
+  }
+}

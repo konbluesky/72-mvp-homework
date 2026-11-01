@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 import { createApp } from '../../apps/server/src/app.js';
 import { createLiveProviders } from '../../apps/server/src/providers/index.js';
 import { testConfig, testMedia } from '../../apps/server/test/helpers.js';
-import { MOCK_LINES } from '../../apps/server/src/providers/mock.js';
+import { MOCK_LINES } from '../../apps/server/src/scenario/cafe/mock.js';
 import { plannerResponse, transcriptResponse } from '../fixtures/provider-http.js';
 import type { Fetch } from '../../apps/server/src/providers/http.js';
 
@@ -49,6 +49,7 @@ test('real recorder to Deepgram STT adapter, GPT graph, Deepgram TTS adapter and
     if (path === '/v1/chat/completions') {
       stages.push('planner');
       return plannerResponse({
+        suggestions: [],
         segments: [
           {
             text: MOCK_LINES.hello,
@@ -85,10 +86,10 @@ test('real recorder to Deepgram STT adapter, GPT graph, Deepgram TTS adapter and
         await route.fulfill({ response });
       },
     );
-    await page.goto('/');
+    await page.goto('/legacy.html');
     await expect(page.locator('#text-input')).toBeEnabled();
     await page.getByRole('button', { name: '切换语音输入', exact: true }).click();
-    const hold = page.getByRole('button', { name: '按住录音，松开发送，上滑取消' });
+    const hold = page.getByRole('button', { name: '按住录音，松开预览，上滑取消' });
     await expect(hold).toBeEnabled();
     await hold.focus();
     await page.keyboard.down('Space');
@@ -96,12 +97,19 @@ test('real recorder to Deepgram STT adapter, GPT graph, Deepgram TTS adapter and
     // Actual capture interval, not a readiness wait.
     await page.waitForTimeout(650);
     await page.keyboard.up('Space');
-    await expect(page.locator('.recent-user')).toContainText('能看看照片吗？');
+    await expect(page.getByRole('textbox', { name: '编辑语音消息' })).toHaveValue('能看看照片吗？');
+    expect(stages).toEqual(['stt']);
+    await expect(page.locator('.recent-user')).toHaveCount(0);
+    await page
+      .getByRole('textbox', { name: '编辑语音消息' })
+      .fill('能看看照片吗？我想听听那次旅行。');
+    await page.getByRole('button', { name: '确认发送', exact: true }).click();
+    await expect(page.locator('.recent-user').last()).toContainText('能看看照片吗？');
     await expect(page.locator('main')).toHaveAttribute('data-state', 'speaking');
     await expect(page.locator('.subtitle')).toContainText(MOCK_LINES.hello);
     await expect(page.locator('[data-photo]')).toBeVisible();
     expect(stages).toEqual(['stt', 'planner', 'tts']);
-    await page.getByRole('button', { name: '暂停，换我说', exact: true }).click();
+    await page.getByRole('button', { name: '停止当前回复', exact: true }).click();
     await expect(page.locator('main')).toHaveAttribute('data-state', 'idle');
   } finally {
     await app.close();

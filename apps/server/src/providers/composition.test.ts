@@ -1,3 +1,4 @@
+import { cafeScenario } from '../scenario/cafe/index.js';
 import { describe, expect, it, vi } from 'vitest';
 import {
   createProviders,
@@ -16,14 +17,17 @@ import type { ServerEvent } from '@mira/protocol';
 describe('provider composition', () => {
   it('Mock never instantiates network adapters and disabled speech is reflected in both modes', async () => {
     const http = vi.fn<Fetch>();
-    const providers = createProviders(testConfig(), http);
+    const providers = createProviders(testConfig(), http, cafeScenario.mockProviders);
     expect(providers.stt?.info.provider).toBe('mock');
     await providers.stt?.transcribe(
       { bytes: wav(), mimeType: 'audio/wav' },
       new AbortController().signal,
     );
     expect(http).not.toHaveBeenCalled();
-    expect(createProviders(testConfig({ STT_PROVIDER: 'disabled' }), http).stt).toBeUndefined();
+    expect(
+      createProviders(testConfig({ STT_PROVIDER: 'disabled' }), http, cafeScenario.mockProviders)
+        .stt,
+    ).toBeUndefined();
   });
   it('swaps a single recognizer while the same Graph, GPT planner and TTS adapter keep running', async () => {
     class AlternativeStt implements SpeechToTextProvider {
@@ -65,7 +69,7 @@ describe('provider composition', () => {
     const providers = { ...live, stt: alternative };
     expect(providers.planner).toBe(live.planner);
     expect(providers.tts).toBe(live.tts);
-    const sessions = new SessionManager(config);
+    const sessions = new SessionManager(config, { scenario: cafeScenario });
     const created = sessions.create();
     const session = sessions.authenticate(created.sessionId, `Bearer ${created.sessionToken}`);
     sessions.begin(session, { generation: 1, turnId: 'turn', receipts: [], frozenTurns: [] });
@@ -74,7 +78,14 @@ describe('provider composition', () => {
     const events: Array<Pick<ServerEvent, 'type' | 'payload'>> = [];
     try {
       await runConversation(
-        { config, providers, sessions, media, logger: { info: () => undefined } },
+        {
+          scenario: cafeScenario,
+          config,
+          providers,
+          sessions,
+          media,
+          logger: { info: () => undefined },
+        },
         session,
         turn,
         { kind: 'audio', bytes: wav(), mimeType: 'audio/wav' },

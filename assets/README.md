@@ -11,3 +11,15 @@
 ## 当前Live2D资源
 
 `apps/web/public/assets/live2d`包含已核验的同源Pixi6.5.10、pixi-live2d-display0.4.0、CubismCore5.1.0及官方Haru样例；来源/许可/每文件SHA-256见该目录的NOTICE.md与SOURCES.json。运行manifest仅保留实际所需Moc/双纹理/physics/pose/CDI/userdata，未发布样例语音或未使用motion/expression。故障poster由同一个Haru模型实际渲染得到，受同样素材条款约束。咖啡馆背景取自本项目Live2D探索资产；不改动历史探索目录。
+
+## Miara 待接入资源
+
+`apps/web/public/assets/live2d/miara/` 已保存 Miara 运行时模型、纹理、物理、参数说明和三段原始动作，共 8 个文件。它们从固定提交的公开镜像取得，来源与 SHA-256 纳入 Live2D `SOURCES.json`；不是原创 Mira 素材，适用保留的 Live2D 样例条款。本次仅入库，没有切换当前角色或实现 WebGAL 聊天接入，Haru 全部保留备用。模型参数与编辑工程边界见该目录 README；后续实施使用 `docs/prompts/miara-webgal-implementation.md`。
+
+## WebGAL 可见引擎示例
+
+`apps/web/public/assets/webgal-demo/cafe-night.svg` 与 `cafe-dusk.svg` 是为本项目编写的原创 SVG 插图，不含外部照片或字体。示例调用固定 WebGAL 源码中的原生雨效和纹理，条款沿用保留的 WebGAL MPL/素材说明。详细来源见该目录 README；不导入上游 `public/game` 剧情和音频。
+
+## 最后一盏灯场景与离线语音
+
+八个独立 SVG 背景与三个打烊变体位于 `apps/web/public/assets/cafe-story/`，原创向量源码、尺寸和哈希随目录保存。新增九条故事/上下文台词由 eSpeak NG/cmn 离线生成，Mock 音频现有十八条，`assets/mock-audio/manifest.json` 保存文本、时长、来源及哈希。没有使用外部 TTS 或用户录音。

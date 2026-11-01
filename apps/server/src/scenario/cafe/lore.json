@@ -1,0 +1,52 @@
+[
+  {
+    "id": "cafe.last-night",
+    "locations": [
+      "street-wide",
+      "cafe-front",
+      "lobby",
+      "window-seat",
+      "photo-corridor",
+      "washroom",
+      "counter",
+      "street-walk"
+    ],
+    "requires": [],
+    "text": "咖啡馆名为雨停之前，今晚是旧店最后营业夜，之后搬迁。没有现实时间倒计时。"
+  },
+  {
+    "id": "mira.background",
+    "requires": ["met"],
+    "text": "米拉是成年旅行摄影师，正在等成年旧友阿岚。两人曾一起旅行和办摄影展。"
+  },
+  {
+    "id": "notice",
+    "title": "旧店最后营业日",
+    "requires": ["notice_read"],
+    "text": "雨停之前 · 旧店最后营业日\n今晚之后，我们搬去新的地方。谢谢你在这里停留。"
+  },
+  {
+    "id": "exhibition",
+    "title": "同一片海",
+    "requires": ["exhibition_read"],
+    "text": "同一片海 · 旅行摄影联展\n米拉 × 阿岚\n留住风景，也留一个再次相遇的位置。"
+  },
+  {
+    "id": "letter",
+    "title": "写给米拉",
+    "requires": ["letter_read"],
+    "text": "米拉，我下午来过，没能等到晚上。下一站的展览，我给你的照片留了一面墙。不是让你追上我，是想知道你现在拍下了什么。如果你愿意，我们重新联系。——阿岚"
+  },
+  {
+    "id": "reply",
+    "title": "留下的话",
+    "requires": ["reply_left"],
+    "text": "阿岚，我想把新的照片带给你。如果你愿意，我们重新联系。——米拉"
+  },
+  {
+    "id": "photo",
+    "title": "海边的一天",
+    "requires": ["photo_seen"],
+    "text": "这是一张无人海岸风景图，画面没有人物，不能编造照片里的人。"
+  }
+]

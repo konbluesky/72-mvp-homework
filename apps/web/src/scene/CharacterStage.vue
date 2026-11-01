@@ -2,7 +2,7 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { CharacterFrame, CharacterRenderer } from './character.js';
 
-const props = defineProps<{ frame: CharacterFrame; environment: 'rain' | 'rain-soft' }>();
+const props = defineProps<{ frame: CharacterFrame; environment: string }>();
 type RenderStatus = 'loading' | 'live2d' | 'failed' | 'suspended';
 const emit = defineEmits<{ status: [status: RenderStatus] }>();
 const canvas = ref<HTMLCanvasElement>();

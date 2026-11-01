@@ -1,6 +1,9 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import type { ScenarioDefinition, StoryCheckpoint } from '../scenario/ports.js';
 import type {
   AudioReadyPayload,
+  PresentationEvent,
+  StoryState,
   Facts,
   FrozenTurn,
   Receipt,
@@ -14,6 +17,10 @@ interface IssuedTarget {
   kind: Receipt['kind'];
   text?: string;
   confirmed?: Receipt;
+  event?: PresentationEvent;
+  dependencies?: string[];
+  order?: number;
+  checkpoint?: StoryCheckpoint;
 }
 export interface Turn {
   identity: TurnIdentity;
@@ -42,10 +49,13 @@ export interface Session {
   current?: Turn;
   turns: Map<string, Turn>;
   facts: Facts;
+  story: StoryState;
+  narrative: StoryCheckpoint;
   history: Array<{ role: 'user' | 'assistant'; text: string; mode?: 'audio' | 'text' }>;
   inputTimes: number[];
 }
 export interface ManagerDependencies {
+  scenario: ScenarioDefinition;
   now?: () => number;
   id?: () => string;
 }
@@ -59,29 +69,35 @@ export class SessionManager {
   private readonly now: () => number;
   private readonly id: () => string;
   private closing = false;
+  readonly scenario: ScenarioDefinition;
 
   constructor(
     private readonly config: Config,
-    dependencies: ManagerDependencies = {},
+    dependencies: ManagerDependencies,
   ) {
+    this.scenario = dependencies.scenario;
     this.now = dependencies.now ?? Date.now;
     this.id = dependencies.id ?? randomUUID;
   }
 
-  create(): Omit<SessionCreated, 'capabilities'> {
+  create(entry: 'story' | 'conversation' = 'story'): Omit<SessionCreated, 'capabilities'> {
     this.sweep();
     if (this.closing || this.sessions.size >= this.config.MAX_SESSIONS) {
       throw new AppError('CAPACITY_EXCEEDED', 503, '店里暂时有些忙，请稍后再来。', true);
     }
     const id = this.id();
     const token = randomBytes(32).toString('base64url');
+    const narrative = this.scenario.initial(entry);
+    const frame = this.scenario.frame(narrative);
     const session: Session = {
       id,
       tokenHash: hash(token),
       expiresAt: this.now() + this.config.SESSION_TTL_SECONDS * 1000,
       generation: 0,
       turns: new Map(),
-      facts: { photo_revealed: false, rain_softened: false },
+      facts: frame.facts,
+      story: frame.story,
+      narrative,
       history: [],
       inputTimes: [],
     };
@@ -92,6 +108,7 @@ export class SessionManager {
       expiresAt: session.expiresAt,
       mode: this.config.APP_MODE,
       scene: this.scene(session),
+      ...(this.scenario.opening ? { opening: this.scenario.opening(narrative) } : {}),
     };
   }
 
@@ -109,10 +126,13 @@ export class SessionManager {
   }
 
   scene(session: Session) {
+    const frame = this.scenario.frame(session.narrative);
     return {
-      character: 'mira' as const,
-      environment: session.facts.rain_softened ? ('rain-soft' as const) : ('rain' as const),
+      character: frame.presentation?.character ?? 'unassigned',
+      environment: frame.presentation?.environment ?? 'default',
+      scenario: { id: session.narrative.storyId, version: session.narrative.version },
       facts: { ...session.facts },
+      story: { ...session.story, revealed: [...session.story.revealed] },
     };
   }
 
@@ -209,8 +229,13 @@ export class SessionManager {
     }
     if (session.current !== turn || turn.abort.signal.aborted || turn.status !== 'begun')
       throw new AppError('TURN_CANCELLED', 409, '旧的回应已结束。');
-    session.inputTimes = session.inputTimes.filter((time) => time > this.now() - 60_000);
-    if (session.inputTimes.length >= this.config.MAX_INPUTS_PER_MINUTE)
+    session.inputTimes = this.config.RATE_LIMIT_ENABLED
+      ? session.inputTimes.filter((time) => time > this.now() - 60_000)
+      : [];
+    if (
+      this.config.RATE_LIMIT_ENABLED &&
+      session.inputTimes.length >= this.config.MAX_INPUTS_PER_MINUTE
+    )
       throw new AppError('RATE_LIMITED', 429, '慢一点，我们还有时间。', true);
     if (this.active >= this.config.MAX_ACTIVE_TURNS)
       throw new AppError('CAPACITY_EXCEEDED', 503, '回应有些拥挤，请稍后再试。', true);
@@ -218,7 +243,7 @@ export class SessionManager {
     turn.status = 'running';
     turn.released = false;
     this.active += 1;
-    session.inputTimes.push(this.now());
+    if (this.config.RATE_LIMIT_ENABLED) session.inputTimes.push(this.now());
     turn.deadlineAt = this.now() + this.config.TURN_MAX_LIFETIME_MS;
     turn.timer = setTimeout(
       () =>
@@ -253,7 +278,29 @@ export class SessionManager {
   issue(session: Session, turn: Turn, payload: AudioReadyPayload): void {
     this.assertCurrent(session, turn);
     turn.targets.set(payload.segmentId, { kind: 'segment', text: payload.text });
-    for (const event of payload.events) turn.targets.set(event.eventId, { kind: event.type });
+    this.issueEvents(session, turn, payload.events);
+  }
+
+  issueEvents(
+    session: Session,
+    turn: Turn,
+    events: PresentationEvent[],
+    ordered = false,
+    predecessors: string[] = [],
+    checkpoint?: StoryCheckpoint,
+  ): void {
+    this.assertCurrent(session, turn);
+    const dependencies: string[] = [...predecessors];
+    for (const event of events) {
+      turn.targets.set(event.eventId, {
+        kind: event.type,
+        event,
+        dependencies: ordered ? [...dependencies] : [],
+        order: turn.identity.generation * 1000 + turn.targets.size,
+        ...(event === events.at(-1) && checkpoint ? { checkpoint } : {}),
+      });
+      dependencies.push(event.eventId);
+    }
   }
 
   remainingLifetime(turn: Turn): number {
@@ -276,7 +323,12 @@ export class SessionManager {
   receipts(session: Session, receipts: Receipt[], explicitSnapshots: FrozenTurn[] = []): string[] {
     this.validateReceipts(session, receipts, explicitSnapshots);
     const acknowledged: string[] = [];
-    for (const receipt of receipts) {
+    const ordered = [...receipts].sort(
+      (a, b) =>
+        (session.turns.get(a.turnId)?.targets.get(a.targetId)?.order ?? 0) -
+        (session.turns.get(b.turnId)?.targets.get(b.targetId)?.order ?? 0),
+    );
+    for (const receipt of ordered) {
       const turn = session.turns.get(receipt.turnId);
       const target = turn?.targets.get(receipt.targetId);
       if (!turn || !target) continue; // Validation above guarantees both; keeps narrowing explicit.
@@ -293,8 +345,14 @@ export class SessionManager {
             mode: receipt.mode ?? 'audio',
           });
           session.history = session.history.slice(-40);
-        } else if (target.kind === 'photo') session.facts.photo_revealed = true;
-        else if (target.kind === 'environment') session.facts.rain_softened = true;
+        } else if (target.checkpoint) {
+          const next = this.scenario.accept(session.narrative, target.checkpoint);
+          const frame = this.scenario.frame(next);
+          session.narrative = next;
+          session.story = frame.story;
+          session.facts = frame.facts;
+          delete target.checkpoint;
+        }
       }
       for (const notify of turn.waiters) notify();
       this.finishIfPresented(turn);
@@ -367,9 +425,26 @@ export class SessionManager {
   ): void {
     const batch = new Map<string, string>();
     const additions = new Map<string, Set<string>>();
-    const photoPresented =
-      session.facts.photo_revealed ||
-      receipts.some((receipt) => receipt.kind === 'photo' && receipt.status === 'presented');
+    let checkpoint = session.narrative;
+    const visited = new Set<string>();
+    for (const receipt of [...receipts].sort(
+      (a, b) =>
+        (session.turns.get(a.turnId)?.targets.get(a.targetId)?.order ?? 0) -
+        (session.turns.get(b.turnId)?.targets.get(b.targetId)?.order ?? 0),
+    )) {
+      const target = session.turns.get(receipt.turnId)?.targets.get(receipt.targetId);
+      const key = `${receipt.turnId}:${receipt.targetId}`;
+      if (
+        receipt.status !== 'presented' ||
+        target?.confirmed?.status === 'presented' ||
+        !target?.checkpoint ||
+        visited.has(key)
+      )
+        continue;
+      visited.add(key);
+      checkpoint = this.scenario.accept(checkpoint, target.checkpoint);
+    }
+
     for (const receipt of receipts) {
       const turn = session.turns.get(receipt.turnId);
       const target = turn?.targets.get(receipt.targetId);
@@ -382,8 +457,21 @@ export class SessionManager {
       ) {
         throw new AppError('INVALID_REQUEST', 400, '呈现记录与这次相遇不匹配。');
       }
-      if (receipt.kind === 'environment' && receipt.status === 'presented' && !photoPresented)
-        throw new AppError('INVALID_REQUEST', 400, '照片尚未呈现，环境不能先改变。');
+      if (
+        receipt.status === 'presented' &&
+        target.dependencies?.some(
+          (id) =>
+            turn.targets.get(id)?.confirmed?.status !== 'presented' &&
+            !receipts.some(
+              (candidate) =>
+                candidate.turnId === receipt.turnId &&
+                candidate.generation === receipt.generation &&
+                candidate.targetId === id &&
+                candidate.status === 'presented',
+            ),
+        )
+      )
+        throw new AppError('INVALID_REQUEST', 400, '前置场景尚未呈现。');
       const digest = receiptDigest(receipt);
       const previous = turn.receipts.get(receipt.receiptId) ?? batch.get(receipt.receiptId);
       if (previous && previous !== digest)
@@ -434,6 +522,11 @@ export class SessionManager {
     const turn = session.turns.get(frozen.turnId);
     if (!turn || turn.frozenFinal) return;
     turn.frozenFinal = true;
+    // Only provisional disconnects need candidate states for the first explicit snapshot.
+    // Once frozen, unpresented branches cannot be extended and need not retain full Ink JSON.
+    for (const target of turn.targets.values()) {
+      if (target.confirmed?.status !== 'presented') delete target.checkpoint;
+    }
     turn.frozen = new Set([
       ...frozen.receipts.map(receiptKey),
       ...[...turn.targets.values()].flatMap((target) =>

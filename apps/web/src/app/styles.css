@@ -215,6 +215,57 @@ button svg {
     linear-gradient(90deg, transparent 50%, #111d1e55 73%, #111d1e 100%),
     linear-gradient(180deg, #111d1e44, transparent 20%, transparent 78%, #111d1e);
 }
+.character-identity {
+  position: absolute;
+  top: 104px;
+  left: 49px;
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  color: #e5e8dc;
+  text-shadow: 0 1px 12px #071b20aa;
+}
+.character-identity h1 {
+  font-family: Georgia, var(--serif);
+  font-size: 23px;
+  font-weight: 400;
+  margin: 0;
+}
+.character-identity > span:not(.voice-level) {
+  font-size: 10px;
+  color: #afbeb0;
+}
+.reply-pending {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 38px;
+  border: 1px solid #c6d0bc12;
+  border-radius: 14px 14px 14px 4px;
+  background: #c2d0b50a;
+}
+.composer-stop {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #c2ccb340;
+  color: #dce5d0;
+  background: #bccab51a;
+}
+.composer-stop svg rect {
+  fill: currentColor;
+  stroke: none;
+}
+.composer.responding .hold-talk {
+  padding-right: 0;
+}
+.interaction-area {
+  flex: none;
+}
 .location {
   position: absolute;
   left: 49px;
@@ -239,90 +290,76 @@ button svg {
 .dialogue {
   grid-area: 2 / 2 / 3 / 3;
   z-index: 3;
-  align-self: center;
+  align-self: end;
   justify-self: center;
   width: 100%;
   max-width: 486px;
-  padding: 35px 54px 52px 10px;
+  padding: 24px 54px 72px 10px;
   max-height: 100%;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #c6cbb22e transparent;
 }
 .conversation-body {
-  padding-bottom: 35px;
+  min-height: 0;
+  max-height: 42svh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #c6cbb22e transparent;
+  padding-bottom: 24px;
 }
 .recent-user {
-  margin: 0 0 36px auto;
-  max-width: 94%;
-  padding: 0 0 0 12px;
-  border-left: 1px solid #c5cdb833;
+  width: fit-content;
+  max-width: 85%;
+  margin: 0 0 20px auto;
+  padding: 12px 16px;
+  border: 1px solid #c3d3bb14;
+  border-radius: 16px 16px 4px 16px;
+  background: #283b34;
 }
-.recent-user > span {
-  color: #b4bfae;
-  font-size: 9px;
+.recent-user > .sample-label {
+  display: block;
+  color: #b4c4ac;
+  font-size: 10px;
+  margin-bottom: 5px;
 }
 .recent-user p {
-  font-size: 12px;
+  color: #e0e8d9;
+  font-size: 14px;
   line-height: 1.8;
-  color: #a6b7ab;
-  margin: 6px 0 0;
-  overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-.speaker {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-.speaker h1 {
-  font-family: Georgia, var(--serif);
-  font-weight: 400;
-  font-size: 34px;
-  letter-spacing: -0.8px;
   margin: 0;
-  line-height: 1.2;
-}
-.speaker-period {
-  color: #c8b08a;
-  margin-left: 2px;
-}
-.speaker-detail {
-  font-size: 10px;
-  color: #99aca1;
-  letter-spacing: 0.7px;
-}
-.subtitle-space {
-  margin-top: 24px;
-  min-height: 108px;
-  position: relative;
-}
-.subtitle {
-  font-family: var(--serif);
-  font-size: 25px;
-  line-height: 1.85;
-  letter-spacing: 0.9px;
-  margin: 0;
-  color: #eee8d9;
-  white-space: pre-line;
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
-  max-height: 31svh;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #b6c4a933 transparent;
 }
-.subtitle-paused {
+
+.character-message {
+  max-width: 94%;
+  margin: 0 0 22px;
+  padding: 0 3px;
+}
+.character-message p {
+  font-family: inherit;
+  font-size: clamp(16px, 1.45vw, 18px);
+  line-height: 1.9;
+  letter-spacing: 0;
+  margin: 0;
+  color: #e8ebe1;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.character-message .message-paused {
   color: #c4cdc0;
 }
+.conversation-body > :last-child {
+  margin-bottom: 0;
+}
 .reply-dots {
-  display: flex;
+  display: inline-flex;
   gap: 5px;
   align-items: center;
-  height: 23px;
-  margin-top: 12px;
+  height: 8px;
+  margin: 0;
 }
 .reply-dots i {
   width: 4px;
@@ -337,13 +374,7 @@ button svg {
 .reply-dots i:nth-child(3) {
   animation-delay: 0.3s;
 }
-.reply-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 13px;
-}
-.interrupt,
+
 .continue {
   min-height: 38px;
   display: inline-flex;
@@ -356,16 +387,7 @@ button svg {
   background: #c0d1b008;
   font-size: 10px;
 }
-.stop-square {
-  width: 6px;
-  height: 6px;
-  border-radius: 1px;
-  background: currentColor;
-}
-.paused-note {
-  font-size: 10px;
-  color: #9bada0;
-}
+
 .voice-level {
   display: inline-flex;
   align-items: center;
@@ -936,9 +958,6 @@ dialog::backdrop {
     max-width: 520px;
     padding-right: 68px;
   }
-  .subtitle {
-    font-size: 28px;
-  }
 }
 @media (max-width: 1050px) {
   .scene-header {
@@ -947,12 +966,7 @@ dialog::backdrop {
   .dialogue {
     padding-right: 30px;
   }
-  .subtitle {
-    font-size: 23px;
-  }
-  .speaker h1 {
-    font-size: 31px;
-  }
+
   .suggestions {
     gap: 7px;
   }
@@ -960,6 +974,9 @@ dialog::backdrop {
     font-size: 10px;
     padding-inline: 10px;
     gap: 8px;
+  }
+  .character-identity {
+    left: 31px;
   }
   .location {
     left: 31px;
@@ -1023,8 +1040,19 @@ dialog::backdrop {
   .live2d-poster {
     filter: brightness(0.87) saturate(0.74);
   }
+  .character-identity {
+    top: 82px;
+    left: 25px;
+    gap: 9px;
+  }
+  .character-identity h1 {
+    font-size: 20px;
+  }
+  .character-identity > span:not(.voice-level) {
+    font-size: 9px;
+  }
   .location {
-    top: 83px;
+    top: 119px;
     bottom: auto;
     left: 25px;
     font-size: 9px;
@@ -1045,43 +1073,7 @@ dialog::backdrop {
     max-height: 68%;
     overflow-y: auto;
   }
-  .conversation-body {
-    padding-bottom: 20px;
-  }
-  .speaker {
-    gap: 11px;
-  }
-  .speaker h1 {
-    font-size: 29px;
-  }
-  .speaker-detail {
-    font-size: 9px;
-    color: #a5b5a8;
-  }
-  .subtitle-space {
-    margin-top: 13px;
-    min-height: 63px;
-  }
-  .subtitle {
-    font-size: 21px;
-    line-height: 1.7;
-    letter-spacing: 0.5px;
-    max-height: 23svh;
-  }
-  .recent-user {
-    margin-bottom: 18px;
-    padding-left: 10px;
-  }
-  .recent-user p {
-    font-size: 11px;
-    margin-top: 4px;
-  }
-  .recent-user > span {
-    font-size: 8px;
-  }
-  .reply-actions {
-    margin-top: 8px;
-  }
+
   .suggestion-area {
     margin-bottom: 13px;
   }
@@ -1154,9 +1146,7 @@ dialog::backdrop {
     padding-inline: 19px;
     padding-bottom: 19px;
   }
-  .subtitle {
-    font-size: 20px;
-  }
+
   .suggestions button {
     padding-inline: 9px;
     gap: 6px;
@@ -1171,20 +1161,7 @@ dialog::backdrop {
     height: 71%;
     min-height: 390px;
   }
-  .speaker h1 {
-    font-size: 25px;
-  }
-  .conversation-body {
-    padding-bottom: 12px;
-  }
-  .subtitle-space {
-    min-height: 52px;
-    margin-top: 9px;
-  }
-  .subtitle {
-    font-size: 19px;
-    line-height: 1.6;
-  }
+
   .suggestion-area {
     margin-bottom: 10px;
   }
@@ -1200,4 +1177,129 @@ dialog::backdrop {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+.voice-preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: #c8d2bb;
+  font-size: 12px;
+}
+.voice-preview-bar > div {
+  display: flex;
+  gap: 8px;
+}
+.voice-preview-bar button {
+  min-height: 44px;
+  padding: 6px 10px;
+  color: inherit;
+  border: 1px solid #c8d2bb40;
+  border-radius: 10px;
+  background: transparent;
+}
+.send-button.voice-confirm {
+  width: auto;
+  min-width: 84px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+/* Link health is compact and independent of conversation/session errors. */
+.header-connection {
+  margin-left: auto;
+  margin-right: 22px;
+}
+@media (max-width: 760px) {
+  .header-connection {
+    position: absolute;
+    top: 72px;
+    right: 24px;
+    margin: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .header-actions > a[href='/webgal.html'] {
+    display: none;
+  }
+}
+
+.voice-input-error {
+  margin-bottom: 13px;
+  padding: 12px 14px;
+  border: 1px solid #c2caa833;
+  border-radius: 10px;
+  background: #bbcba209;
+  color: #c7d3b9;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.voice-input-error p {
+  margin: 0 0 7px;
+}
+.voice-input-error > div {
+  display: flex;
+  gap: 10px;
+}
+.voice-input-error button {
+  min-height: 40px;
+  padding: 5px 10px;
+  border: 1px solid #c2caa840;
+  border-radius: 6px;
+  background: transparent;
+  color: #d2ddc3;
+  font-size: 11px;
+}
+
+/* Keep the original presentation and the WebGAL story as peer entry points. */
+.experience-switch {
+  position: absolute;
+  z-index: 6;
+  top: 76px;
+  left: 48px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #a9bdab38;
+  border-radius: 18px;
+  background: #18302dc9;
+  font-size: 11px;
+  color: #cbd4c1;
+}
+.experience-switch span,
+.experience-switch a {
+  padding: 6px 10px;
+  border-radius: 14px;
+}
+.experience-switch span {
+  background: #51655a;
+  color: #f0edda;
+}
+.experience-switch a:focus-visible {
+  outline: 2px solid #d7c497;
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  .experience-switch {
+    top: 76px;
+    left: 20px;
+    font-size: 10px;
+  }
+  .experience-switch span,
+  .experience-switch a {
+    padding: 6px 8px;
+  }
+}
+
+.scene-narration {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
 }

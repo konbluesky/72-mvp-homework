@@ -1,8 +1,14 @@
-import { ServerEventSchema, sameTurn, type Receipt, type TurnIdentity } from '@mira/protocol';
+import {
+  ServerEventSchema,
+  sameTurn,
+  type Receipt,
+  type TurnIdentity,
+  type StoryInteraction,
+} from '@mira/protocol';
 import { ApiClient, ApiError } from '../api/client.js';
 import { readSse } from '../api/sse.js';
 import type { PlaybackScheduler } from '../playback/scheduler.js';
-import type { SceneStore } from '../stores/scene.js';
+import type { InteractiveState } from './state.js';
 import { acquireMicrophone, RecordingController } from './recorder.js';
 import { ReceiptBook } from './receipts.js';
 
@@ -18,14 +24,23 @@ export class TurnController {
   private flushing = false;
   private disposed = false;
   private epoch = 0;
+  private recoveryAttempts = 0;
+  private nextRecoveryAt = 0;
+  private automaticRecoveryBlocked = false;
+  private rateLimitedUntil = 0;
 
   constructor(
     private readonly api: ApiClient,
     private readonly playback: PlaybackScheduler,
-    private readonly store: SceneStore,
+    private readonly store: InteractiveState,
   ) {}
 
   async connect(reset = false): Promise<void> {
+    if (this.disposed || (!reset && this.store.connecting) || Date.now() < this.rateLimitedUntil)
+      return;
+    if (reset) this.store.sessionExpired = false;
+    if (this.store.sessionExpired && !reset) return;
+    this.automaticRecoveryBlocked = false;
     const epoch = ++this.epoch;
     this.interrupt();
     this.connection.abort();
@@ -36,12 +51,20 @@ export class TurnController {
     this.store.failure = '';
     try {
       if (this.sessionId && !reset) {
+        const pending = this.receipts.outbox();
+        if (pending.length) {
+          const acknowledged = await this.api.receipts(pending, signal);
+          if (this.disposed || epoch !== this.epoch) return;
+          this.receipts.acknowledge(acknowledged.acknowledged);
+        }
         const snapshot = await this.api.snapshot(signal);
         if (this.disposed || epoch !== this.epoch) return;
         this.generation = Math.max(this.generation, snapshot.generation);
         this.store.voiceInput = snapshot.capabilities.voiceInput;
+        this.store.scenario = snapshot.scene.scenario ?? null;
         this.store.environment = snapshot.scene.environment;
         this.store.facts = snapshot.scene.facts;
+        if (snapshot.scene.story) this.store.story = snapshot.scene.story;
       } else {
         this.api.clear();
         const session = await this.api.createSession(signal);
@@ -51,21 +74,88 @@ export class TurnController {
         this.receipts.clear();
         this.store.mode = session.mode;
         this.store.voiceInput = session.capabilities.voiceInput;
+        this.store.scenario = session.scene.scenario ?? null;
         this.store.environment = session.scene.environment;
         this.store.facts = session.scene.facts;
+        if (session.scene.story) this.store.story = session.scene.story;
         this.store.emotion = 'guarded';
+        this.store.narration = '';
+        this.store.opening = session.opening ?? null;
       }
       this.store.connected = true;
+      this.store.sessionExpired = false;
+      this.recoveryAttempts = 0;
+      this.nextRecoveryAt = 0;
+      this.automaticRecoveryBlocked = false;
+      this.rateLimitedUntil = 0;
     } catch (error) {
       if (signal.aborted || this.disposed || epoch !== this.epoch) return;
       this.store.connected = false;
       this.store.failure =
         error instanceof ApiError ? error.message : '故事暂时没有连接上，请重新连接。';
-      if (error instanceof ApiError && ['SESSION_EXPIRED', 'UNAUTHORIZED'].includes(error.code))
+      this.recoveryAttempts += 1;
+      this.nextRecoveryAt =
+        Date.now() + Math.min(30_000, 1_000 * 2 ** Math.min(this.recoveryAttempts - 1, 5));
+      this.automaticRecoveryBlocked = !(error instanceof ApiError) || !error.retryable;
+      if (
+        error instanceof ApiError &&
+        (error.code === 'RATE_LIMITED' || error.httpStatus === 429)
+      ) {
+        this.rateLimitedUntil = Date.now() + 60_000;
+        this.nextRecoveryAt = Math.max(this.nextRecoveryAt, this.rateLimitedUntil);
+      }
+      if (error instanceof ApiError && error.code === 'STALE_TURN')
+        void this.recoverConnection(true, true);
+      if (error instanceof ApiError && ['SESSION_EXPIRED', 'UNAUTHORIZED'].includes(error.code)) {
+        this.store.sessionExpired = true;
         this.sessionId = '';
+      }
     } finally {
       if (epoch === this.epoch && !this.disposed) this.store.connecting = false;
     }
+  }
+
+  /** Automatic recovery is for a disconnected, idle session, never an active reply. */
+  async recoverConnection(force = false, verifySession = false): Promise<void> {
+    const activePlayback =
+      this.store.playback !== 'idle' ||
+      this.store.interaction === 'thinking' ||
+      this.store.interaction === 'speaking' ||
+      this.store.recording !== 'idle' ||
+      this.store.voicePreview !== 'idle';
+    if (
+      this.disposed ||
+      this.automaticRecoveryBlocked ||
+      Date.now() < this.rateLimitedUntil ||
+      (this.store.connected && !verifySession) ||
+      this.store.connecting ||
+      (this.current && (!verifySession || activePlayback)) ||
+      this.recording ||
+      this.store.sessionExpired
+    )
+      return;
+    if (!force && Date.now() < this.nextRecoveryAt) return;
+    await this.connect();
+  }
+  pauseRecovery(): void {
+    if (this.disposed || !this.store.connecting) return;
+    ++this.epoch;
+    this.connection.abort();
+    this.store.connecting = false;
+  }
+  connectionLost(): void {
+    if (this.disposed) return;
+    ++this.epoch;
+    this.connection.abort();
+    this.interrupt();
+    this.store.connected = false;
+    this.store.connecting = false;
+    if (
+      !this.store.sessionExpired &&
+      !this.automaticRecoveryBlocked &&
+      Date.now() >= this.rateLimitedUntil
+    )
+      this.store.failure = '与服务端的连接已中断，正在自动重连。';
   }
 
   send(text: string): void {
@@ -74,6 +164,12 @@ export class TurnController {
     void this.playback.unlock().catch(() => undefined);
     const turn = this.start();
     void this.submit(turn, clean);
+  }
+  interact(interaction: StoryInteraction): void {
+    if (!this.store.connected) return;
+    void this.playback.unlock().catch(() => undefined);
+    const turn = this.start();
+    void this.submit(turn, { interaction });
   }
   press(): void {
     if (!this.store.connected || this.recording) return;
@@ -90,17 +186,22 @@ export class TurnController {
       phase: (phase) => {
         if (!this.isCurrent(turn)) return;
         this.store.recording = phase;
-        this.store.interaction = phase === 'recording' ? 'listening' : 'idle';
+        this.store.interaction =
+          phase === 'recording'
+            ? 'listening'
+            : this.store.voicePreview === 'transcribing'
+              ? 'thinking'
+              : 'idle';
       },
       submit: (blob, durationMs) => {
         if (!this.isCurrent(turn)) return;
         this.recording = undefined;
-        void this.submit(turn, { blob, durationMs });
+        void this.previewRecording(turn, { blob, durationMs });
       },
       fail: (message) => {
         if (this.isCurrent(turn)) {
           this.recording = undefined;
-          this.store.failure = message;
+          this.failVoiceInput(turn, message);
         }
       },
     });
@@ -126,21 +227,24 @@ export class TurnController {
     this.recording?.cancel();
     this.recording = undefined;
     this.store.recording = 'idle';
+    this.store.voicePreview = 'idle';
+    this.store.voiceInputError = '';
+    this.store.voiceDraft = '';
+    this.store.voiceDraftSimulated = false;
     if (previous) {
       const snapshot = this.receipts.freeze(previous);
       // Network cancellation is best effort; the next begin includes this frozen snapshot.
       void this.api.cancel(previous, snapshot).catch(() => undefined);
     }
   }
+  discardVoicePreview(): void {
+    this.interrupt();
+  }
 
   receipt(value: Omit<Receipt, keyof TurnIdentity | 'receiptId'>, turn: TurnIdentity): void {
     if (!this.isCurrent(turn)) return;
     const receipt = { ...turn, ...value, receiptId: crypto.randomUUID() };
     if (!this.receipts.record(receipt)) return;
-    if (value.status === 'presented' && value.kind === 'photo')
-      this.store.facts.photo_revealed = true;
-    if (value.status === 'presented' && value.kind === 'environment')
-      this.store.facts.rain_softened = true;
     void this.flush();
   }
   async dispose(): Promise<void> {
@@ -177,7 +281,7 @@ export class TurnController {
   }
   private async submit(
     turn: TurnIdentity,
-    input: string | { blob: Blob; durationMs: number },
+    input: string | { blob: Blob; durationMs: number } | { interaction: StoryInteraction },
   ): Promise<void> {
     const begin = this.begin;
     const signal = this.active.signal;
@@ -226,9 +330,12 @@ export class TurnController {
             case 'audio.ready':
               this.playback.enqueue(turn, event.payload);
               break;
+            case 'presentation.ready':
+              this.playback.enqueuePresentation(turn, event.payload);
+              break;
             case 'reply.done':
               done = true;
-              this.playback.generationDone(turn);
+              this.playback.generationDone(turn, event.payload.suggestions ?? []);
               break;
             case 'error':
               throw new ApiError(
@@ -246,18 +353,69 @@ export class TurnController {
       this.fail(turn, error);
     }
   }
+  private async previewRecording(
+    turn: TurnIdentity,
+    audio: { blob: Blob; durationMs: number },
+  ): Promise<void> {
+    const begin = this.begin;
+    const signal = this.active.signal;
+    this.store.voicePreview = 'transcribing';
+    this.store.interaction = 'thinking';
+    try {
+      await begin;
+      if (!this.isCurrent(turn)) return;
+      const preview = await this.api.transcribe(turn, audio, crypto.randomUUID(), signal);
+      if (!this.isCurrent(turn)) return;
+      if (!sameTurn(preview, turn)) throw new Error('TRANSCRIPTION_IDENTITY');
+      // The recording round has no reply. Its text remains a draft until a new confirmed input.
+      this.playback.cancel();
+      this.store.voiceDraft = preview.text;
+      this.store.voiceDraftSimulated = preview.simulated;
+      this.store.voicePreview = 'ready';
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        [
+          'NO_SPEECH',
+          'INVALID_REQUEST',
+          'UNSUPPORTED_AUDIO',
+          'UPLOAD_TOO_LARGE',
+          'PROVIDER_FAILED',
+          'PROVIDER_TIMEOUT',
+          'CAPACITY_EXCEEDED',
+          'RATE_LIMITED',
+        ].includes(error.code)
+      )
+        this.failVoiceInput(turn, error.message);
+      else this.fail(turn, error);
+    }
+  }
   private isCurrent(turn: TurnIdentity): boolean {
     return !this.disposed && sameTurn(turn, this.current) && !this.active.signal.aborted;
   }
+  private failVoiceInput(turn: TurnIdentity, message: string): void {
+    if (!this.isCurrent(turn)) return;
+    this.interrupt();
+    this.store.voiceInputError = message;
+  }
   private fail(turn: TurnIdentity, error: unknown): void {
     if (!this.isCurrent(turn)) return;
+    if (error instanceof ApiError && error.code === 'NO_SPEECH') {
+      this.failVoiceInput(turn, error.message);
+      return;
+    }
     this.interrupt();
     this.store.failure =
       error instanceof ApiError
         ? error.message
-        : '连接暂时断开，故事停在这里。请重新连接或再说一句。';
+        : error instanceof Error && error.message === 'SSE_IDLE_TIMEOUT'
+          ? '回复等待超时，已停止本轮，可以重新发送消息。'
+          : '这次回复未完成，未播放的内容已停止，可以重新发送消息。';
+    if (error instanceof ApiError && error.code === 'STALE_TURN')
+      void this.recoverConnection(true, true);
     if (error instanceof ApiError && ['SESSION_EXPIRED', 'UNAUTHORIZED'].includes(error.code)) {
       this.store.connected = false;
+      this.store.sessionExpired = true;
       this.sessionId = '';
     }
   }

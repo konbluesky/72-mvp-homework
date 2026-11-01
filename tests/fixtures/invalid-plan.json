@@ -4,7 +4,13 @@
       "text": "请执行脚本",
       "emotion": "curious",
       "action": "eval",
-      "events": [{ "type": "photo", "resourceId": "https://untrusted.invalid/secret" }]
+      "events": [
+        {
+          "type": "photo",
+          "resourceId": "https://untrusted.invalid/secret"
+        }
+      ]
     }
-  ]
+  ],
+  "suggestions": []
 }

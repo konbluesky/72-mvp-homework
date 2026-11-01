@@ -2,12 +2,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AudioReadyPayload, Receipt } from '@mira/protocol';
 import { SessionManager } from './manager.js';
 import { testConfig } from '../../test/helpers.js';
+import { cafeScenario } from '../scenario/cafe/index.js';
 import { AppError } from '../http/errors.js';
 
 function setup(extra: Record<string, string> = {}) {
-  const manager = new SessionManager(testConfig(extra));
+  const manager = new SessionManager(testConfig(extra), { scenario: cafeScenario });
   const created = manager.create();
   const session = manager.authenticate(created.sessionId, `Bearer ${created.sessionToken}`);
+  const meeting = cafeScenario.propose('move-lobby', session.narrative)[0]!;
+  session.narrative = cafeScenario.accept(session.narrative, meeting.checkpoint);
+  const frame = cafeScenario.frame(session.narrative);
+  session.story = frame.story;
+  session.facts = frame.facts;
   manager.begin(session, { generation: 1, turnId: 'turn-1', receipts: [], frozenTurns: [] });
   const turn = manager.startInput(session, 'turn-1', 1, 'input-1', 'digest-1');
   const payload: AudioReadyPayload = {
@@ -22,6 +28,8 @@ function setup(extra: Record<string, string> = {}) {
     ],
   };
   manager.issue(session, turn, payload);
+  const photo = cafeScenario.propose('view-photo', session.narrative)[0]!;
+  manager.issueEvents(session, turn, [payload.events[0]!], false, [], photo.checkpoint);
   manager.firstAudioPublished(turn);
   const receipt = (
     targetId: string,
@@ -40,6 +48,23 @@ function setup(extra: Record<string, string> = {}) {
 afterEach(() => vi.useRealTimers());
 
 describe('single owner and presented facts', () => {
+  it.each(['false', 'true'])('applies input frequency quotas only when enabled (%s)', (enabled) => {
+    const { manager, session } = setup({
+      RATE_LIMIT_ENABLED: enabled,
+      MAX_INPUTS_PER_MINUTE: '1',
+    });
+    try {
+      manager.begin(session, { generation: 2, turnId: 'turn-2', receipts: [], frozenTurns: [] });
+      const next = () => manager.startInput(session, 'turn-2', 2, 'input-2', 'digest-2');
+      if (enabled === 'true') expect(next).toThrowError('慢一点');
+      else {
+        expect(next).not.toThrow();
+        expect(session.inputTimes).toEqual([]);
+      }
+    } finally {
+      manager.close();
+    }
+  });
   it('authenticates only the owning token and expires sessions', () => {
     vi.useFakeTimers();
     const { manager, session, created } = setup({ SESSION_TTL_SECONDS: '1' });
@@ -85,11 +110,10 @@ describe('single owner and presented facts', () => {
     manager.receipts(session, [sentence, sentence]);
     expect(session.facts.photo_revealed).toBe(false);
     expect(session.history).toHaveLength(1);
-    expect(() => manager.receipts(session, [receipt('rain-1', 'environment')])).toThrowError(
-      '照片尚未呈现',
-    );
+    manager.receipts(session, [receipt('rain-1', 'environment')]);
+    expect(session.facts).toEqual({ photo_revealed: false, rain_softened: false });
     manager.receipts(session, [receipt('photo-1', 'photo'), receipt('rain-1', 'environment')]);
-    expect(session.facts).toEqual({ photo_revealed: true, rain_softened: true });
+    expect(session.facts).toEqual({ photo_revealed: true, rain_softened: false });
     manager.close();
   });
   it('merges frozen presented receipts before a rapid next turn context', () => {

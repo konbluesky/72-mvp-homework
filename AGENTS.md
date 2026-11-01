@@ -16,3 +16,6 @@
 - Read [docs/README.md](docs/README.md) for design scope and [acceptance](docs/acceptance/implementation-plan.md) for delivery status.
 
 - Character rendering is Live2D: `apps/web/src/scene/live2d*.ts`; pinned local runtime/model/terms live in `apps/web/public/assets/live2d`. Run `npm run assets:check` after asset changes. Keep Haru stand-in attribution; the removed SVG character and Rive paths must not reappear as silent fallbacks.
+
+- Scenario logic lives in `apps/server/src/scenario/cafe/` as Ink and validated JSON. `runtime/` adapts inkjs; SessionManager alone commits receipt-confirmed checkpoints. Do not restore production keyword routing or duplicate prop canon in the frontend.
+- After editing `.ink` or scenario JSON, run `npm run scenarios:build`; `npm run scenarios:check` validates the artifact. Generated `compiled.json` is ignored and rebuilt by dev/typecheck/build preparation. Keep existing dev services running; do not launch them for debugging unless requested.

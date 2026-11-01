@@ -16,3 +16,17 @@ docs/ui-integrated-design.md
 docs/contracts/openapi.json
 apps/web/public/assets/live2d
 docs/live2d-scene-transitions-research.md
+
+# Preserve imported WebGAL source formatting for upstream diffs.
+apps/web/src/engine/webgal
+packages/webgal-parser/src
+apps/web/third-party/webgal/SOURCES.json
+apps/web/third-party/webgal/package.upstream.json
+packages/webgal-parser/package.upstream.json
+
+# Deterministic SVG generator output and its source hashes.
+apps/web/public/assets/cafe-story
+
+apps/server/src/scenario/cafe/compiled.json
+
+**/manifest.generated.json

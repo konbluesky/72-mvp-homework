@@ -12,6 +12,17 @@ const liveTextConfig = {
 };
 
 describe('configuration boundaries', () => {
+  it('disables demo frequency quotas by default while retaining production limits and explicit overrides', () => {
+    expect(loadConfig({}).RATE_LIMIT_ENABLED).toBe(false);
+    expect(loadConfig({ NODE_ENV: 'development' }).RATE_LIMIT_ENABLED).toBe(false);
+    expect(loadConfig({ NODE_ENV: 'production' }).RATE_LIMIT_ENABLED).toBe(true);
+    expect(loadConfig({ NODE_ENV: 'test' }).RATE_LIMIT_ENABLED).toBe(true);
+    expect(loadConfig({ RATE_LIMIT_ENABLED: 'true' }).RATE_LIMIT_ENABLED).toBe(true);
+    expect(
+      loadConfig({ NODE_ENV: 'production', RATE_LIMIT_ENABLED: 'false' }).RATE_LIMIT_ENABLED,
+    ).toBe(false);
+    expect(() => loadConfig({ RATE_LIMIT_ENABLED: 'disabled' })).toThrow('RATE_LIMIT_ENABLED');
+  });
   it('boots mock with no provider secrets and resolves media independently of cwd', () => {
     const config = loadConfig({});
     expect(config.APP_MODE).toBe('mock');

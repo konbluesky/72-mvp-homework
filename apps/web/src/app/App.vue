@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { ApiClient } from '../api/client.js';
+import { ConnectionMonitor } from '../connection/monitor.js';
+import ConnectionStatus from '../connection/ConnectionStatus.vue';
 import { BrowserAudio } from '../playback/audio.js';
 import { PlaybackScheduler } from '../playback/scheduler.js';
 import { TurnController } from '../interaction/turn-controller.js';
 import { createPresentation } from '../scene/presentation.js';
 import CharacterStage from '../scene/CharacterStage.vue';
 import { useSceneStore } from '../stores/scene.js';
-import { useConversationDisplay } from './conversation-display.js';
-import { replySuggestions, type ReplySuggestion } from './reply-suggestions.js';
+import { useConversationDisplay, type DisplayLine } from './conversation-display.js';
+import type { ReplySuggestion } from '@mira/protocol';
 
 const scene = useSceneStore();
 const text = ref('');
@@ -20,10 +22,41 @@ const hold = ref<HTMLButtonElement>();
 const inputMode = ref<'text' | 'voice'>('text');
 const inputFocused = ref(false);
 const suggestionsExpanded = ref(true);
-const awaitingReply = ref(false);
 const conversation = useConversationDisplay('雨这么大，先坐一会儿吧。');
-const { messages, lastReply, lastUser, lastUserIsSample, replyPaused } = conversation;
-const api = new ApiClient();
+const { messages } = conversation;
+const conversationViewport = ref<HTMLDivElement>();
+const followConversation = ref(true);
+let scrollEpoch = 0;
+let disposed = false;
+const visibleMessages = computed(() => {
+  const grouped: DisplayLine[] = [];
+  for (const line of messages.value) {
+    const previous = grouped.at(-1);
+    if (line.role === 'character' && previous?.role === 'character') {
+      previous.text += '\n' + line.text;
+      previous.paused ||= line.paused;
+    } else grouped.push({ ...line });
+  }
+  return grouped.slice(-6);
+});
+const latestReplyId = computed(
+  () => visibleMessages.value.filter((line) => line.role === 'character').at(-1)?.id,
+);
+watch(
+  [() => messages.value.at(-1)?.id, () => scene.interaction, () => scene.playback],
+  async () => {
+    const epoch = ++scrollEpoch;
+    await nextTick();
+    if (disposed || epoch !== scrollEpoch || !followConversation.value) return;
+    const pane = conversationViewport.value;
+    if (pane) pane.scrollTop = pane.scrollHeight;
+  },
+);
+function onConversationScroll() {
+  const pane = conversationViewport.value;
+  if (pane) followConversation.value = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 32;
+}
+const api = new ApiClient(undefined, undefined, 'conversation');
 let controller: TurnController;
 function timing(name: string, durationMs: number) {
   const measure = `mira:${name}`;
@@ -38,17 +71,32 @@ const playback = new PlaybackScheduler({
   timing,
   presentation: createPresentation(scene),
   view: (value) => {
-    if (value.subtitle) awaitingReply.value = false;
     conversation.observePlayback(value);
     scene.$patch(value);
   },
   receipt: (value, turn) => controller.receipt(value, turn),
   expired: (turn) => controller.expire(turn),
+  cancelled: (turn) => controller.expire(turn),
   failure: (message) => {
     scene.failure = message;
   },
 });
 controller = new TurnController(api, playback, scene);
+const connectionMonitor = new ConnectionMonitor(api, {
+  view: (value) => scene.$patch({ connection: value }),
+  reachable: () => {
+    void controller.recoverConnection();
+  },
+  unavailable: () => {
+    conversation.pauseCaption();
+    controller.connectionLost();
+  },
+});
+function retryConnection() {
+  if (document.hidden || !navigator.onLine) return;
+  connectionMonitor.retry();
+  void controller.recoverConnection(true, true);
+}
 const character = computed(() => ({
   interaction: scene.interaction,
   emotion: scene.emotion,
@@ -58,6 +106,7 @@ const character = computed(() => ({
 }));
 const busy = computed(
   () =>
+    scene.voicePreview === 'transcribing' ||
     scene.interaction === 'thinking' ||
     scene.interaction === 'speaking' ||
     scene.playback === 'buffering',
@@ -67,6 +116,8 @@ const activity = computed(() => {
   if (!scene.connected) return '连接中断';
   if (scene.recording === 'permission') return '需要麦克风权限';
   if (scene.recording === 'recording') return '录音中';
+  if (scene.voicePreview === 'transcribing') return '正在识别，完成后可编辑';
+  if (scene.voicePreview === 'ready') return '语音草稿待确认';
   if (scene.playback === 'audio-error') return '音频未能播放';
   if (scene.interaction === 'thinking' || scene.playback === 'buffering') return '回复准备中';
   if (scene.interaction === 'speaking') return '语音播放中';
@@ -78,23 +129,37 @@ const showSuggestions = computed(
     !scene.failure &&
     !busy.value &&
     scene.recording === 'idle' &&
-    inputMode.value === 'text' &&
+    scene.voicePreview === 'idle' &&
     !text.value.trim() &&
-    !inputFocused.value,
+    !inputFocused.value &&
+    scene.suggestions.length > 0,
 );
-const suggestions = computed(() => replySuggestions(scene.facts, lastReply.value));
+const suggestions = computed(() => scene.suggestions);
+watch(
+  () => scene.voicePreview,
+  async (phase) => {
+    if (phase !== 'ready') return;
+    const epoch = ++editEpoch;
+    text.value = scene.voiceDraft;
+    inputMode.value = 'text';
+    await nextTick();
+    if (disposed || epoch !== editEpoch || scene.voicePreview !== 'ready') return;
+    resizeInput();
+    input.value?.focus();
+  },
+);
 const composerHint = computed(() => {
   if (scene.recording === 'recording') return '上滑或按 Esc 取消 · 最长 15 秒';
   if (scene.recording === 'permission') return '请在浏览器中允许麦克风，松开可取消';
-  if (scene.playback === 'text') return '当前使用文字继续这段对话';
-  if (inputMode.value === 'voice' && scene.mode === 'mock') return '演示录音：发送后使用示例转录';
-  if (inputMode.value === 'voice') return '按住录音，松开发送';
   return '';
 });
 watch(
   () => scene.transcribed,
   (value) => {
-    if (value) conversation.addUser(value, scene.simulated ? 'sample' : 'voice');
+    if (value) {
+      followConversation.value = true;
+      conversation.addUser(value, scene.simulated ? 'sample' : 'voice');
+    }
   },
 );
 watch(
@@ -108,11 +173,24 @@ let pointer: number | undefined;
 let pressY = 0;
 function send() {
   const value = text.value.trim();
-  if (!value || !scene.connected || scene.recording !== 'idle') return;
+  if (
+    !value ||
+    !scene.connected ||
+    scene.recording !== 'idle' ||
+    scene.voicePreview === 'transcribing'
+  )
+    return;
+  const voice = scene.voicePreview === 'ready';
+  const source =
+    voice && scene.voiceDraftSimulated && value === scene.voiceDraft
+      ? 'sample'
+      : voice
+        ? 'voice'
+        : 'text';
   editEpoch += 1;
   conversation.pauseCaption();
-  conversation.addUser(value);
-  awaitingReply.value = true;
+  followConversation.value = true;
+  conversation.addUser(value, source);
   text.value = '';
   inputFocused.value = false;
   if (input.value) {
@@ -124,6 +202,7 @@ function send() {
 async function chooseSuggestion(suggestion: ReplySuggestion) {
   if (!showSuggestions.value) return;
   const epoch = ++editEpoch;
+  inputMode.value = 'text';
   text.value = suggestion.draft;
   await nextTick();
   if (
@@ -136,6 +215,24 @@ async function chooseSuggestion(suggestion: ReplySuggestion) {
     input.value?.focus();
   }
 }
+function discardVoiceDraft() {
+  editEpoch += 1;
+  controller.discardVoicePreview();
+  text.value = '';
+  inputFocused.value = false;
+  input.value?.blur();
+}
+function rerecord() {
+  discardVoiceDraft();
+  inputMode.value = 'voice';
+}
+function switchInputMode(mode: 'text' | 'voice') {
+  if (scene.recording !== 'idle') return;
+  if (scene.voicePreview !== 'idle') discardVoiceDraft();
+  inputFocused.value = false;
+  scene.voiceInputError = '';
+  inputMode.value = mode;
+}
 function resizeInput() {
   const field = input.value;
   if (!field) return;
@@ -143,7 +240,6 @@ function resizeInput() {
   field.style.height = `${Math.max(28, Math.min(105, field.scrollHeight))}px`;
 }
 function interrupt() {
-  awaitingReply.value = false;
   conversation.pauseCaption();
   controller.interrupt();
 }
@@ -151,7 +247,7 @@ function restart() {
   editEpoch += 1;
   cancel();
   conversation.reset();
-  awaitingReply.value = false;
+  followConversation.value = true;
   text.value = '';
   info.value?.close();
   history.value?.close();
@@ -161,7 +257,6 @@ function startRecording() {
   editEpoch += 1;
   if (!scene.connected || !scene.voiceInput || scene.recording !== 'idle') return;
   conversation.pauseCaption();
-  awaitingReply.value = true;
   controller.press();
 }
 function down(event: PointerEvent) {
@@ -180,13 +275,18 @@ function up(event: PointerEvent) {
   controller.release();
 }
 function cancel() {
-  awaitingReply.value = false;
   pointer = undefined;
   if (scene.recording !== 'idle') conversation.pauseCaption();
   controller.cancelRecording();
 }
 function move(event: PointerEvent) {
   if (event.pointerId === pointer && pressY - event.clientY > 70) cancel();
+}
+function lostCapture() {
+  const wasHeld = pointer !== undefined;
+  pointer = undefined;
+  // Automatic recording completion may replace the microphone with the draft editor.
+  if (wasHeld && scene.recording !== 'idle') cancel();
 }
 function keyboardDown(event: KeyboardEvent) {
   if ([' ', 'Enter'].includes(event.key)) {
@@ -201,12 +301,18 @@ function keyboardUp(event: KeyboardEvent) {
   }
 }
 function submitKey(event: KeyboardEvent) {
+  // Editing a transcript should not accidentally send it while the user inserts a new line.
+  if (scene.voicePreview === 'ready' && !event.ctrlKey && !event.metaKey) return;
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault();
     send();
   }
 }
 function escape(event: KeyboardEvent) {
+  if (event.key === 'Escape' && scene.voicePreview !== 'idle') {
+    discardVoiceDraft();
+    return;
+  }
   if (event.key === 'Escape' && scene.recording !== 'idle') cancel();
 }
 function visibility() {
@@ -215,28 +321,43 @@ function visibility() {
     conversation.pauseCaption();
     cancel();
     void playback.dispose();
-  }
+    connectionMonitor.suspend();
+    controller.pauseRecovery();
+  } else if (navigator.onLine) {
+    connectionMonitor.start();
+    void controller.recoverConnection(true, true);
+  } else connectionMonitor.offline();
 }
 function blur() {
   if (scene.recording !== 'idle') cancel();
 }
 function offline() {
-  interrupt();
-  scene.failure = '网络断开了。恢复连接后，可以接着聊。';
-  scene.connected = false;
+  connectionMonitor.offline();
 }
+function online() {
+  if (!document.hidden) retryConnection();
+}
+
 onMounted(() => {
-  void controller.connect();
+  if (navigator.onLine) {
+    void controller.connect();
+    if (!document.hidden) connectionMonitor.start();
+  } else connectionMonitor.offline();
   document.addEventListener('visibilitychange', visibility);
   document.addEventListener('keydown', escape);
   window.addEventListener('blur', blur);
   window.addEventListener('offline', offline);
+  window.addEventListener('online', online);
 });
 onBeforeUnmount(() => {
+  disposed = true;
+  scrollEpoch += 1;
   document.removeEventListener('visibilitychange', visibility);
   document.removeEventListener('keydown', escape);
   window.removeEventListener('blur', blur);
   window.removeEventListener('offline', offline);
+  window.removeEventListener('online', online);
+  connectionMonitor.dispose();
   void controller.dispose();
 });
 </script>
@@ -253,8 +374,35 @@ onBeforeUnmount(() => {
       <a class="brand" href="/" aria-label="雨停之前首页"
         ><span class="brand-mark" aria-hidden="true">✳</span>雨停之前</a
       >
+      <div class="header-connection">
+        <ConnectionStatus
+          :value="scene.connection"
+          :session-connected="scene.connected"
+          :session-connecting="scene.connecting"
+          :session-expired="scene.sessionExpired"
+          @retry="retryConnection"
+          @restart="restart"
+        />
+      </div>
       <nav class="header-actions" aria-label="对话选项">
-        <span v-if="scene.mode === 'mock'" class="mode-label">演示</span>
+        <a
+          class="quiet-button"
+          href="/webgal.html"
+          target="_blank"
+          rel="noopener"
+          aria-label="切换到 WebGAL 故事页面"
+          >WebGAL 故事</a
+        >
+        <span
+          v-if="scene.connected"
+          class="mode-label"
+          :title="
+            scene.mode === 'live'
+              ? 'Deepgram 语音识别和播报，GPT 对话'
+              : '离线演示语音，不使用 Deepgram'
+          "
+          >{{ scene.mode === 'live' ? 'Live' : 'Mock' }}</span
+        >
         <button
           class="quiet-button history-button"
           aria-label="回看本次对话"
@@ -278,6 +426,12 @@ onBeforeUnmount(() => {
         </button>
       </nav>
     </header>
+    <nav class="experience-switch" aria-label="页面版本切换">
+      <span aria-current="page">原版对话</span>
+      <a href="/webgal.html" target="_blank" rel="noopener" title="新标签页打开，保留当前对话"
+        >WebGAL 故事 ↗</a
+      >
+    </nav>
     <section class="portrait" aria-label="雨夜咖啡馆里的 Mira">
       <CharacterStage
         :key="animationKey"
@@ -286,6 +440,17 @@ onBeforeUnmount(() => {
         @status="scene.animation = $event"
       />
       <div class="portrait-shade" aria-hidden="true" />
+      <div class="character-identity">
+        <h1>Mira</h1>
+        <span>旅行摄影师</span>
+        <span
+          v-if="scene.interaction === 'speaking'"
+          class="voice-level"
+          :style="{ '--voice-energy': scene.mouthOpen }"
+          aria-hidden="true"
+          ><i /><i /><i /><i
+        /></span>
+      </div>
       <div class="location">
         <span aria-hidden="true" class="location-line" /><span>巷口咖啡馆</span
         ><span class="location-weather">{{
@@ -310,52 +475,41 @@ onBeforeUnmount(() => {
       </section>
     </section>
     <section class="dialogue" aria-label="与 Mira 对话">
-      <div class="conversation-body">
-        <div v-if="lastUser" class="recent-user">
-          <span>{{ lastUserIsSample ? '语音示例' : '你' }}</span>
-          <p>{{ lastUser }}</p>
-        </div>
-        <div class="speaker">
-          <h1>Mira<span class="speaker-period">.</span></h1>
-          <span class="speaker-detail">旅行摄影师</span
-          ><span
-            v-if="scene.interaction === 'speaking'"
-            class="voice-level"
-            :style="{ '--voice-energy': scene.mouthOpen }"
-            aria-hidden="true"
-            ><i /><i /><i /><i
-          /></span>
-        </div>
-        <div class="subtitle-space">
+      <div
+        ref="conversationViewport"
+        class="conversation-body"
+        aria-label="最近的对话"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        @scroll="onConversationScroll"
+      >
+        <article
+          v-for="line in visibleMessages"
+          :key="line.id"
+          :class="line.role === 'user' ? 'recent-user' : 'character-message'"
+          :aria-label="line.role === 'user' ? '你发送的消息' : 'Mira 的回复'"
+        >
+          <span v-if="line.source === 'sample'" class="sample-label">语音示例</span>
           <p
-            v-if="!awaitingReply"
-            class="subtitle"
-            :class="{ 'subtitle-paused': replyPaused }"
-            aria-live="polite"
+            :class="{
+              subtitle: line.role === 'character' && line.id === latestReplyId,
+              'message-paused': line.paused,
+            }"
           >
-            {{ lastReply }}
+            {{ line.text }}
           </p>
-          <span
-            v-if="scene.interaction === 'thinking' || scene.playback === 'buffering'"
-            class="reply-dots"
-            aria-hidden="true"
-            ><i /><i /><i
-          /></span>
+        </article>
+        <div
+          v-if="busy && scene.interaction !== 'speaking'"
+          class="reply-pending"
+          aria-hidden="true"
+        >
+          <span class="reply-dots" aria-hidden="true"><i /><i /><i /></span>
         </div>
-        <div class="reply-actions">
-          <button v-if="busy" class="interrupt" @click="interrupt">
-            <span class="stop-square" aria-hidden="true" />{{
-              scene.interaction === 'speaking' ? '暂停，换我说' : '取消这次回复'
-            }}</button
-          ><span v-else-if="replyPaused" class="paused-note">这句已暂停</span
-          ><button
-            v-if="scene.playback === 'text'"
-            class="continue"
-            @click="playback.continueText()"
-          >
-            下一句 <span aria-hidden="true">→</span>
-          </button>
-        </div>
+        <button v-if="scene.playback === 'text'" class="continue" @click="playback.continueText()">
+          下一句 <span aria-hidden="true">→</span>
+        </button>
       </div>
       <div class="interaction-area">
         <div v-if="scene.failure" class="recovery" role="alert">
@@ -386,6 +540,7 @@ onBeforeUnmount(() => {
         <div v-if="scene.animation === 'failed'" class="animation-note" role="status">
           <span>动画加载失败</span><button @click="animationKey++">重试</button>
         </div>
+        <p v-if="scene.narration" class="scene-narration" role="status">{{ scene.narration }}</p>
         <div v-if="showSuggestions" class="suggestion-area">
           <button
             class="suggestion-heading"
@@ -417,11 +572,34 @@ onBeforeUnmount(() => {
             </button>
           </div>
         </div>
+        <div v-if="scene.voiceInputError" class="voice-input-error" role="status">
+          <p>{{ scene.voiceInputError }}</p>
+          <div>
+            <button type="button" @click="rerecord">重新录音</button
+            ><button type="button" @click="switchInputMode('text')">改用文字</button>
+          </div>
+        </div>
+        <div v-if="scene.voicePreview !== 'idle'" class="voice-preview-bar" role="status">
+          <span>{{
+            scene.voicePreview === 'transcribing'
+              ? '正在识别，完成后可编辑…'
+              : scene.voiceDraftSimulated
+                ? '模拟识别草稿 · 可编辑后确认发送'
+                : '语音草稿 · 可编辑后确认发送'
+          }}</span>
+          <div>
+            <button v-if="scene.voicePreview === 'ready'" type="button" @click="rerecord">
+              重新录音
+            </button>
+            <button type="button" @click="discardVoiceDraft">取消</button>
+          </div>
+        </div>
         <form
           class="composer"
           :class="{
             'composer-voice': inputMode === 'voice',
             recording: scene.recording === 'recording',
+            responding: busy,
           }"
           @submit.prevent="send()"
         >
@@ -432,7 +610,7 @@ onBeforeUnmount(() => {
             :disabled="!scene.voiceInput || !scene.connected"
             :aria-label="scene.voiceInput ? '切换语音输入' : '麦克风暂不可用，请输入文字'"
             :title="scene.voiceInput ? '语音输入' : '麦克风暂不可用'"
-            @click="inputMode = 'voice'"
+            @click="switchInputMode('voice')"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect x="9" y="3" width="6" height="11" rx="3" />
@@ -445,7 +623,7 @@ onBeforeUnmount(() => {
             class="input-switch"
             aria-label="切换文字输入"
             :disabled="scene.recording !== 'idle'"
-            @click="inputMode = 'text'"
+            @click="switchInputMode('text')"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect x="3" y="5" width="18" height="14" rx="3" />
@@ -453,12 +631,14 @@ onBeforeUnmount(() => {
             </svg>
           </button>
           <template v-if="inputMode === 'text'"
-            ><label class="sr-only" for="text-input">给 Mira 的消息</label
+            ><label class="sr-only" for="text-input">{{
+              scene.voicePreview === 'ready' ? '编辑语音消息' : '给 Mira 的消息'
+            }}</label
             ><textarea
               id="text-input"
               ref="input"
               v-model="text"
-              :disabled="!scene.connected"
+              :disabled="!scene.connected || scene.voicePreview === 'transcribing'"
               maxlength="1000"
               rows="1"
               autocomplete="off"
@@ -467,12 +647,31 @@ onBeforeUnmount(() => {
               @blur="inputFocused = false"
               @input="resizeInput"
               @keydown="submitKey" /><button
-              type="submit"
-              class="send-button"
-              aria-label="发送文字"
-              :disabled="!scene.connected || !text.trim() || scene.recording !== 'idle'"
+              v-if="busy && !text.trim()"
+              type="button"
+              class="composer-stop"
+              aria-label="停止当前回复"
+              title="停止回复"
+              @click="interrupt"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="8" y="8" width="8" height="8" rx="1.5" />
+              </svg></button
+            ><button
+              v-else
+              type="submit"
+              class="send-button"
+              :class="{ 'voice-confirm': scene.voicePreview === 'ready' }"
+              :aria-label="scene.voicePreview === 'ready' ? '确认发送' : '发送文字'"
+              :disabled="
+                !scene.connected ||
+                !text.trim() ||
+                scene.recording !== 'idle' ||
+                scene.voicePreview === 'transcribing'
+              "
+            >
+              <span v-if="scene.voicePreview === 'ready'">确认发送</span>
+              <svg v-else viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 19V5m-6 6 6-6 6 6" />
               </svg></button
           ></template>
@@ -481,13 +680,15 @@ onBeforeUnmount(() => {
             ref="hold"
             type="button"
             class="hold-talk"
-            :disabled="!scene.connected || !scene.voiceInput"
-            aria-label="按住录音，松开发送，上滑取消"
+            :disabled="
+              !scene.connected || !scene.voiceInput || scene.voicePreview === 'transcribing'
+            "
+            aria-label="按住录音，松开预览，上滑取消"
             @pointerdown="down"
             @pointerup="up"
             @pointercancel="cancel"
             @pointermove="move"
-            @lostpointercapture="pointer !== undefined && cancel()"
+            @lostpointercapture="lostCapture"
             @keydown="keyboardDown"
             @keyup="keyboardUp"
           >
@@ -495,17 +696,37 @@ onBeforeUnmount(() => {
               ><b /><b /><b /><b /><b /></span
             ><span>{{
               scene.recording === 'recording'
-                ? '松开发送'
+                ? '松开预览'
                 : scene.recording === 'permission'
                   ? '等待麦克风授权'
-                  : '按住录音'
+                  : scene.voicePreview === 'transcribing'
+                    ? '正在识别…'
+                    : '按住录音'
             }}</span
             ><small v-if="scene.mode === 'mock' && scene.recording === 'idle'">示例</small>
+          </button>
+          <button
+            v-if="inputMode === 'voice' && busy"
+            type="button"
+            class="composer-stop"
+            aria-label="停止当前回复"
+            title="停止回复"
+            @click="interrupt"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="8" y="8" width="8" height="8" rx="1.5" />
+            </svg>
           </button>
         </form>
         <p v-if="composerHint" class="interaction-hint">{{ composerHint }}</p>
         <p v-if="scene.connecting || !scene.connected" class="connection-note" role="status">
-          {{ scene.connecting ? '正在建立连接…' : '暂时离线，重新连接后可发送消息。' }}
+          {{
+            scene.sessionExpired
+              ? '会话已结束，请重新开始。'
+              : scene.connecting
+                ? '正在恢复会话…'
+                : '连接恢复后可继续发送消息。'
+          }}
         </p>
         <span class="sr-only" role="status" aria-live="polite">{{ activity }}</span>
       </div>
@@ -543,7 +764,9 @@ onBeforeUnmount(() => {
     ><span class="sheet-eyebrow">雨停之前</span>
     <h2 id="about-title">一场雨，一次偶遇。</h2>
     <p>深夜的咖啡馆快打烊了。Mira 把相机放在桌边，面前的咖啡已经凉了一半。</p>
-    <p>直接发消息，或切换到麦克风按住录音。回复播放时，可以暂停，也可以直接发出新消息。</p>
+    <p>
+      直接发消息，或切换到麦克风按住录音。松开后可以预览、修改识别文字，确认后发送。回复播放时，可以暂停，也可以直接发出新消息。
+    </p>
     <div class="about-details">
       <p>
         <b>当前模式</b
@@ -562,6 +785,7 @@ onBeforeUnmount(() => {
       <a class="asset-credits" href="/assets/live2d/NOTICE.md" target="_blank" rel="noreferrer"
         >素材与运行库来源 ↗</a
       >
+      <a class="asset-credits" href="/webgal.html">切换到 WebGAL 故事 ↗</a>
     </div>
     <button class="restart-button" :disabled="scene.connecting" @click="restart">
       重新开始这段相遇 <span aria-hidden="true">↺</span>
