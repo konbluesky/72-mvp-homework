@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Mira: 前后端服务",
+      "name": "角色互动平台: 前后端服务",
       "type": "pwa-node",
       "request": "launch",
       "runtimeExecutable": "node",
@@ -29,12 +29,12 @@
       "args": ["dev"]
     },
     {
-      "name": "Mira: 浏览器",
+      "name": "角色互动平台: 浏览器",
       "type": "pwa-chrome",
       "request": "launch",
       "url": "http://localhost:${config:mira.webPort}",
       "webRoot": "${workspaceFolder}/apps/web",
-      "preLaunchTask": "Mira: 等待就绪",
+      "preLaunchTask": "角色互动平台: 等待就绪",
       "presentation": {
         "hidden": true
       }
@@ -42,9 +42,9 @@
   ],
   "compounds": [
     {
-      "name": "Mira: 一键启动前后端",
-      "configurations": ["Mira: 前后端服务", "Mira: 浏览器"],
-      "preLaunchTask": "Mira: 启动预检",
+      "name": "角色互动平台: 一键启动前后端",
+      "configurations": ["角色互动平台: 前后端服务", "角色互动平台: 浏览器"],
+      "preLaunchTask": "角色互动平台: 启动预检",
       "stopAll": true
     }
   ]

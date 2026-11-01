@@ -6,7 +6,8 @@ import type { PresentationPort } from '../../../playback/scheduler.js';
 import type { InteractiveState } from '../../../interaction/state.js';
 import type { VisualEngineLease } from '../../runtime/engine-adapter';
 import { CharacterDriver } from '../../characters/driver';
-import { cafeLocation, cafeResource, stageScene } from './definition';
+import { cafeLocation, stageScene } from './definition';
+import { cafeResource } from './resources';
 
 type Scope = { revision: number; abort: AbortController };
 export class CafePresentation implements PresentationPort {
@@ -130,6 +131,7 @@ export class CafePresentation implements PresentationPort {
     if (
       this.initialized &&
       this.weather === environment &&
+      this.story.revision === story.revision &&
       this.story.location === story.location &&
       this.story.ambience === story.ambience &&
       this.story.ending === story.ending &&
@@ -276,9 +278,6 @@ export class CafePresentation implements PresentationPort {
     const root = this.lease.stage.mainStageContainer;
     root.scale.set(root.scale.x * zoom);
     await this.painted(scope, signal);
-  }
-  previewMotion(group: string) {
-    this.actor.previewOriginal(group);
   }
   clear() {
     this.scope?.abort.abort();

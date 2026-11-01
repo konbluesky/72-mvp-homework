@@ -1,4 +1,4 @@
-import { cafeResource } from './definition.js';
+import { cafeResource } from './resources.js';
 import { nextTick } from 'vue';
 import { projectStory } from '@mira/protocol';
 import type { PresentationPort } from '../../../playback/scheduler.js';

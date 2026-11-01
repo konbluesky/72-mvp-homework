@@ -8,7 +8,7 @@ export const washroom: LocationDefinition = {
   y: 1610,
   height: 1670,
   visible: true,
-  background: { id: 'washroom', url: '/assets/cafe-story/washroom.svg' },
+  background: { id: 'washroom', url: '/assets/cafe-story/washroom.webp' },
   foreground: drawWashroom,
   outdoor: false,
   anchors: {},

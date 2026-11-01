@@ -144,38 +144,10 @@ button svg {
   position: absolute;
   inset: 0;
 }
-.cafe-background,
-.window-light,
-.rain-window,
 .scene-atmosphere {
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-.cafe-background {
-  background: url('/assets/live2d/cafe-background.jpg') center / cover;
-  filter: saturate(0.66) brightness(0.67);
-  transition: filter 1.2s ease;
-}
-.window-light {
-  background:
-    linear-gradient(90deg, #173e4955, transparent 55%),
-    radial-gradient(ellipse at 90% 18%, #dfb46b30, transparent 55%);
-  opacity: 0.65;
-  transition: opacity 1.2s ease;
-}
-.rain-window {
-  inset: -50% 0 0;
-  opacity: 0.1;
-  background: repeating-linear-gradient(
-    101deg,
-    transparent 0 21px,
-    #b7dce45e 21px 22px,
-    transparent 23px 58px
-  );
-  mask-image: linear-gradient(90deg, #000, transparent 57%);
-  animation: rainfall 2.6s linear infinite;
-  transition: opacity 1s ease;
 }
 .live2d-canvas,
 .live2d-poster {
@@ -197,15 +169,6 @@ button svg {
 }
 .scene-atmosphere {
   background: linear-gradient(180deg, #111d1e22, transparent 35%, #111d1e05 65%, #111d1e96);
-}
-.character-stage[data-weather='rain-soft'] .rain-window {
-  opacity: 0.025;
-}
-.character-stage[data-weather='rain-soft'] .window-light {
-  opacity: 1;
-}
-.character-stage[data-weather='rain-soft'] .cafe-background {
-  filter: saturate(0.74) brightness(0.78);
 }
 .portrait-shade {
   position: absolute;
@@ -920,11 +883,6 @@ dialog::backdrop {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
 }
-@keyframes rainfall {
-  to {
-    transform: translateY(30%);
-  }
-}
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1032,9 +990,6 @@ dialog::backdrop {
   }
   .scene-atmosphere {
     background: linear-gradient(180deg, #111d1e15, transparent 30%, #111d1e10 65%, #111d1e7a);
-  }
-  .cafe-background {
-    background-position: center;
   }
   .live2d-canvas,
   .live2d-poster {

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { ReplySuggestion, StoryAction } from '@mira/protocol';
 import { InteractiveHost } from './host';
-import { CHARACTERS } from '../characters/driver';
+import { CHARACTERS } from '../characters/profiles/index';
+import { PLATFORM_NAME } from '../../app/platform';
 import {
   canUseStoryActions,
   currentStoryAction,
@@ -247,10 +248,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       <header className="story-header">
         <div className="story-brand">
           <span aria-hidden="true">✳</span>
-          <span>
-            {scene.title}
-            <small>{scene.subtitle}</small>
-          </span>
+          <span>{PLATFORM_NAME}</span>
         </div>
         <div className="story-header-actions">
           {state.connected && state.mode === 'mock' && <span className="demo-indicator">演示</span>}

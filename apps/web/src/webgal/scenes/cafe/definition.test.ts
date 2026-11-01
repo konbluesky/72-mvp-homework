@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { LOCATIONS, cafeLocation, cafeResource } from './definition.js';
+import { LOCATIONS, cafeLocation } from './definition.js';
+import { cafeResource } from './resources.js';
 import metadata from './manifest.generated.json';
 describe('scene package render bindings', () => {
   it('pairs authored locations and resource IDs with registered rendering entries', () => {

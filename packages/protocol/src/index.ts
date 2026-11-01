@@ -70,7 +70,7 @@ export const ActionSchema = z.enum([
 
 export type Action = z.infer<typeof ActionSchema>;
 
-/** 本场景的雨势状态；跨轮保留已确认变化。 */
+/** 场景声明的环境预设 ID；跨轮保留已确认变化。 */
 export const EnvironmentSchema = ContentIdSchema;
 
 // 会话：能力、已确认场景与上下文
@@ -158,7 +158,7 @@ export const SessionSnapshotSchema = z.object({
 
 // 回复计划：模型只提议内容与白名单演出
 
-/** 模型可提议的照片/环境事件；资源固定白名单，剧情许可由服务端另行校验。 */
+/** 图片/环境呈现能力的结构；当前规划器禁止生成世界事件，许可由场景校验。 */
 export const PlanEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('photo'), resourceId: ContentIdSchema }).strict(),
   z.object({ type: z.literal('environment'), environment: EnvironmentSchema }).strict(),

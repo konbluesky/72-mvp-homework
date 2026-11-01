@@ -13,7 +13,7 @@ export const useSceneStore = defineStore('scene', {
       return {
         idle: '等待你开口',
         listening: '正在听你说',
-        thinking: '她想了想…',
+        thinking: '正在思考…',
         speaking: '正在说话',
       }[state.interaction];
     },

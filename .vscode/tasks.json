@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Mira: 启动预检",
+      "label": "角色互动平台: 启动预检",
       "type": "process",
       "command": "node",
       "args": [
@@ -22,7 +22,7 @@
       }
     },
     {
-      "label": "Mira: 等待就绪",
+      "label": "角色互动平台: 等待就绪",
       "type": "process",
       "command": "node",
       "args": [
@@ -43,7 +43,7 @@
       }
     },
     {
-      "label": "Mira: 安装依赖（npm ci）",
+      "label": "角色互动平台: 安装依赖（npm ci）",
       "type": "process",
       "command": "node",
       "args": ["scripts/project.mjs", "ci"],
@@ -53,7 +53,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Mira: check",
+      "label": "角色互动平台: check",
       "type": "process",
       "command": "node",
       "args": ["scripts/project.mjs", "check"],
@@ -64,7 +64,7 @@
       "group": "test"
     },
     {
-      "label": "Mira: build",
+      "label": "角色互动平台: build",
       "type": "process",
       "command": "node",
       "args": ["scripts/project.mjs", "build"],

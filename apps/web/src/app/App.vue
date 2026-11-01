@@ -6,12 +6,14 @@ import ConnectionStatus from '../connection/ConnectionStatus.vue';
 import { BrowserAudio } from '../playback/audio.js';
 import { PlaybackScheduler } from '../playback/scheduler.js';
 import { TurnController } from '../interaction/turn-controller.js';
-import { createPresentation } from '../scene/presentation.js';
+import type { LegacySceneModule } from '../webgal/scenes/legacy-module.js';
+import { PLATFORM_NAME } from './platform.js';
 import CharacterStage from '../scene/CharacterStage.vue';
 import { useSceneStore } from '../stores/scene.js';
 import { useConversationDisplay, type DisplayLine } from './conversation-display.js';
 import type { ReplySuggestion } from '@mira/protocol';
 
+const props = defineProps<{ content: LegacySceneModule }>();
 const scene = useSceneStore();
 const text = ref('');
 const input = ref<HTMLTextAreaElement>();
@@ -22,7 +24,7 @@ const hold = ref<HTMLButtonElement>();
 const inputMode = ref<'text' | 'voice'>('text');
 const inputFocused = ref(false);
 const suggestionsExpanded = ref(true);
-const conversation = useConversationDisplay('雨这么大，先坐一会儿吧。');
+const conversation = useConversationDisplay(props.content.opening);
 const { messages } = conversation;
 const conversationViewport = ref<HTMLDivElement>();
 const followConversation = ref(true);
@@ -56,10 +58,13 @@ function onConversationScroll() {
   const pane = conversationViewport.value;
   if (pane) followConversation.value = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 32;
 }
-const api = new ApiClient(undefined, undefined, 'conversation');
+const api = new ApiClient(undefined, undefined, 'conversation', {
+  id: props.content.id,
+  version: props.content.version,
+});
 let controller: TurnController;
 function timing(name: string, durationMs: number) {
-  const measure = `mira:${name}`;
+  const measure = `character-interaction:${name}`;
   performance.clearMeasures(measure);
   performance.measure(measure, {
     start: Math.max(0, performance.now() - durationMs),
@@ -69,7 +74,7 @@ function timing(name: string, durationMs: number) {
 const playback = new PlaybackScheduler({
   audio: new BrowserAudio((path, signal) => api.media(path, signal), timing),
   timing,
-  presentation: createPresentation(scene),
+  presentation: props.content.createPresentation(scene),
   view: (value) => {
     conversation.observePlayback(value);
     scene.$patch(value);
@@ -371,8 +376,8 @@ onBeforeUnmount(() => {
     :data-playback="scene.playback"
   >
     <header class="scene-header">
-      <a class="brand" href="/" aria-label="雨停之前首页"
-        ><span class="brand-mark" aria-hidden="true">✳</span>雨停之前</a
+      <a class="brand" href="/" :aria-label="`${PLATFORM_NAME}首页`"
+        ><span class="brand-mark" aria-hidden="true">✳</span>{{ PLATFORM_NAME }}</a
       >
       <div class="header-connection">
         <ConnectionStatus
@@ -432,17 +437,19 @@ onBeforeUnmount(() => {
         >WebGAL 故事 ↗</a
       >
     </nav>
-    <section class="portrait" aria-label="雨夜咖啡馆里的 Mira">
+    <section class="portrait" :aria-label="`${content.title} · ${content.speaker}`">
       <CharacterStage
         :key="animationKey"
         :frame="character"
         :environment="scene.environment"
         @status="scene.animation = $event"
-      />
+      >
+        <template #background><component :is="content.backdrop" /></template>
+      </CharacterStage>
       <div class="portrait-shade" aria-hidden="true" />
       <div class="character-identity">
-        <h1>Mira</h1>
-        <span>旅行摄影师</span>
+        <h1>{{ content.speaker }}</h1>
+        <span>{{ content.speakerDescription }}</span>
         <span
           v-if="scene.interaction === 'speaking'"
           class="voice-level"
@@ -452,29 +459,27 @@ onBeforeUnmount(() => {
         /></span>
       </div>
       <div class="location">
-        <span aria-hidden="true" class="location-line" /><span>巷口咖啡馆</span
-        ><span class="location-weather">{{
-          scene.environment === 'rain-soft' ? '雨渐歇' : '深夜 · 有雨'
-        }}</span>
+        <span aria-hidden="true" class="location-line" /><span>{{ content.locationLabel }}</span
+        ><span class="location-weather">{{ content.environmentLabel(scene.environment) }}</span>
       </div>
       <div v-if="scene.photo === 'loading'" class="photo-loading" role="status">
         <span class="spinner" />照片加载中
       </div>
-      <section v-if="scene.photo === 'visible'" class="photo-view" aria-label="Mira 的旅行照片">
+      <section
+        v-if="scene.photo === 'visible'"
+        class="photo-view"
+        :aria-label="content.photo.caption"
+      >
         <div class="photo-card">
-          <img
-            data-photo
-            src="/assets/travel-photo.svg"
-            alt="明亮天空下的海岸，蓝绿色海面与岸边的白色浪花"
-          />
-          <p>海边的一天</p>
+          <img data-photo :src="content.photo.url" :alt="content.photo.alt" />
+          <p>{{ content.photo.caption }}</p>
         </div>
         <button aria-label="收起照片" @click="scene.photo = 'hidden'">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
         </button>
       </section>
     </section>
-    <section class="dialogue" aria-label="与 Mira 对话">
+    <section class="dialogue" :aria-label="`与 ${content.speaker} 对话`">
       <div
         ref="conversationViewport"
         class="conversation-body"
@@ -488,7 +493,7 @@ onBeforeUnmount(() => {
           v-for="line in visibleMessages"
           :key="line.id"
           :class="line.role === 'user' ? 'recent-user' : 'character-message'"
-          :aria-label="line.role === 'user' ? '你发送的消息' : 'Mira 的回复'"
+          :aria-label="line.role === 'user' ? '你发送的消息' : `${content.speaker} 的回复`"
         >
           <span v-if="line.source === 'sample'" class="sample-label">语音示例</span>
           <p
@@ -632,7 +637,7 @@ onBeforeUnmount(() => {
           </button>
           <template v-if="inputMode === 'text'"
             ><label class="sr-only" for="text-input">{{
-              scene.voicePreview === 'ready' ? '编辑语音消息' : '给 Mira 的消息'
+              scene.voicePreview === 'ready' ? '编辑语音消息' : `给 ${content.speaker} 的消息`
             }}</label
             ><textarea
               id="text-input"
@@ -642,7 +647,7 @@ onBeforeUnmount(() => {
               maxlength="1000"
               rows="1"
               autocomplete="off"
-              placeholder="给 Mira 发消息…"
+              :placeholder="`给 ${content.speaker} 发消息…`"
               @focus="inputFocused = true"
               @blur="inputFocused = false"
               @input="resizeInput"
@@ -735,7 +740,7 @@ onBeforeUnmount(() => {
   <dialog ref="history" class="history-sheet" aria-labelledby="history-title">
     <header class="sheet-header">
       <div>
-        <span class="sheet-eyebrow">MIRA</span>
+        <span class="sheet-eyebrow">{{ content.speaker }}</span>
         <h2 id="history-title">本次对话</h2>
       </div>
       <button class="dialog-close" aria-label="关闭对话回看" @click="history?.close()">×</button>
@@ -749,7 +754,7 @@ onBeforeUnmount(() => {
         :class="{ 'history-user': line.role === 'user' }"
       >
         <div class="history-role">
-          {{ line.role === 'character' ? 'Mira' : '你'
+          {{ line.role === 'character' ? content.speaker : '你'
           }}<small v-if="line.source === 'opening'">开场</small
           ><small v-else-if="line.source === 'sample'">示例转录</small
           ><small v-if="line.paused">已暂停</small>
@@ -761,9 +766,9 @@ onBeforeUnmount(() => {
   </dialog>
   <dialog ref="info" class="about" aria-labelledby="about-title">
     <button class="dialog-close" aria-label="关闭场景说明" @click="info?.close()">×</button
-    ><span class="sheet-eyebrow">雨停之前</span>
-    <h2 id="about-title">一场雨，一次偶遇。</h2>
-    <p>深夜的咖啡馆快打烊了。Mira 把相机放在桌边，面前的咖啡已经凉了一半。</p>
+    ><span class="sheet-eyebrow">{{ content.title }}</span>
+    <h2 id="about-title">{{ content.about.title }}</h2>
+    <p>{{ content.about.description }}</p>
     <p>
       直接发消息，或切换到麦克风按住录音。松开后可以预览、修改识别文字，确认后发送。回复播放时，可以暂停，也可以直接发出新消息。
     </p>
@@ -778,10 +783,7 @@ onBeforeUnmount(() => {
               : '实时对话：支持文字与语音回复，麦克风暂不可用。'
         }}
       </p>
-      <p>
-        <b>角色素材</b>Haru 为 Live2D 官方样例，作为原创成年角色 Mira
-        的表演替身。当前照片为独立场景道具，样例不含专用递照片动作。
-      </p>
+      <p><b>角色素材</b>{{ content.about.attribution }}</p>
       <a class="asset-credits" href="/assets/live2d/NOTICE.md" target="_blank" rel="noreferrer"
         >素材与运行库来源 ↗</a
       >

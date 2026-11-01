@@ -125,7 +125,7 @@ export function StoryPanels({
                   </article>
                 ))
               ) : (
-                <p className="panel-note">这一晚的对话会留在这里。</p>
+                <p className="panel-note">本次会话的对话会留在这里。</p>
               )}
             </div>
           </>
@@ -138,7 +138,7 @@ export function StoryPanels({
         )}
         {panel === 'restart' && (
           <div className="restart-confirm">
-            <p>重新开始这一晚？</p>
+            <p>重新开始这段故事？</p>
             <span>当前相遇将结束，从头开始这次会话。</span>
             <button className="story-primary" onClick={onRestart}>
               重新开始 <StoryIcon name="refresh" />
@@ -148,8 +148,8 @@ export function StoryPanels({
         {panel === 'menu' && (
           <>
             <div className="menu-story">
-              <span>{host.scene.title}</span>
-              <h3>{host.scene.subtitle}</h3>
+              <span>当前场景</span>
+              <h3>{host.location.label}</h3>
             </div>
             <div className="menu-links">
               <button onClick={() => onOpen('locations')}>

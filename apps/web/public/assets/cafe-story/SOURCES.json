@@ -1,6 +1,11 @@
 {
-  "author": "Project-authored SVG artwork; Codex assisted implementation",
-  "license": "Project source license; no external images",
+  "author": "AI-generated project environment artwork, directed and reviewed with Codex",
+  "license": "Generated artwork subject to the configured image provider's terms; no Live2D character content included",
+  "generatedOn": "2026-11-01",
+  "model": "gpt-image-2",
+  "method": "imagegen bundled CLI through the user-authorized OpenAI-compatible provider; reference-guided scenes and lighting edits",
+  "prompts": "assets/cafe-story-prompts/PROMPTS.md",
+  "generator": "scripts/prepare-cafe-art.py (local packaging only)",
   "baseBackgrounds": [
     "street-wide",
     "cafe-front",
@@ -16,51 +21,127 @@
     "street-wide-closed",
     "street-walk-closed"
   ],
-  "generator": "scripts/create-cafe-art.py",
+  "requestedSize": [
+    2560,
+    1440
+  ],
+  "returnedSizes": {
+    "street-wide": [
+      1672,
+      941
+    ],
+    "cafe-front": [
+      1672,
+      941
+    ],
+    "lobby": [
+      1672,
+      941
+    ],
+    "window-seat": [
+      1672,
+      941
+    ],
+    "photo-corridor": [
+      1672,
+      941
+    ],
+    "washroom": [
+      1672,
+      941
+    ],
+    "counter": [
+      1672,
+      941
+    ],
+    "street-walk": [
+      1672,
+      941
+    ],
+    "cafe-front-closed": [
+      1672,
+      941
+    ],
+    "street-wide-closed": [
+      1672,
+      941
+    ],
+    "street-walk-closed": [
+      1672,
+      941
+    ]
+  },
+  "runtimeSize": [
+    1664,
+    936
+  ],
+  "processing": "Minimal aspect-ratio correction and downsampling; WebP quality 91; no upscaling",
   "files": {
-    "cafe-front-closed.svg": {
-      "sha256": "49bcd710ded7b708fc36bb362387e3f8bae759705984dee490983a6dec30bd8d",
-      "bytes": 7625
+    "street-wide.webp": {
+      "sha256": "f2fa33879473d7003261a6a03312fcc23ca20b75ab6e0009b2a8bff81c85dde1",
+      "bytes": 558380,
+      "width": 1664,
+      "height": 936
     },
-    "cafe-front.svg": {
-      "sha256": "c55329a3b6329b718c189de51a20c1269a9e4c8c07f5945746629d76838827a3",
-      "bytes": 7625
+    "cafe-front.webp": {
+      "sha256": "b320727f6a4b75ff275ca5dca7767a1d9d33eeee9afb830fdd1ad9c7eebbe596",
+      "bytes": 372028,
+      "width": 1664,
+      "height": 936
     },
-    "counter.svg": {
-      "sha256": "112318c36fc0ec02714424b20cc303f512a4d5deada0d5c3d95a17990e26c66b",
-      "bytes": 8435
+    "lobby.webp": {
+      "sha256": "d5d5cfe41e0e904f989b633522adf48fb6ad54d216a937b42afdb565b56d4c27",
+      "bytes": 310380,
+      "width": 1664,
+      "height": 936
     },
-    "lobby.svg": {
-      "sha256": "1ffa6398aea660dc848b56812c70e542d40fdba2e071a38cf41c873fc8fe7096",
-      "bytes": 7718
+    "window-seat.webp": {
+      "sha256": "d6d9adbc463be640b2276b2435c857cb1d0df4182844fc8d3971c56b11167ce4",
+      "bytes": 349462,
+      "width": 1664,
+      "height": 936
     },
-    "photo-corridor.svg": {
-      "sha256": "d7e0f744bc0a0c2610506fa0cb4adef7cd25b2094a55e628a2afa690860de9f5",
-      "bytes": 5289
+    "photo-corridor.webp": {
+      "sha256": "be57fe28b5412a435b060a190525179c757caa222ad7418514e69743167a4a9a",
+      "bytes": 286266,
+      "width": 1664,
+      "height": 936
     },
-    "street-walk-closed.svg": {
-      "sha256": "6fed86ded07fa4fa56d110b376e0b2cf97d8394c9985ca57edce77fad7dbb521",
-      "bytes": 5387
+    "washroom.webp": {
+      "sha256": "3679eef7b8c7672b4f841bdf4fb8593eca179055eeada2ef58ac433e359f8318",
+      "bytes": 239116,
+      "width": 1664,
+      "height": 936
     },
-    "street-walk.svg": {
-      "sha256": "b842cf6d74eb37a7c238b25cce28d245ec0361590712b1c719f80bb11b46d01d",
-      "bytes": 5387
+    "counter.webp": {
+      "sha256": "94e8f644293531b345b8aa189ac86ace7a9880504fbad64e45eac30eb136934b",
+      "bytes": 333848,
+      "width": 1664,
+      "height": 936
     },
-    "street-wide-closed.svg": {
-      "sha256": "b98dba2e9c071a3d908e8b22216044591ebee817a0af4cea2d18dbc637ae76b7",
-      "bytes": 6722
+    "street-walk.webp": {
+      "sha256": "809b4cf7ee28e2029cadc92ae98fcdccb2f8ae58fbe85f984d1814350b50e8f9",
+      "bytes": 418590,
+      "width": 1664,
+      "height": 936
     },
-    "street-wide.svg": {
-      "sha256": "2ff6eb5545e88ae46b330432f86d8cb5b6b67f65321ab0dbc947dd26b7769d64",
-      "bytes": 6722
+    "cafe-front-closed.webp": {
+      "sha256": "558769aa701ba02d90e870ae9c424a5b93a783ce74ce82bea850fa20aa822cc6",
+      "bytes": 279736,
+      "width": 1664,
+      "height": 936
     },
-    "washroom.svg": {
-      "sha256": "5b5a34c59c45234bfda0e2f525e9a2e718f0506f67226c3294192aff2cf497cd",
-      "bytes": 3980
+    "street-wide-closed.webp": {
+      "sha256": "08fb514f759a2cc1f415c9c7eab78f0f55625f9098510660137296934be972d4",
+      "bytes": 438276,
+      "width": 1664,
+      "height": 936
     },
-    "window-seat.svg": {
-      "sha256": "ce8ac7431e572a262c446112a55139538786abb01debe91bbfdba7df188c56ee",
-      "bytes": 5063
+    "street-walk-closed.webp": {
+      "sha256": "a7ca9e5fb0cc876e2c5ec8a4d70a9ffceedf8aa30a3b62125293f5e51699398e",
+      "bytes": 357132,
+      "width": 1664,
+      "height": 936
     }
   }
 }

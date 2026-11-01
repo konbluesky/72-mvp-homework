@@ -7,7 +7,7 @@ export const photoCorridor: LocationDefinition = {
   y: 1440,
   height: 1390,
   visible: true,
-  background: { id: 'photo-corridor', url: '/assets/cafe-story/photo-corridor.svg' },
+  background: { id: 'photo-corridor', url: '/assets/cafe-story/photo-corridor.webp' },
   outdoor: false,
   anchors: { 'inspect-exhibition': [320, 680] },
 };

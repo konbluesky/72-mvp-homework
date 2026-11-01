@@ -42,7 +42,7 @@ export const CHARACTERS = {
   haru: {
     label: 'Haru',
     model: '/assets/live2d/haru/Haru.model3.json',
-    attribution: 'Haru © Live2D Inc. · 显式备用技术角色',
+    attribution: 'Haru © Live2D Inc. · 官方技术样例',
     parameters: face,
     motionGroups: [],
     gestures: {},

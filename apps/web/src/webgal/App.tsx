@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createWorkbench, DEMO_SCENES } from './composition';
 import type { VisualEngineLease } from './runtime/engine-adapter';
 import type { StageEvidence, StageScene } from './runtime/visual-port';
+import { PLATFORM_NAME } from '../app/platform';
 
 export function App() {
   const [attempt, setAttempt] = useState(0);
@@ -67,7 +68,7 @@ export function App() {
     >
       <nav className="workbench-nav" aria-label="工作台导航">
         <a className="workbench-brand" href="/">
-          ✳ 雨停之前
+          ✳ {PLATFORM_NAME}
         </a>
         <a href="/">
           返回现有对话 <span aria-hidden="true">↗</span>
@@ -79,7 +80,7 @@ export function App() {
           <h1>WebGAL 场景演示</h1>
           <p>切换时间、开关雨效、改变视角。现在可以直接看到引擎在做什么。</p>
         </div>
-        <span className="phase-badge">B0 可见样板 · 完整迁移未完成</span>
+        <span className="phase-badge">独立引擎能力预览</span>
       </header>
       <div className="workbench-grid">
         <section className="preview-panel" aria-label="WebGAL 场景预览">
@@ -190,22 +191,13 @@ export function App() {
               <li>
                 <span className="complete-mark">✓</span> 背景、原生雨效、变换与重建
               </li>
-              <li>
-                <span className="pending-mark">○</span> B1：输入、字幕与对话链迁移
-              </li>
-              <li>
-                <span className="pending-mark">○</span> B2：Bridge、轮次取消与回执
-              </li>
-              <li>
-                <span className="pending-mark">○</span> B3：Haru、口型与正式场景
-              </li>
+              <li>角色、对话与回执使用独立的互动场景入口。</li>
             </ul>
           </div>
         </aside>
       </div>
       <footer>
-        此页用于确认 WebGAL 引擎接入。首页仍是现有 Vue / Live2D 版本；Haru 为技术替身，原创 Mira
-        模型仍待交付。
+        {PLATFORM_NAME} · 本页用于预览引擎能力。<a href="/webgal.html">打开互动场景</a>
       </footer>
     </main>
   );

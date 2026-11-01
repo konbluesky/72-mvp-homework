@@ -4,8 +4,8 @@ import type { Live2DModel, Cubism4InternalModel } from 'pixi-live2d-display-webg
 import type PixiStage from '../../engine/webgal/Core/controller/stage/pixi/PixiController';
 import type { CharacterFrame } from '../../scene/character.js';
 
-import { CHARACTERS, characterProfile, type CharacterId } from './profiles/index.js';
-export { CHARACTERS, type CharacterId } from './profiles/index.js';
+import { characterProfile, type CharacterId } from './profiles/index.js';
+export type { CharacterId } from './profiles/index.js';
 let coreLoad: Promise<void> | undefined;
 function coreReady(): Promise<void> {
   return (coreLoad ??= new Promise<void>((resolve, reject) => {
@@ -138,7 +138,7 @@ export class CharacterDriver {
     if (!valid()) throw new DOMException('Character superseded', 'AbortError');
     const sdk = await import('pixi-live2d-display-webgal/cubism4');
     sdk.config.sound = false;
-    const pending = sdk.Live2DModel.from(CHARACTERS[id].model, {
+    const pending = sdk.Live2DModel.from(characterProfile(id).model, {
       autoUpdate: false,
       autoInteract: false,
       idleMotionGroup: '__host_disabled__',

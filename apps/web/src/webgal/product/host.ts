@@ -25,13 +25,17 @@ export class InteractiveHost {
   private disposed = false;
   private started = false;
   private restoreQueued = false;
-  readonly api = new ApiClient();
+  readonly api: ApiClient;
   readonly playback: PlaybackScheduler;
   readonly controller: TurnController;
   private monitor: ConnectionMonitor;
   characterId: CharacterId;
   characterError = '';
   constructor(readonly scene: SceneModule) {
+    this.api = new ApiClient(undefined, undefined, 'story', {
+      id: scene.id,
+      version: scene.version,
+    });
     this.engine = createInteractiveEngine(scene.assets);
     this.characterId = scene.defaultCharacter;
     const initial = initialInteractiveState();
@@ -174,12 +178,6 @@ export class InteractiveHost {
       if (connect || (!this.state.connected && !this.state.sessionExpired))
         await this.controller.connect();
       if (!valid()) return;
-      if (
-        this.state.scenario &&
-        (this.state.scenario.id !== this.scene.id ||
-          this.state.scenario.version !== this.scene.version)
-      )
-        throw new Error('SCENE_MODULE_VERSION_MISMATCH');
       await presentation.restore(this.state.story, this.state.environment, signal);
       await this.selectCharacter(this.characterId);
       if (!valid()) return;
@@ -252,10 +250,18 @@ export class InteractiveHost {
     queueMicrotask(() => {
       this.restoreQueued = false;
       if (!this.presentation || this.disposed) return;
-      void this.presentation
-        .restore(this.state.story, this.state.environment, this.stageLifetime.signal)
+      const presentation = this.presentation;
+      const lifetime = this.stageLifetime;
+      void presentation
+        .restore(this.state.story, this.state.environment, lifetime.signal)
         .catch((error) => {
-          if (!this.disposed && !(error instanceof DOMException && error.name === 'AbortError'))
+          if (
+            !this.disposed &&
+            !lifetime.signal.aborted &&
+            lifetime === this.stageLifetime &&
+            presentation === this.presentation &&
+            !(error instanceof DOMException && error.name === 'AbortError')
+          )
             this.state.failure = '场景恢复失败，可以重新连接或重建舞台。';
         });
     });

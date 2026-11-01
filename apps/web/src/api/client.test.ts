@@ -85,3 +85,50 @@ describe('monitoring API and controlled failures', () => {
     }
   });
 });
+
+describe('scene module compatibility before applying server projections', () => {
+  const expected = { id: 'sample-story', version: '1' };
+  const compatible = { ...session, scene: { ...session.scene, scenario: expected } };
+  const response = (body: unknown) => new Response(JSON.stringify(body));
+
+  it('rejects incompatible or unversioned sessions before binding their token', async () => {
+    for (const scenario of [
+      undefined,
+      { id: 'other-story', version: '1' },
+      { ...expected, version: '2' },
+    ]) {
+      const api = new ApiClient(
+        'http://localhost:3000',
+        async () =>
+          response({
+            ...session,
+            scene: { ...session.scene, ...(scenario ? { scenario } : {}) },
+          }),
+        'conversation',
+        expected,
+      );
+      await expect(api.createSession()).rejects.toMatchObject({
+        code: 'SCENE_MODULE_VERSION_MISMATCH',
+      });
+      expect(() => api.snapshot()).toThrow('故事连接已结束');
+    }
+  });
+
+  it('rechecks snapshot versions after a compatible session was created', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(response(compatible))
+      .mockResolvedValueOnce(
+        response({
+          sessionId: session.sessionId,
+          generation: 1,
+          capabilities: session.capabilities,
+          scene: { ...compatible.scene, scenario: { ...expected, version: '2' } },
+          history: [],
+        }),
+      );
+    const api = new ApiClient('http://localhost:3000', fetcher, 'story', expected);
+    await expect(api.createSession()).resolves.toMatchObject({ scene: { scenario: expected } });
+    await expect(api.snapshot()).rejects.toMatchObject({ code: 'SCENE_MODULE_VERSION_MISMATCH' });
+  });
+});

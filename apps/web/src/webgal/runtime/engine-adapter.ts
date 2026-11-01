@@ -14,7 +14,7 @@ export interface VisualEngineLease extends EngineLease {
   readonly stage: PixiStage;
 }
 
-/** The preview port executes local visuals; business dialogue cues remain B1/B2 work. */
+/** Scene modules execute authored cues through this owned native visual stage. */
 export async function mountEngine(
   signal: AbortSignal,
   assets: readonly LocalStageAsset[],

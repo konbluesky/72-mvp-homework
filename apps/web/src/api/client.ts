@@ -36,6 +36,7 @@ export class ApiClient {
     base = import.meta.env.VITE_API_BASE_URL || window.location.origin,
     private readonly fetcher: typeof fetch = fetch.bind(globalThis),
     private readonly sessionEntry: 'story' | 'conversation' = 'story',
+    private readonly expectedScenario?: { id: string; version: string },
   ) {
     const url = new URL(base, window.location.origin);
     if (
@@ -54,6 +55,7 @@ export class ApiClient {
       signal,
     });
     signal?.throwIfAborted();
+    this.validateScenario(session.scene);
     this.session = session;
     return session;
   }
@@ -73,7 +75,21 @@ export class ApiClient {
   snapshot(signal?: AbortSignal) {
     return this.json(`/api/sessions/${this.requireSession().sessionId}`, SessionSnapshotSchema, {
       signal,
+    }).then((snapshot) => {
+      this.validateScenario(snapshot.scene);
+      return snapshot;
     });
+  }
+  private validateScenario(scene: { scenario?: { id: string; version: string } }) {
+    if (
+      this.expectedScenario &&
+      (scene.scenario?.id !== this.expectedScenario.id ||
+        scene.scenario.version !== this.expectedScenario.version)
+    )
+      throw new ApiError(
+        'SCENE_MODULE_VERSION_MISMATCH',
+        '场景版本与服务端不一致，请刷新页面后重试。',
+      );
   }
   begin(turn: TurnIdentity, receipts: Receipt[], frozenTurns: FrozenTurn[], signal: AbortSignal) {
     return this.json(`/api/sessions/${turn.sessionId}/turns`, BeginTurnResponseSchema, {

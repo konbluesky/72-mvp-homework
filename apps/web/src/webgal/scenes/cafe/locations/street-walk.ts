@@ -7,8 +7,8 @@ export const streetWalk: LocationDefinition = {
   y: 1440,
   height: 1320,
   visible: true,
-  background: { id: 'street-walk', url: '/assets/cafe-story/street-walk.svg' },
+  background: { id: 'street-walk', url: '/assets/cafe-story/street-walk.webp' },
   outdoor: true,
   anchors: {},
-  closedBackground: { id: 'street-walk-closed', url: '/assets/cafe-story/street-walk-closed.svg' },
+  closedBackground: { id: 'street-walk-closed', url: '/assets/cafe-story/street-walk-closed.webp' },
 };

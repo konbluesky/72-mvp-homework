@@ -1,0 +1,26 @@
+{
+  "author": "Project authors; Codex-assisted original SVG artwork",
+  "license": "Project-authored assets; no additional license grant specified by this catalog",
+  "files": {
+    "favicon.svg": {
+      "source": "Project-authored platform symbol; editable SVG source in this file.",
+      "bytes": 285,
+      "sha256": "2741b1963c92af2aa7c84a7d75a123822bd0ef0c9d1c7d09b125ee53fe6cbe3e"
+    },
+    "assets/travel-photo.svg": {
+      "source": "Project-authored SVG; provenance described in assets/README.md and assets/webgal-demo/README.md.",
+      "bytes": 1691,
+      "sha256": "990e04712a2b8fd994990279ad006e63ca73e602cd23be42882bc42464c6a012"
+    },
+    "assets/webgal-demo/cafe-night.svg": {
+      "source": "Project-authored SVG; provenance described in assets/README.md and assets/webgal-demo/README.md.",
+      "bytes": 4240,
+      "sha256": "5a93b1fb9e3bb975f5e6e958200f782774b2953401c58ca9b6fe581518028a14"
+    },
+    "assets/webgal-demo/cafe-dusk.svg": {
+      "source": "Project-authored SVG; provenance described in assets/README.md and assets/webgal-demo/README.md.",
+      "bytes": 4240,
+      "sha256": "e74312479f729382f052bcb74d439a3802ed760d80c45786abe2a2ee7ef64fce"
+    }
+  }
+}

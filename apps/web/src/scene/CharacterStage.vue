@@ -103,9 +103,7 @@ onBeforeUnmount(() => {
     :data-interaction="frame.interaction"
     :data-emotion="frame.emotion"
   >
-    <div class="cafe-background" aria-hidden="true" />
-    <div class="window-light" aria-hidden="true" />
-    <div class="rain-window" aria-hidden="true" />
+    <slot name="background" />
     <canvas
       :key="canvasKey"
       ref="canvas"

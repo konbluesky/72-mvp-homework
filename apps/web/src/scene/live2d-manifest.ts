@@ -4,7 +4,7 @@ import type { CubismParameters } from './live2d-types.js';
 export const HARU_MANIFEST = {
   id: 'haru-technical-stand-in',
   model: '/assets/live2d/haru/Haru.model3.json',
-  attribution: 'Haru 官方技术替身 · 原创 Mira 模型待制作',
+  attribution: 'Haru © Live2D Inc. · 官方技术样例',
   capabilities: {
     audioMouth: true,
     expressions: true,

@@ -10,6 +10,7 @@ import { photoCorridor } from './locations/photo-corridor.js';
 import { washroom } from './locations/washroom.js';
 import { counter } from './locations/counter.js';
 import { streetWalk } from './locations/street-walk.js';
+import { CAFE_RESOURCES } from './resources.js';
 
 export const LOCATIONS = defineLocations(metadata.locations, {
   'street-wide': streetWide,
@@ -25,17 +26,6 @@ export function cafeLocation(id: string): LocationDefinition {
   const location = Object.hasOwn(LOCATIONS, id) ? LOCATIONS[id] : undefined;
   if (!location) throw new Error('CAFE_LOCATION_NOT_REGISTERED');
   return location;
-}
-export const CAFE_RESOURCES: Readonly<Record<string, LocalStageAsset>> = Object.fromEntries(
-  Object.entries(metadata.resources).map(([id, resource]) => [
-    id,
-    { id: resource.asset, url: resource.url },
-  ]),
-);
-export function cafeResource(id: string): LocalStageAsset {
-  const resource = Object.hasOwn(CAFE_RESOURCES, id) ? CAFE_RESOURCES[id] : undefined;
-  if (!resource) throw new Error('CAFE_RESOURCE_NOT_REGISTERED');
-  return resource;
 }
 export const CAFE_ASSETS: readonly LocalStageAsset[] = [
   ...Object.values(LOCATIONS).flatMap((location) => [
@@ -59,7 +49,4 @@ export function stageScene(story: StoryState, environment: string): StageScene {
     rainMask: location.rain,
     rainStrength: environment === 'rain-soft' ? 0.23 : 0.8,
   };
-}
-export function sceneActionAnchor(location: string, actionId: string) {
-  return cafeLocation(location).anchors[actionId];
 }

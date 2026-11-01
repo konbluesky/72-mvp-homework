@@ -1,8 +1,8 @@
 {
   "clientModule": "cafe",
   "character": "mira",
-  "title": "雨停之前",
-  "subtitle": "最后一盏灯",
+  "title": "咖啡馆",
+  "subtitle": "",
   "speaker": "米拉",
   "speakerDescription": "旅行摄影师",
   "defaultCharacter": "haru",
@@ -16,9 +16,6 @@
     "default": "rain",
     "variants": [
       {
-        "requires": [
-          "rain_softened"
-        ],
         "value": "rain-soft"
       }
     ]
