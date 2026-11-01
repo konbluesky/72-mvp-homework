@@ -72,6 +72,8 @@ const manifest = z
         flags: z.array(flag).max(20),
         revealed: z.record(z.string(), flag),
         facts: z.record(z.string().min(1).max(80), flag),
+        beat: flag.optional(),
+        shot: z.object({ location: flag, mode: flag }).strict().optional(),
       })
       .strict(),
     directorNotes: z
@@ -80,6 +82,7 @@ const manifest = z
           .object({
             requires: z.array(flag).optional(),
             locations: z.array(LocationSchema).optional(),
+            beats: z.array(ContentIdSchema).max(8).optional(),
             text: z.string().max(500),
             replyActions: z
               .array(z.string().regex(/^[a-z0-9-]+$/))
@@ -89,7 +92,7 @@ const manifest = z
           })
           .strict(),
       )
-      .max(20),
+      .max(160),
   })
   .strict()
   .parse(manifestData);

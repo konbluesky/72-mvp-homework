@@ -1,105 +1,84 @@
 import { describe, expect, it } from 'vitest';
 import { cafeScenario } from './index.js';
-import type { StoryCheckpoint } from '../ports.js';
+import { advance, followTo, firstNight, secondMeeting } from './story-helpers.test-support.js';
 
-// Regression sources only: do not run runtime/functional tests without user authorization.
-const frame = (state: StoryCheckpoint) => cafeScenario.frame(state);
-const actions = (state: StoryCheckpoint) => frame(state).story.actions.map((action) => action.id);
-function advance(state: StoryCheckpoint, ...ids: string[]): StoryCheckpoint {
-  for (const id of ids) {
-    for (const beat of cafeScenario.propose(id, state))
-      state = cafeScenario.accept(state, beat.checkpoint);
-  }
-  return state;
-}
-function attracted() {
-  return advance(cafeScenario.initial(), 'talk-companionship', 'talk-off-duty', 'talk-spark');
-}
-function reunion() {
-  return advance(attracted(), 'choose-appointment', 'choose-depart', 'choose-reunion');
-}
-
-describe('two adult encounters and independent relationship choices', () => {
-  it('does not turn company, optional props or a correct guess into a date', () => {
-    const initial = cafeScenario.initial();
-    const company = advance(initial, 'talk-companionship');
-    const guessed = advance(company, 'talk-game', 'talk-game-third');
-    const letter = advance(guessed, 'move-counter', 'inspect-letter');
-    for (const state of [initial, company, guessed, letter]) {
-      expect(actions(state)).not.toContain('choose-appointment');
-      expect(actions(state)).not.toContain('choose-reunion');
-      expect(actions(state)).not.toContain('choose-hand');
-    }
-    const honest = advance(letter, 'talk-off-duty');
-    expect(actions(honest)).not.toContain('choose-appointment');
-    expect(actions(advance(honest, 'talk-spark'))).toContain('choose-appointment');
+// Regression sources only: execution requires explicit user authorization.
+const frame = (state: Parameters<typeof cafeScenario.frame>[0]) => cafeScenario.frame(state);
+const ids = (state: Parameters<typeof cafeScenario.frame>[0]) => frame(state).story.actions.map((x) => x.id);
+describe('long encounters, independent viewpoint and adult relationship choices', () => {
+  it('does not let three conversations substitute for the full first encounter', () => {
+    const state = advance(cafeScenario.initial(), 'talk-a01-1', 'talk-a01-2', 'talk-a01-3');
+    for (const id of ['choose-depart', 'choose-night', 'choose-reunion', 'choose-appointment'])
+      expect(ids(state)).not.toContain(id);
+    expect(ids(state)).toContain('choose-farewell');
   });
-
-  it('lets wrong guesses reveal the same person without rewarding intimacy', () => {
-    const question = advance(cafeScenario.initial(), 'talk-companionship', 'talk-game');
-    expect(frame(question).known.some((entry) => entry.id === 'mira.game')).toBe(false);
+  it('separates a private makeup shot from the player location and rejects its stale completion', () => {
+    const before = followTo(cafeScenario.initial(), 'a05-2');
+    const proposed = cafeScenario.propose('talk-a05-2', before);
+    expect(frame(before).story.shot?.mode).toBe('shared');
+    const privateView = cafeScenario.accept(before, proposed[0]!.checkpoint);
+    expect(frame(privateView).story.location).toBe('window-seat');
+    expect(frame(privateView).story.shot).toEqual({ location: 'washroom', mode: 'character' });
+    const next = cafeScenario.propose('talk-a05-3', privateView);
+    const left = advance(privateView, 'choose-farewell');
+    expect(frame(left).story.shot?.mode).toBe('shared');
+    expect(() => cafeScenario.accept(left, next[0]!.checkpoint)).toThrow();
+  });
+  it('requires two explicit steps and the fade receipt before recording a shared night', () => {
+    const offer = advance(firstNight(), 'choose-night');
+    expect(frame(offer).story.milestones).not.toContain('overnight');
+    const proposed = cafeScenario.propose('choose-night-confirm', offer);
+    const faded = cafeScenario.accept(offer, proposed[0]!.checkpoint);
+    expect(frame(faded).story.shot?.mode).toBe('blackout');
+    expect(frame(faded).story.milestones).not.toContain('overnight');
+    const declined = advance(faded, 'choose-night-decline');
+    expect(frame(declined).story.shot?.mode).toBe('shared');
+    expect(frame(declined).story.milestones).not.toContain('overnight');
+    expect(() => cafeScenario.accept(declined, proposed[1]!.checkpoint)).toThrow();
+    const spent = cafeScenario.accept(faded, proposed[1]!.checkpoint);
+    expect(frame(spent).story.milestones).toContain('overnight');
+    expect(frame(spent).story.milestones).not.toContain('appointment');
+    expect(ids(spent)).not.toContain('choose-reunion');
+  });
+  it('preserves boundaries without awarding intimacy for a game or elapsed conversations', () => {
+    const slower = advance(firstNight(), 'talk-boundary');
+    expect(ids(slower)).not.toContain('choose-night');
+    expect(ids(advance(slower, 'talk-reopen'))).toContain('choose-night');
+    const question = followTo(cafeScenario.initial(), 'a02-4');
     const wrong = advance(question, 'talk-game-first');
-    const right = advance(question, 'talk-game-third');
-    expect(frame(wrong).known).toEqual(frame(right).known);
-    expect(actions(wrong)).toEqual(actions(right));
+    const right = advance(question, 'talk-a02-4');
+    expect(frame(wrong).story.milestones).toEqual(frame(right).story.milestones);
     expect(frame(wrong).story.milestones).not.toContain('chemistry');
   });
-
-  it('keeps a slowed relationship distinct until the user explicitly reopens it', () => {
-    const slower = advance(attracted(), 'talk-boundary');
-    expect(actions(slower)).not.toContain('choose-appointment');
-    expect(actions(slower)).toContain('choose-farewell');
-    const reopened = advance(slower, 'talk-reopen');
-    expect(frame(reopened).story.milestones).toEqual(
-      expect.arrayContaining(['boundary_set', 'boundary_repaired']),
-    );
-    expect(actions(reopened)).toContain('choose-appointment');
-    expect(actions(advance(reopened, 'talk-boundary'))).not.toContain('choose-appointment');
-  });
-
-  it('waits for an invitation receipt and a completed first-night ending before changing chapters', () => {
-    const state = attracted();
-    const invitation = cafeScenario.propose('choose-appointment', state);
-    expect(frame(state).story.milestones).not.toContain('appointment');
-    const invited = cafeScenario.accept(state, invitation[0]!.checkpoint);
-    expect(frame(invited).story.revealed).toContain('appointment');
-    expect(actions(invited)).not.toContain('choose-reunion');
-    const ending = cafeScenario.propose('choose-depart', invited);
-    const atDoor = cafeScenario.accept(invited, ending[0]!.checkpoint);
-    expect(actions(atDoor)).not.toContain('choose-reunion');
-    const finished = advance(invited, 'choose-depart');
-    expect(actions(finished)).toContain('choose-reunion');
-  });
-
-  it('does not return a second date to a closed interior or inherit the first-night weather', () => {
-    const state = reunion();
-    expect(frame(state).story.location).toBe('cafe-front');
-    expect(frame(state).story.ambience).toBe('closed');
-    expect(frame(state).facts.rain_softened).toBe(false);
-    for (const id of ['move-lobby', 'move-counter', 'move-window-seat', 'move-washroom'])
-      expect(actions(state)).not.toContain(id);
-    expect(actions(state)).not.toContain('choose-hand');
-  });
-
-  it('supports continuing to date without physical contact and stops offers after a friends ending', () => {
-    const honest = advance(reunion(), 'talk-date-memory', 'talk-date-honest');
-    expect(actions(honest)).toContain('choose-hand');
-    const closer = advance(honest, 'choose-date-close');
+  it('keeps the second meeting outdoors and offers a full ending without physical contact', () => {
+    const initial = secondMeeting();
+    expect(frame(initial).story).toMatchObject({ location: 'cafe-front', beat: 'b01-1', ambience: 'closed' });
+    expect(frame(initial).facts.rain_softened).toBe(false);
+    for (const id of ['move-lobby', 'move-counter', 'move-window-seat']) expect(ids(initial)).not.toContain(id);
+    const ending = followTo(initial, 'b-ending');
+    const closer = advance(ending, 'choose-date-close');
     expect(frame(closer).story.ending).toBe('closer');
     expect(frame(closer).story.milestones).not.toContain('handheld');
-    const friends = advance(honest, 'choose-date-friends');
+    expect(ids(closer)).not.toContain('choose-reunion');
+    const friends = advance(ending, 'choose-date-friends');
     expect(frame(friends).story.ending).toBe('friends');
-    for (const id of ['choose-hand', 'choose-date-close', 'choose-reunion', 'talk-reopen'])
-      expect(actions(friends)).not.toContain(id);
+    expect(ids(friends)).not.toContain('choose-hug');
   });
-
-  it('keeps a proposed handhold uncommitted and lets the user stop intimacy in the second chapter', () => {
-    const honest = advance(reunion(), 'talk-date-memory', 'talk-date-honest');
-    const proposed = cafeScenario.propose('choose-hand', honest);
-    expect(frame(honest).story.milestones).not.toContain('handheld');
-    const boundary = advance(honest, 'talk-boundary');
-    expect(actions(boundary)).not.toContain('choose-hand');
-    expect(() => cafeScenario.accept(boundary, proposed[0]!.checkpoint)).toThrow();
-    expect(frame(boundary).story.milestones).not.toContain('handheld');
+  it('backs the length target with distinct presented dialogue rather than a timer', () => {
+    let state = cafeScenario.initial(); let spoken = ''; let turns = 0;
+    for (const target of ['a-ending', 'b-ending']) {
+      for (let guard = 0; frame(state).story.beat !== target && guard < 90; guard++) {
+        const action = `talk-${frame(state).story.beat}`;
+        for (const beat of cafeScenario.propose(action, state)) {
+          spoken += beat.line?.text ?? '';
+          state = cafeScenario.accept(state, beat.checkpoint);
+        }
+        turns++;
+      }
+      expect(frame(state).story.beat).toBe(target);
+      if (target === 'a-ending') state = advance(state, 'choose-appointment', 'choose-depart', 'choose-reunion');
+    }
+    expect(turns).toBeGreaterThanOrEqual(70);
+    expect((spoken.match(/[\u4e00-\u9fff]/g) ?? []).length).toBeGreaterThanOrEqual(5300);
   });
 });

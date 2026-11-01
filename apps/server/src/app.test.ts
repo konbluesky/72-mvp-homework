@@ -42,6 +42,74 @@ function events(payload: string) {
 }
 
 describe('Fastify API boundaries', () => {
+  it('retries a failed message with fresh request IDs without duplicating planner history', async () => {
+    const { app, base, headers, providers, created } = await setup();
+    const plan = vi
+      .spyOn(providers.planner, 'plan')
+      .mockRejectedValueOnce(new ProviderError('PROVIDER_FAILED'));
+    const synthesize = vi.spyOn(providers.tts, 'synthesize');
+    const begin = (generation: number) =>
+      app.inject({
+        method: 'POST',
+        url: `${base}/turns`,
+        headers,
+        payload: { generation, turnId: `attempt-${generation}`, messageId: 'message' },
+      });
+    const input = (generation: number) =>
+      app.inject({
+        method: 'POST',
+        url: `${base}/turns/attempt-${generation}/input`,
+        headers,
+        payload: { generation, inputId: `input-${generation}`, text: '哈哈' },
+      });
+    expect((await begin(2)).statusCode).toBe(200);
+    const failed = events((await input(2)).payload);
+    expect(failed.at(-1)?.type).toBe('error');
+    const before = (await app.inject({ url: base, headers })).json();
+    expect(before.history).toEqual([]);
+    expect(before.messageAttempts.at(-1)).toMatchObject({
+      messageId: 'message',
+      status: 'failed',
+      retryable: true,
+    });
+    expect((await begin(3)).statusCode).toBe(200);
+    const retried = events((await input(3)).payload);
+    const audio = retried.find((frame) => frame.type === 'audio.ready');
+    if (!audio || audio.type !== 'audio.ready') throw new Error('Missing retried response');
+    expect(plan).toHaveBeenCalledTimes(2);
+    expect(plan.mock.calls[1]?.[0]).toMatchObject({ text: '哈哈', history: [] });
+    expect(synthesize).toHaveBeenCalledOnce();
+    expect((await app.inject({ url: base, headers })).json().messageAttempts.at(-1).status).toBe(
+      'pending',
+    );
+    await app.inject({
+      method: 'POST',
+      url: `${base}/receipts`,
+      headers,
+      payload: {
+        receipts: [
+          {
+            sessionId: created.sessionId,
+            generation: 3,
+            turnId: 'attempt-3',
+            receiptId: 'receipt',
+            targetId: audio.payload.segmentId,
+            kind: 'segment',
+            status: 'presented',
+            mode: 'audio',
+          },
+        ],
+      },
+    });
+    const after = (await app.inject({ url: base, headers })).json();
+    expect(after.history.filter((line: { role: string }) => line.role === 'user')).toEqual([
+      { role: 'user', text: '哈哈' },
+    ]);
+    expect(after.messageAttempts.at(-1).status).toBe('completed');
+    expect((await input(3)).statusCode).toBe(409);
+    expect(plan).toHaveBeenCalledTimes(2);
+  });
+
   it('previews transcription without dialogue or planner/TTS, then replies only to confirmed edited text', async () => {
     const { app, created, base, headers, providers } = await setup({ MAX_ACTIVE_TURNS: '1' });
     const plan = vi.spyOn(providers.planner, 'plan');
@@ -99,9 +167,7 @@ describe('Fastify API boundaries', () => {
     expect(plan.mock.calls[0]?.[0].text).toBe('我改主意了，聊聊旅行吧。');
     expect(tts).toHaveBeenCalledOnce();
     expect(stt).toHaveBeenCalledOnce();
-    expect((await app.inject({ method: 'GET', url: base, headers })).json().history).toEqual([
-      { role: 'user', text: '我改主意了，聊聊旅行吧。' },
-    ]);
+    expect((await app.inject({ method: 'GET', url: base, headers })).json().history).toEqual([]);
   });
   it('rejects transcription preview when voice is disabled without decoding or generating a reply', async () => {
     const { app, base, headers, providers } = await setup({ FFMPEG_PATH: '/missing-decoder' });
@@ -225,7 +291,7 @@ describe('Fastify API boundaries', () => {
       ).statusCode,
     ).toBe(401);
     const before = (await app.inject({ url: base, headers })).json();
-    expect(before.history).toHaveLength(1);
+    expect(before.history).toHaveLength(0);
     const receipt = {
       sessionId: created.sessionId,
       turnId: 'turn',

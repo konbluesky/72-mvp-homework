@@ -9,6 +9,7 @@ import type {
   Receipt,
   SessionCreated,
   TurnIdentity,
+  MessageAttempt,
 } from '@mira/protocol';
 import type { Config } from '../config/index.js';
 import { AppError } from '../http/errors.js';
@@ -24,6 +25,10 @@ interface IssuedTarget {
 }
 export interface Turn {
   identity: TurnIdentity;
+  messageId?: string;
+  contentDigest?: string;
+  pendingUser?: string;
+  userCommitted?: boolean;
   status: 'begun' | 'running' | 'completed' | 'cancelled';
   abort: AbortController;
   input?: { id: string; digest: string };
@@ -142,12 +147,21 @@ export class SessionManager {
       generation: session.generation,
       scene: this.scene(session),
       history: [...session.history],
+      messageAttempts: [...session.turns.values()].flatMap((turn) =>
+        turn.messageId ? [this.messageAttempt(turn)] : [],
+      ),
     };
   }
 
   begin(
     session: Session,
-    input: { generation: number; turnId: string; receipts: Receipt[]; frozenTurns: FrozenTurn[] },
+    input: {
+      generation: number;
+      turnId: string;
+      messageId?: string;
+      receipts: Receipt[];
+      frozenTurns: FrozenTurn[];
+    },
   ) {
     if (this.closing)
       throw new AppError('CAPACITY_EXCEEDED', 503, '服务正在维护，请稍后再来。', true);
@@ -169,6 +183,31 @@ export class SessionManager {
     ];
     for (const frozen of input.frozenTurns) this.validateFrozen(session, frozen);
     this.validateReceipts(session, combined, input.frozenTurns);
+    if (input.generation === session.generation && session.current?.messageId !== input.messageId)
+      throw new AppError('INPUT_CONFLICT', 409, '同一条消息的标识不能改变。');
+    if (input.messageId && input.generation > session.generation) {
+      const messages = [...session.turns.values()].filter((turn) => turn.messageId);
+      const previous = [...messages].reverse().find((turn) => turn.messageId === input.messageId);
+      if (previous) {
+        if (previous !== messages.at(-1))
+          throw new AppError('STALE_TURN', 409, '后面已有新的对话，请作为新消息发送。');
+        if (
+          [...previous.targets.values()].some(
+            (target) => target.confirmed?.status === 'presented',
+          ) ||
+          combined.some(
+            (receipt) =>
+              receipt.turnId === previous.identity.turnId && receipt.status === 'presented',
+          )
+        )
+          throw new AppError('INPUT_COMPLETED', 409, '这条消息已有实际回应，请继续对话。');
+        if (
+          previous.status !== 'cancelled' &&
+          !input.frozenTurns.some((snapshot) => snapshot.turnId === previous.identity.turnId)
+        )
+          throw new AppError('INPUT_IN_PROGRESS', 409, '这条消息正在回应中。');
+      }
+    }
     const acknowledged = this.receipts(session, combined, input.frozenTurns);
     for (const frozen of input.frozenTurns) this.freeze(session, frozen);
     if (input.generation === session.generation && session.current) {
@@ -177,6 +216,7 @@ export class SessionManager {
     if (session.current) this.cancel(session.current);
     const turn: Turn = {
       identity: { sessionId: session.id, generation: input.generation, turnId: input.turnId },
+      ...(input.messageId ? { messageId: input.messageId } : {}),
       status: 'begun',
       abort: new AbortController(),
       targets: new Map(),
@@ -209,7 +249,7 @@ export class SessionManager {
     generation: number,
     inputId: string,
     digest: string,
-    options: { expectAudio?: boolean } = {},
+    options: { expectAudio?: boolean; contentDigest?: string } = {},
   ): Turn {
     const turn = this.getTurn(session, turnId, generation);
     if (turn.input) {
@@ -229,6 +269,16 @@ export class SessionManager {
     }
     if (session.current !== turn || turn.abort.signal.aborted || turn.status !== 'begun')
       throw new AppError('TURN_CANCELLED', 409, '旧的回应已结束。');
+    if (turn.messageId) {
+      const previous = [...session.turns.values()]
+        .reverse()
+        .find(
+          (candidate) =>
+            candidate !== turn && candidate.messageId === turn.messageId && candidate.contentDigest,
+        );
+      if (previous && previous.contentDigest !== options.contentDigest)
+        throw new AppError('INPUT_CONFLICT', 409, '重试不能改变原消息的内容。');
+    }
     session.inputTimes = this.config.RATE_LIMIT_ENABLED
       ? session.inputTimes.filter((time) => time > this.now() - 60_000)
       : [];
@@ -240,6 +290,7 @@ export class SessionManager {
     if (this.active >= this.config.MAX_ACTIVE_TURNS)
       throw new AppError('CAPACITY_EXCEEDED', 503, '回应有些拥挤，请稍后再试。', true);
     turn.input = { id: inputId, digest };
+    turn.contentDigest = options.contentDigest;
     turn.status = 'running';
     turn.released = false;
     this.active += 1;
@@ -271,8 +322,7 @@ export class SessionManager {
 
   addUser(session: Session, turn: Turn, text: string): void {
     this.assertCurrent(session, turn);
-    session.history.push({ role: 'user', text });
-    session.history = session.history.slice(-40);
+    turn.pendingUser = text;
   }
 
   issue(session: Session, turn: Turn, payload: AudioReadyPayload): void {
@@ -338,6 +388,12 @@ export class SessionManager {
       if (target.confirmed?.status === 'presented') continue;
       target.confirmed = receipt;
       if (receipt.status === 'presented') {
+        // A failed, unheard attempt must never pollute the next planner context.
+        if (turn.pendingUser && !turn.userCommitted) {
+          session.history.push({ role: 'user', text: turn.pendingUser });
+          turn.userCommitted = true;
+          session.history = session.history.slice(-40);
+        }
         if (target.kind === 'segment' && target.text) {
           session.history.push({
             role: 'assistant',
@@ -540,6 +596,33 @@ export class SessionManager {
       turn.released = true;
       this.active -= 1;
     }
+  }
+
+  private messageAttempt(turn: Turn): MessageAttempt {
+    const targets = [...turn.targets.values()];
+    const presented = targets.some((target) => target.confirmed?.status === 'presented');
+    const completed =
+      turn.generationDone &&
+      targets.length > 0 &&
+      targets.every((target) => target.confirmed?.status === 'presented');
+    return {
+      ...turn.identity,
+      messageId: turn.messageId!,
+      status: completed
+        ? 'completed'
+        : turn.failure
+          ? 'failed'
+          : turn.status === 'cancelled'
+            ? 'interrupted'
+            : 'pending',
+      presented,
+      retryable:
+        !completed &&
+        !presented &&
+        turn.status === 'cancelled' &&
+        (!turn.failure || turn.failure.retryable || turn.failure.code === 'INTERNAL_ERROR'),
+      error: completed ? '' : (turn.failure?.message ?? ''),
+    };
   }
 
   private finishIfPresented(turn: Turn): void {

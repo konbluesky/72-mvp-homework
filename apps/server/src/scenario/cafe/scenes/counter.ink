@@ -1,5 +1,7 @@
 === enter_counter ===
 ~ location = "counter"
+~ shot_location = "counter"
+~ shot_mode = "shared"
 # cue:location:counter
 {letter_read:阿岚的信仍在托盘旁。读过的字不必再读，你们还有自己的话。|托盘里放着写有米拉名字的信封。她认得字迹，随口说是老同事留的，正文还没展开。}
 -> menu

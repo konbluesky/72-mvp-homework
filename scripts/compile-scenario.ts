@@ -88,12 +88,14 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
     for (const tag of source.matchAll(/#\s*([^\]#\r\n]+)/g)) {
       const value = tag[1]!.trim();
       if (
-        !/^(action:[a-z0-9-]+|explicit|cue:(location|prop|ambience|ending|environment|photo|beat):[a-z0-9_-]+|voice:[a-zA-Z0-9_-]+|thought:[a-zA-Z0-9_-]+)$/.test(
+        !/^(action:[a-z0-9-]+|explicit|cue:(location|prop|ambience|ending|environment|photo|beat):[a-z0-9_-]+|cue:shot:(shared|character|blackout):[a-z0-9_-]+|voice:[a-zA-Z0-9_-]+|thought:[a-zA-Z0-9_-]+)$/.test(
           value,
         )
       )
         throw new Error(`Unsupported story tag: ${file}`);
       const [kind, type, target] = value.split(':');
+      if (kind === 'cue' && type === 'shot' && !manifest.locations[value.split(':')[3]!])
+        throw new Error(`Undeclared shot location in ${file}`);
       if (kind === 'cue' && type && allowed[type] && (!target || !allowed[type]!.includes(target)))
         throw new Error(`Undeclared ${type} cue in ${file}: ${target}`);
       if (kind === 'voice' && type && !Object.hasOwn(manifest.voices, type))

@@ -1,5 +1,7 @@
 === enter_window_seat ===
 ~ location = "window-seat"
+~ shot_location = "window-seat"
+~ shot_mode = "shared"
 # cue:location:window-seat
 {boundary_set && not boundary_repaired:窗边还是原来的位置。她给安静和距离都留出空间。|{chemistry:玻璃上映着两人的轮廓。她望过来，没有急着把目光移走。|桌上的咖啡冒着一点热气。窗上有倒影，也有足够容纳两个人的沉默。}}
 -> menu

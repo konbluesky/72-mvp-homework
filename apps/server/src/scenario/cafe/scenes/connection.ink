@@ -33,14 +33,6 @@
 她听完你的话，轻轻点头。不是假装刚才什么都没发生，而是终于知道彼此想怎么往前走。
 -> menu
 
-=== make_appointment ===
-~ appointment = true
-# cue:prop:appointment
-# voice:appointment
-# thought:appointment
-约定便笺在暖光里展开。“不用等雨”几个字，比刚才的玩笑认真一些。
--> menu
-
 === play_game ===
 ~ game_played = true
 # cue:beat:three-truths

@@ -17,6 +17,7 @@ export interface ParsedInput {
   generation: number;
   inputId: string;
   digest: string;
+  contentDigest?: string;
   input: TurnInput;
 }
 
@@ -28,6 +29,15 @@ export async function readInput(request: FastifyRequest, config: Config): Promis
       generation: parsed.data.generation,
       inputId: parsed.data.inputId,
       digest: createHash('sha256').update(JSON.stringify(parsed.data)).digest('hex'),
+      contentDigest: createHash('sha256')
+        .update(
+          JSON.stringify(
+            'interaction' in parsed.data
+              ? { interaction: parsed.data.interaction }
+              : { text: parsed.data.text },
+          ),
+        )
+        .digest('hex'),
       input:
         'interaction' in parsed.data
           ? { kind: 'interaction', interaction: parsed.data.interaction }
@@ -81,6 +91,7 @@ export async function readInput(request: FastifyRequest, config: Config): Promis
     generation: parsed.data.generation,
     inputId: parsed.data.inputId,
     digest,
+    contentDigest: digest,
     input: { kind: 'audio', ...audio },
   };
 }

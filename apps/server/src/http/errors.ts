@@ -47,7 +47,7 @@ export function publicError(error: unknown): AppError {
       true,
     );
   if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
-    return new AppError('TURN_CANCELLED', 409, '这次回应已经结束，请重新开始。', true);
+    return new AppError('TURN_CANCELLED', 409, '这次回应已中断，请重新发送消息。', true);
   }
   return new AppError('INTERNAL_ERROR', 500, '服务内部出现异常，请检查后端日志后重试。');
 }

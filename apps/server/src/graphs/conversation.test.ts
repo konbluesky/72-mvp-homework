@@ -71,16 +71,13 @@ describe('real LangGraph orchestration', () => {
       expect(plan.mock.calls[0]?.[0]).toMatchObject({
         text: '你们认识多久了？',
         facts: ['photo_revealed'],
-        history: [
-          { role: 'assistant', text: '我在等一位老朋友。' },
-          { role: 'user', text: '你们认识多久了？' },
-        ],
+        history: [{ role: 'assistant', text: '我在等一位老朋友。' }],
       });
       expect(ctx.events.at(-1)).toEqual({
         type: 'reply.done',
         payload: { segmentCount: 1, suggestions },
       });
-      expect(ctx.session.history).toHaveLength(2);
+      expect(ctx.session.history).toHaveLength(1);
       expect(ctx.session.history.some((message) => message.text === suggestions[0]?.draft)).toBe(
         false,
       );
@@ -100,7 +97,7 @@ describe('real LangGraph orchestration', () => {
     );
     expect(plan).toHaveBeenCalledOnce();
     expect(ctx.events.map((event) => event.type)).toEqual(['audio.ready', 'reply.done']);
-    expect(ctx.session.history).toEqual([{ role: 'user', text: '你好' }]);
+    expect(ctx.session.history).toEqual([]);
     expect(ctx.turn.status).toBe('completed');
     expect(ctx.turn.abort.signal.aborted).toBe(false);
     await ctx.cleanup();

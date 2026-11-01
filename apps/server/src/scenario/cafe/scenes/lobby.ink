@@ -1,5 +1,7 @@
 === enter_lobby ===
 ~ location = "lobby"
+~ shot_location = "lobby"
+~ shot_mode = "shared"
 {not met:
     ~ met = true
     # cue:location:lobby

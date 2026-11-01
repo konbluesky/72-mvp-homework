@@ -7,9 +7,31 @@ import {
   ServerEventSchema,
   ReceiptSchema,
   ReplySuggestionSchema,
+  BeginTurnSchema,
+  MessageAttemptSchema,
 } from './index.js';
 
 describe('network schemas', () => {
+  it('accepts message identity on begin and rejects extra retry commands or malformed attempt results', () => {
+    const begin = { generation: 2, turnId: 'retry', messageId: 'message' };
+    expect(BeginTurnSchema.safeParse(begin).success).toBe(true);
+    expect(BeginTurnSchema.safeParse({ ...begin, replay: true }).success).toBe(false);
+    const result = {
+      sessionId: 'session',
+      ...begin,
+      status: 'failed',
+      presented: false,
+      retryable: true,
+      error: '服务失败',
+    };
+    expect(MessageAttemptSchema.safeParse(result).success).toBe(true);
+    expect(MessageAttemptSchema.safeParse({ ...result, url: 'https://example.com' }).success).toBe(
+      false,
+    );
+    expect(MessageAttemptSchema.safeParse({ ...result, messageId: '../message' }).success).toBe(
+      false,
+    );
+  });
   it('requires bounded user reply suggestions in plans and rejects executable extra fields', () => {
     const plan: unknown = JSON.parse(readFileSync('tests/fixtures/valid-plan.json', 'utf8'));
     const parsed = ReplyPlanSchema.parse(plan);

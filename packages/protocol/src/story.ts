@@ -26,6 +26,10 @@ export const StoryActionSchema = z
   })
   .strict();
 export type StoryAction = z.infer<typeof StoryActionSchema>;
+/** A camera cut does not move the player or grant knowledge of another location. */
+export const StoryShotSchema = z
+  .object({ location: LocationSchema, mode: z.enum(['shared', 'character', 'blackout']) })
+  .strict();
 export const StoryStateSchema = z
   .object({
     location: LocationSchema,
@@ -36,6 +40,8 @@ export const StoryStateSchema = z
     revision: z.number().int().nonnegative().default(0),
     actions: z.array(StoryActionSchema).max(24).default([]),
     milestones: z.array(z.string().max(80)).max(20).default([]),
+    beat: ContentIdSchema.optional(),
+    shot: StoryShotSchema.optional(),
   })
   .strict();
 export type StoryState = z.infer<typeof StoryStateSchema>;
@@ -85,7 +91,11 @@ export const EndingEventSchema = z
   .object({ type: z.literal('ending'), ending: EndingSchema })
   .strict();
 export const BeatEventSchema = z
-  .object({ type: z.literal('beat'), beatId: z.string().min(1).max(80) })
+  .object({
+    type: z.literal('beat'),
+    beatId: z.string().min(1).max(80),
+    shot: StoryShotSchema.optional(),
+  })
   .strict();
 export const StoryCueSchema = z.discriminatedUnion('type', [
   LocationEventSchema,
@@ -100,7 +110,11 @@ export type StoryCue = z.infer<typeof StoryCueSchema>;
 export function projectStory(state: StoryState, event: StoryCue): StoryState {
   switch (event.type) {
     case 'location':
-      return { ...state, location: event.location };
+      return {
+        ...state,
+        location: event.location,
+        ...(state.shot ? { shot: { location: event.location, mode: 'shared' as const } } : {}),
+      };
     case 'prop':
       return { ...state, revealed: [...new Set([...state.revealed, event.prop])] };
     case 'ambience':
@@ -108,6 +122,6 @@ export function projectStory(state: StoryState, event: StoryCue): StoryState {
     case 'ending':
       return { ...state, ending: event.ending };
     case 'beat':
-      return state;
+      return event.shot ? { ...state, shot: event.shot } : state;
   }
 }

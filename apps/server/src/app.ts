@@ -515,6 +515,7 @@ export async function createApp(options: AppOptions = {}) {
         input.digest,
         {
           expectAudio: input.input.kind !== 'interaction',
+          contentDigest: input.contentDigest,
         },
       );
       turn.abort.signal.addEventListener(

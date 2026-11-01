@@ -124,6 +124,14 @@ export class MockPlanner implements ReplyPlanner {
   async plan(input: PlanInput, signal: AbortSignal) {
     signal.throwIfAborted();
     const actions = input.allowedActions ?? [];
+    const authoredAction = actions.find((action) =>
+      manifest.playerReplies[action.id as keyof typeof manifest.playerReplies] === input.text,
+    );
+    if (authoredAction) return {
+      actionId: authoredAction.id,
+      actionRequest: { quote: input.text, confirmed: true },
+      segments: [], suggestions: [],
+    };
     if (/(不聊|先不问|不追问|不想谈|不读|不看信|别打开|不要打开)/u.test(input.text)) {
       const plan = mockPlan('旅行', input.facts);
       return {
@@ -191,6 +199,8 @@ export class MockPlanner implements ReplyPlanner {
                   'revision',
                   'actions',
                   'milestones',
+                  'beat',
+                  'shot',
                 ].includes(key),
               ),
             ),

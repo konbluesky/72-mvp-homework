@@ -31,10 +31,13 @@ export interface InkContent {
     flags: string[];
     revealed: Record<string, string>;
     facts: Record<string, string>;
+    beat?: string;
+    shot?: { location: string; mode: string };
   };
   directorNotes: Array<{
     requires?: string[];
     locations?: string[];
+    beats?: string[];
     text: string;
     replyActions?: string[];
     chatReplies?: string[];
@@ -146,11 +149,21 @@ export class InkScenario {
       revision: checkpoint.revision,
       actions: this.actions(story),
       milestones: [...knownFlags],
+      ...(this.content.projection.beat
+        ? { beat: this.read(story, this.content.projection.beat) }
+        : {}),
+      ...(this.content.projection.shot
+        ? { shot: {
+            location: this.read(story, this.content.projection.shot.location),
+            mode: this.read(story, this.content.projection.shot.mode),
+          } }
+        : {}),
     });
     for (const [value, allowed] of [
       [state.location, this.content.locations],
       [state.ambience, this.content.ambiences],
       [state.ending, this.content.endings],
+      [state.shot?.location, this.content.locations],
     ] as const) {
       if (value && allowed && !allowed.includes(value))
         throw new AppError('INVALID_PLAN', 500, '故事投影引用了未声明的内容。');
@@ -184,6 +197,7 @@ export class InkScenario {
         this.content.directorNotes.find(
           (note) =>
             (note.requires ?? []).every((name) => knownFlags.has(name)) &&
+            (!note.beats || (!!state.beat && note.beats.includes(state.beat))) &&
             (!note.locations || note.locations.includes(state.location)),
         )?.text ?? '',
     };
@@ -194,6 +208,7 @@ export class InkScenario {
     const note = this.content.directorNotes.find(
       (item) =>
         (item.requires ?? []).every((flag) => known.has(flag)) &&
+        (!item.beats || (!!frame.story.beat && item.beats.includes(frame.story.beat))) &&
         (!item.locations || item.locations.includes(frame.story.location)),
     );
     const guided = (note?.replyActions ?? [])
@@ -267,13 +282,19 @@ export class InkScenario {
       if (caption.length > 240) throw new AppError('INVALID_PLAN', 500, '故事片段过长。');
       const cues = tags.filter((tag) => tag.startsWith('cue:'));
       if (cues.length !== 1) throw new AppError('INVALID_PLAN', 500, '故事片段缺少呈现锚点。');
-      const [, type, value] = cues[0]!.split(':');
+      const [, type, value, shotLocation] = cues[0]!.split(':');
       const id = tags.find((tag: string) => tag.startsWith('voice:'))?.slice(6);
       const next = this.checkpoint(story, checkpoint.revision + beats.length + 1);
       next.parentHash = createHash('sha256').update(parent.state).digest('hex');
       parent = next;
       let event: Record<string, unknown>;
       if (type === 'location') event = { type, location: value };
+      else if (type === 'shot') {
+        if (!shotLocation || !this.content.locations.includes(shotLocation))
+          throw new AppError('INVALID_PLAN', 500, '未声明的叙事视点。');
+        event = { type: 'beat', beatId: `shot-${value}-${shotLocation}`,
+          shot: { location: shotLocation, mode: value } };
+      }
       else if (type === 'prop') {
         const document = this.content.documents.find((item) => item.id === value);
         if (!document?.title) throw new AppError('INVALID_PLAN', 500, '资料没有准备好。');

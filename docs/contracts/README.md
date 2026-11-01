@@ -4,7 +4,7 @@
 
 ## 会话与输入
 
-1. `POST /api/sessions` 返回短期 sessionToken与capabilities.voiceInput。浏览器仅在内存保存token，按实际能力开放录音，不由Mock/Live字符串推断。
+1. `POST /api/sessions` 返回短期 sessionToken与capabilities.voiceInput。浏览器按 API origin、入口和故事包隔离保存短期会话凭证，用于刷新恢复；过期或鉴权失效清除凭证，按实际能力开放录音，不由Mock/Live字符串推断。凭证方案见 [ADR 013](../architecture/decisions.md#adr-013--浏览器侧保存与短期会话恢复)。
 2. 对该会话所有操作用 `Authorization: Bearer <sessionToken>`；私有媒体另带 `X-Session-Id`。令牌不放 URL。
 3. `POST /api/sessions/:id/turns` 提交 `{turnId,generation,receipts,frozenTurns}`。generation 是会话内单调正整数，同代同ID幂等，同代不同ID冲突，旧代拒绝。
 4. 等 begin 确认后 `POST .../:turnId/input`。文字：`{generation,inputId,text}`。录音：multipart 中 `metadata` 是 `{generation,inputId,durationMs}` JSON，`audio` 是真实 MIME 的文件，客户端不得只修改扩展名。
@@ -40,6 +40,10 @@ SSE正常完成不会中断有效播放。异常断线取消该stream拥有的�
 `POST .../:turnId/cancel` 接收 `{generation,receipts,frozen:true}`，只作用于指定轮。完整schema与limits见协议源码；不要另写与代码不同的字段表。
 
 ## 失败
+
+消息级重试使用可选的 `begin.messageId`：同一用户消息在重试时保留该 ID，但使用新的 turnId、generation 和 inputId；同一执行内的输入幂等规则保持不变。服务端拒绝更改重试内容、重试已经有成功呈现回执的消息，以及在后续新消息之后重试旧消息。原位重试前客户端先同步冻结回执并查询快照，不自动重放输入。
+
+会话快照新增有界的可选 `messageAttempts`，返回消息对应执行的 pending/completed/failed/interrupted、presented、retryable 和安全错误文字。此处 completed 要求生成结束且所有下发目标均成功呈现；原有 begin 响应中的 completed 仍仅表示生成结束。用户输入在 Graph 中暂存，首次成功呈现回执才与已呈现回应一起写入历史；完全未呈现的失败输入不会重复进入后续模型上下文。部分回复与已确认剧情保留，不整轮重放。浏览器记录已经开始显示但未完成的回复，亦禁止直接重试。
 
 非流错误统一 `{error:{code,message,retryable},requestId}`。400非法数据；401无效令牌；409身份/幂等冲突；410会话失效；413上传过大；415格式不支持；422/NO_SPEECH表示没有识别出语音，当前会话仍可用于文字；429限流；502/504外部服务失败或超时；503容量不足。详情以生成OpenAPI与schema为准。
 

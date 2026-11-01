@@ -125,7 +125,7 @@ export const SessionOpeningSchema = z
   .strict();
 export type SessionOpening = z.infer<typeof SessionOpeningSchema>;
 
-/** 创建匿名会话的响应。token 仅在浏览器内存持有，后续请求用鉴权头发送。 */
+/** 创建匿名会话的响应。短期 token 可用于浏览器刷新恢复，后续仅以鉴权头发送。 */
 export const SessionCreatedSchema = z.object({
   sessionId: IdSchema,
   sessionToken: z.string().min(32),
@@ -139,6 +139,16 @@ export const SessionCreatedSchema = z.object({
 
 export type SessionCreated = z.infer<typeof SessionCreatedSchema>;
 
+/** 消息与执行尝试分离；完成只由全部成功呈现回执确认。 */
+export const MessageAttemptSchema = TurnIdentitySchema.extend({
+  messageId: IdSchema,
+  status: z.enum(['pending', 'completed', 'failed', 'interrupted']),
+  presented: z.boolean(),
+  retryable: z.boolean(),
+  error: z.string().max(240),
+}).strict();
+export type MessageAttempt = z.infer<typeof MessageAttemptSchema>;
+
 /** 重连时查询已确认状态，不重播旧事件；history 不包含未呈现的助手计划。 */
 export const SessionSnapshotSchema = z.object({
   sessionId: IdSchema,
@@ -146,6 +156,7 @@ export const SessionSnapshotSchema = z.object({
   generation: z.number().int().nonnegative(),
   capabilities: CapabilitiesSchema,
   scene: SceneSchema,
+  messageAttempts: z.array(MessageAttemptSchema).max(100).optional(),
   history: z
     .array(
       z.object({
@@ -338,6 +349,8 @@ export const BeginTurnSchema = z
   .object({
     generation: z.number().int().positive(),
     turnId: IdSchema,
+    // 重试保留消息 ID，每次执行使用新的 turnId/generation。
+    messageId: IdSchema.optional(),
     receipts: z.array(ReceiptSchema).max(128).default([]),
     frozenTurns: z.array(FrozenTurnSchema).max(8).default([]),
   })

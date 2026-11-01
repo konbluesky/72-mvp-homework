@@ -429,6 +429,30 @@
                               "minLength": 1,
                               "maxLength": 80
                             },
+                            "shot": {
+                              "type": "object",
+                              "properties": {
+                                "location": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80,
+                                  "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                },
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "shared",
+                                    "character",
+                                    "blackout"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "location",
+                                "mode"
+                              ],
+                              "additionalProperties": false
+                            },
                             "eventId": {
                               "type": "string",
                               "minLength": 1,
@@ -720,6 +744,30 @@
                               "minLength": 1,
                               "maxLength": 80
                             },
+                            "shot": {
+                              "type": "object",
+                              "properties": {
+                                "location": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80,
+                                  "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                },
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "shared",
+                                    "character",
+                                    "blackout"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "location",
+                                "mode"
+                              ],
+                              "additionalProperties": false
+                            },
                             "eventId": {
                               "type": "string",
                               "minLength": 1,
@@ -843,6 +891,36 @@
                           "type": "string",
                           "maxLength": 80
                         }
+                      },
+                      "beat": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80,
+                        "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                      },
+                      "shot": {
+                        "type": "object",
+                        "properties": {
+                          "location": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80,
+                            "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                          },
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "shared",
+                              "character",
+                              "blackout"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "location",
+                          "mode"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
@@ -2800,6 +2878,36 @@
                                 "type": "string",
                                 "maxLength": 80
                               }
+                            },
+                            "beat": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80,
+                              "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                            },
+                            "shot": {
+                              "type": "object",
+                              "properties": {
+                                "location": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80,
+                                  "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                },
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "shared",
+                                    "character",
+                                    "blackout"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "location",
+                                "mode"
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "required": [
@@ -4125,6 +4233,36 @@
                                 "type": "string",
                                 "maxLength": 80
                               }
+                            },
+                            "beat": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80,
+                              "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                            },
+                            "shot": {
+                              "type": "object",
+                              "properties": {
+                                "location": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80,
+                                  "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                },
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "shared",
+                                    "character",
+                                    "blackout"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "location",
+                                "mode"
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "required": [
@@ -4146,6 +4284,68 @@
                         "facts"
                       ],
                       "additionalProperties": false
+                    },
+                    "messageAttempts": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sessionId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100,
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                          },
+                          "generation": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "turnId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100,
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                          },
+                          "messageId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100,
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "completed",
+                              "failed",
+                              "interrupted"
+                            ]
+                          },
+                          "presented": {
+                            "type": "boolean"
+                          },
+                          "retryable": {
+                            "type": "boolean"
+                          },
+                          "error": {
+                            "type": "string",
+                            "maxLength": 240
+                          }
+                        },
+                        "required": [
+                          "sessionId",
+                          "generation",
+                          "turnId",
+                          "messageId",
+                          "status",
+                          "presented",
+                          "retryable",
+                          "error"
+                        ],
+                        "additionalProperties": false
+                      }
                     },
                     "history": {
                       "maxItems": 40,
@@ -5147,6 +5347,12 @@
                     "maximum": 9007199254740991
                   },
                   "turnId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "pattern": "^[a-zA-Z0-9_-]+$"
+                  },
+                  "messageId": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 100,
@@ -11249,6 +11455,30 @@
                                         "minLength": 1,
                                         "maxLength": 80
                                       },
+                                      "shot": {
+                                        "type": "object",
+                                        "properties": {
+                                          "location": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 80,
+                                            "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                          },
+                                          "mode": {
+                                            "type": "string",
+                                            "enum": [
+                                              "shared",
+                                              "character",
+                                              "blackout"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "location",
+                                          "mode"
+                                        ],
+                                        "additionalProperties": false
+                                      },
                                       "eventId": {
                                         "type": "string",
                                         "minLength": 1,
@@ -11540,6 +11770,30 @@
                                         "minLength": 1,
                                         "maxLength": 80
                                       },
+                                      "shot": {
+                                        "type": "object",
+                                        "properties": {
+                                          "location": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 80,
+                                            "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                          },
+                                          "mode": {
+                                            "type": "string",
+                                            "enum": [
+                                              "shared",
+                                              "character",
+                                              "blackout"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "location",
+                                          "mode"
+                                        ],
+                                        "additionalProperties": false
+                                      },
                                       "eventId": {
                                         "type": "string",
                                         "minLength": 1,
@@ -11663,6 +11917,36 @@
                                     "type": "string",
                                     "maxLength": 80
                                   }
+                                },
+                                "beat": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80,
+                                  "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                },
+                                "shot": {
+                                  "type": "object",
+                                  "properties": {
+                                    "location": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80,
+                                      "pattern": "^(?!(?:__proto__|prototype|constructor)$)[a-zA-Z0-9_-]+$"
+                                    },
+                                    "mode": {
+                                      "type": "string",
+                                      "enum": [
+                                        "shared",
+                                        "character",
+                                        "blackout"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "location",
+                                    "mode"
+                                  ],
+                                  "additionalProperties": false
                                 }
                               },
                               "required": [
