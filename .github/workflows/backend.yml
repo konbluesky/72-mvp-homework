@@ -9,7 +9,6 @@ on:
       - 'infra/deploy/**'
       - 'apps/server/**'
       - 'packages/protocol/**'
-      - 'assets/mock-audio/**'
       - 'scripts/compile-scenario.ts'
       - 'scripts/openapi.ts'
       - 'docs/contracts/openapi.json'
