@@ -2,10 +2,12 @@ FROM node:26.13.0-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/protocol/package.json packages/protocol/package.json
+COPY packages/webgal-parser/package.json packages/webgal-parser/package.json
 COPY apps/server/package.json apps/server/package.json
 COPY apps/web/package.json apps/web/package.json
 RUN npm ci
 COPY tsconfig.base.json ./
+COPY scripts/compile-scenario.ts scripts/compile-scenario.ts
 COPY packages/protocol packages/protocol
 COPY apps/server apps/server
 RUN npm run build:server
@@ -14,6 +16,7 @@ FROM node:26.13.0-bookworm-slim AS production-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/protocol/package.json packages/protocol/package.json
+COPY packages/webgal-parser/package.json packages/webgal-parser/package.json
 COPY apps/server/package.json apps/server/package.json
 COPY apps/web/package.json apps/web/package.json
 RUN npm ci --omit=dev --workspace=@mira/server --workspace=@mira/protocol --ignore-scripts && npm cache clean --force

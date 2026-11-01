@@ -14,7 +14,7 @@
 
 fetch POST 读取 ReadableStream。每个帧 `data: <JSON>\n\n`，心跳 `: heartbeat\n\n`。UTF-8、CRLF、跨chunk、多行data由同一 parser 处理；不完整尾帧、未知版本、序号缺口或身份不匹配受控中止。相同eventId/相同内容可忽略，冲突内容拒绝。
 
-统一字段：schemaVersion=1、sessionId、generation、turnId、eventId、seq（从1连续递增）、type、payload。
+统一字段：schemaVersion=2、sessionId、generation、turnId、eventId、seq（从1连续递增）、type、payload。
 
 | type              | 语义                                                                                                  |
 | ----------------- | ----------------------------------------------------------------------------------------------------- |
@@ -41,6 +41,64 @@ SSE正常完成不会中断有效播放。异常断线取消该stream拥有的�
 
 ## 失败
 
-非流错误统一 `{error:{code,message,retryable},requestId}`。400非法数据；401无效令牌；409身份/幂等冲突；410会话失效；413上传过大；415格式不支持；429限流；502/504外部服务失败或超时；503容量不足。详情以生成OpenAPI与schema为准。
+非流错误统一 `{error:{code,message,retryable},requestId}`。400非法数据；401无效令牌；409身份/幂等冲突；410会话失效；413上传过大；415格式不支持；422/NO_SPEECH表示没有识别出语音，当前会话仍可用于文字；429限流；502/504外部服务失败或超时；503容量不足。详情以生成OpenAPI与schema为准。
 
 会话创建和快照现在都包含必填 `capabilities: { voiceInput: boolean }`。该新增字段由实际Provider组合生成，不携带供应商凭证。发布时先更新后端再更新前端；旧前端会忽略新增字段，新前端需要该能力字段。
+
+## 用户发言推荐
+
+`ReplyPlan` 现在必须包含 `suggestions`，由 planner 与 `segments` 同次生成。建议2–3个不同方向，必要时允许空数组；最多3项，每项严格为 `{ label, draft }`（分别最多20、120字符）。它是用户下一条自然发言候选，不参与TTS，也不直接写入会话历史或剧情事实。
+
+现有 `reply.done.payload` 同时返回 `{ segmentCount, suggestions }`，不新增推荐HTTP接口或第二次常规LLM调用。客户端校验轮次后暂存，全部播放/呈现完成才显示；取消、新轮或过期立即清除，视觉失败不显示。WebGAL 点击候选即把 draft 作为玩家发言发送，走正常 begin/input 链路，与手写和确认后的语音文字采用同一意图校验。候选本身不授权动作；兼容 Vue 宿主仍可先填入编辑，不影响候选的可提交文字语义。`suggestions` 在SSE接收schema中为可选，兼容旧服务端缺失时不展示候选；当前服务端始终发送该字段。部署时先更新服务端planner/schema，再更新前端。
+
+## 语音草稿预览与确认
+
+当前页面的录音流程是 begin → `POST /api/sessions/:id/turns/:turnId/transcription`（multipart metadata/audio）→ 可编辑草稿 → 用户确认 → 新begin → 文字input。预览响应为完整TurnIdentity加 `{ text, simulated }`，共享 `TranscriptionPreviewSchema` 校验；支持与其他轮次相同的鉴权、上传、取消、限流和处理并发保护。
+
+预览只运行录音校验与所选STT，不写用户history，不调用GPT/TTS，不发SSE或媒体。识别完释放任务，用户编辑无需持有活动模型请求。确认提交的是最终编辑文字，不再次识别录音。`input`仍兼容原audio multipart链路，但页面不会用它直接发送未确认录音。
+
+## 无状态连接监测
+
+`GET /api/connection/events`为公开、无敏感信息的常驻SSE，不创建会话、不占用模型任务。`ConnectionEventSchema`严格校验schemaVersion、type（connection.ready/connection.heartbeat）、connectionId、连续seq、status与5秒heartbeatIntervalMs。新的连接从ready/seq=1开始，不回放旧事件；它与带TurnIdentity的回复流是两个独立用途。
+
+`GET /api/connection/ping`使用strict `ConnectionProbeSchema` 返回 `{schemaVersion:1,status:"ok"}`，用于浏览器本地单调时钟的HTTP往返采样，无令牌和cookie。正常JSON请求有总deadline，POST回复流仍使用自身读取/轮次预算。
+
+更多恢复与状态语义见[运维说明](../operations/connection-health.md)。监测重连不自动重试带输入的POST，不创建已过期会话，不伪造呈现回执。
+
+## 未识别出语音
+
+Deepgram成功返回HTTP 200但transcript为空时，Provider保留NO_SPEECH分类，HTTP边界返回422与稳定的NO_SPEECH错误码（retryable=true只表示用户可以重试，不触发自动重录/识别）。它不是连接或会话失效；客户端结束失败的预览轮次，展示“重新录音/改用文字”，不创建假转录、不调用Planner/TTS、不要求重新连接。格式错误、超限等预览错误也保持在语音输入区域处理；认证/会话过期与传输失败仍走原恢复流程。
+
+## 八场景故事契约（v2）
+
+默认产品新增 strict 的 interaction 输入：move/location、inspect/prop、choose/ending；未知地点、任意脚本、路径与额外字段拒绝。纯导航经 Graph 确定性分支生成 presentation.ready，不伪造音频；reply.done 仍只表示生成结束。
+
+location、prop、ambience、ending 均有独立 issued target 与回执。场景组合事件依赖前置语音/视觉的成功回执；当前位置按服务端事件顺序更新，迟到冻结回执不倒退新地点。照片仍用独立 photo 回执，雨势改由合法离店节点提出，不再以看过照片为前置。快照新增 story 的地点、已公开道具、灯光/营业状态与结局。
+
+完整严格定义见协议源码与生成 OpenAPI。v1 严格客户端需协调升级并刷新；照片/声音完成不能替代新场景目标完成。
+
+## Ink场景与呈现checkpoint（schemaVersion 3）
+
+创建会话支持可选JSON `{entry:"story"|"conversation"}`，缺省story。WebGAL故事从大堂的初次相遇开始；原版对话使用conversation的窗边初始设定，同一Ink包按宿主能力提供choices。`scene.story`新增phase、revision、milestones、actions；动作有id/label/kind/explicit/description，不包含Ink路径、源码或存档。
+
+`interaction`新增 `{kind:"action",actionId,revision}`。服务端按当前存档与版本验证选择；菜单中的地点和既有物件快捷操作使用该结构；WebGAL 推荐与手写发言使用文字 input。旧move/inspect/choose输入仍按当前合法集合解释，不支持客户端直接改变量。
+
+`presentation.ready`可附`storyAfter/factsAfter`，供客户端在该片段实际呈现后投影；它们不是浏览器上报的事实。事件新增`beat`呈现锚点；prop事件可携带服务端授权的document.title/text，前端用同源正文呈现。对应回执kind支持location/prop/ambience/ending/beat。服务器根据已下发目标、前置回执、冻结范围、revision与父存档hash提交候选checkpoint，不接受客户端提交Ink状态。
+
+模型使用私有`PlannerOutputSchema`，包含 actionId、actionRequest（完整当前 userText 引用与 confirmed）以及带 kind/relatedActionId 的候选元数据。Graph校验后转换为普通ReplyPlan或可信Ink演出。公开推荐仍只有label/draft；元数据不变成自动执行指令。普通模型segments不得创建世界事件，递照片等世界动作也走合法Ink选择。
+
+当前正常LLM调用同时解释输入并生成推荐。自然语言明确请求当前合法动作时可以附带不假定未来结果的闲聊候选；所有演出完成才展示。纯地图/热区操作不为推荐额外调用LLM，必要的作者台词继续走现有TTS。
+
+## 会话动作确认（2026-11-01）
+
+explicit 代表需要明确意图/同意，不限制输入表面。Graph 要求 actionRequest.quote 等于完整当前文字、confirmed=true，并校验当前允许动作、revision 与轮次身份。explicit 动作额外经过 Graph 内独立确认复核，同一动作通过后才执行；拒绝、假设、询问后果与含糊附和转为角色澄清。复核不是推荐接口，普通聊天与普通动作仍在同次规划中生成建议。模型不输出可信资源地址，Ink 事件和实际呈现回执仍决定事实。
+
+SessionCreated 可选 opening 为故事包提供的 {text,revision,suggestions}；只用于本次会话的初始文字与自然回复，不记作声音完成或事实。开场候选在第一次发言或 revision 变化后失效。
+
+## 场景模块ID与公开投影
+
+地点、道具、结局、阶段、角色、环境预设与公开事实不再由共享协议枚举咖啡馆内容。共享层校验有界ID、DTO与数量；活动故事包在编译及Ink适配时进一步校验已声明的地点、道具、结局和资源。不能因为ID格式正确就执行未注册内容，也不接收任意URL或代码。
+
+场景快照可附带 `scenario: {id,version}`，当前服务端始终提供，用于前端与所装配模块匹配。`presentation.ready.payload.environmentAfter`由服务端故事投影提供；Scheduler不再从具体的照片/雨势事实推导环境，只在实际呈现成功后投影随事件返回的状态。
+
+标准photo/environment事件与四态、表演动作保留兼容；它们的资源、事实和呈现实现由故事包解释。生产的隐藏Lore和Ink存档不进入公开呈现manifest。

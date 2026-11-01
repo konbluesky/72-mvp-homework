@@ -1,5 +1,13 @@
 # 实施状态与验收入口
 
+> 2026-11-01：WebGAL 第 1–3 点持续会话改造见[交互说明](../architecture/webgal-interaction-design.md)；物件直接点选第 4 点仍待定，功能/运行时/E2E 未在本轮执行。
+>
+> 原版 `/` 与 WebGAL `/webgal.html` 按用户要求并存，原版仍为默认首页；以下 B0/Vue 描述保留为历史阶段记录。最新范围与验证边界见[八场景实施记录](miara-webgal-story.md)。
+
+WebGAL 路线 B 已开始实施：[B0 迁移记录](webgal-migration.md)。固定引擎/parser 与 React 工作台进入构建；B1–B4 尚未交付，下表仍描述当前默认产品入口。
+
+逐项跟进请使用[需求与代码对照 TODO 清单](todo-list.md)，其中保留勾选状态、代码证据、优先级与未完成项的验收条件；本页保留范围摘要。
+
 当前工程已完成 npm workspaces 基座、共享协议、Vue/Fastify 独立入口、LangGraph 单轮编排、Mock 闭环、真实录音/播放、轮次取消及事件级回执。
 
 | 范围       | 当前实现                                                 | 证据入口与边界                                                                                           |

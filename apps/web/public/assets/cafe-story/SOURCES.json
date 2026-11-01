@@ -1,0 +1,66 @@
+{
+  "author": "Project-authored SVG artwork; Codex assisted implementation",
+  "license": "Project source license; no external images",
+  "baseBackgrounds": [
+    "street-wide",
+    "cafe-front",
+    "lobby",
+    "window-seat",
+    "photo-corridor",
+    "washroom",
+    "counter",
+    "street-walk"
+  ],
+  "variants": [
+    "cafe-front-closed",
+    "street-wide-closed",
+    "street-walk-closed"
+  ],
+  "generator": "scripts/create-cafe-art.py",
+  "files": {
+    "cafe-front-closed.svg": {
+      "sha256": "49bcd710ded7b708fc36bb362387e3f8bae759705984dee490983a6dec30bd8d",
+      "bytes": 7625
+    },
+    "cafe-front.svg": {
+      "sha256": "c55329a3b6329b718c189de51a20c1269a9e4c8c07f5945746629d76838827a3",
+      "bytes": 7625
+    },
+    "counter.svg": {
+      "sha256": "112318c36fc0ec02714424b20cc303f512a4d5deada0d5c3d95a17990e26c66b",
+      "bytes": 8435
+    },
+    "lobby.svg": {
+      "sha256": "1ffa6398aea660dc848b56812c70e542d40fdba2e071a38cf41c873fc8fe7096",
+      "bytes": 7718
+    },
+    "photo-corridor.svg": {
+      "sha256": "d7e0f744bc0a0c2610506fa0cb4adef7cd25b2094a55e628a2afa690860de9f5",
+      "bytes": 5289
+    },
+    "street-walk-closed.svg": {
+      "sha256": "6fed86ded07fa4fa56d110b376e0b2cf97d8394c9985ca57edce77fad7dbb521",
+      "bytes": 5387
+    },
+    "street-walk.svg": {
+      "sha256": "b842cf6d74eb37a7c238b25cce28d245ec0361590712b1c719f80bb11b46d01d",
+      "bytes": 5387
+    },
+    "street-wide-closed.svg": {
+      "sha256": "b98dba2e9c071a3d908e8b22216044591ebee817a0af4cea2d18dbc637ae76b7",
+      "bytes": 6722
+    },
+    "street-wide.svg": {
+      "sha256": "2ff6eb5545e88ae46b330432f86d8cb5b6b67f65321ab0dbc947dd26b7769d64",
+      "bytes": 6722
+    },
+    "washroom.svg": {
+      "sha256": "5b5a34c59c45234bfda0e2f525e9a2e718f0506f67226c3294192aff2cf497cd",
+      "bytes": 3980
+    },
+    "window-seat.svg": {
+      "sha256": "ce8ac7431e572a262c446112a55139538786abb01debe91bbfdba7df188c56ee",
+      "bytes": 5063
+    }
+  }
+}

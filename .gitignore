@@ -33,14 +33,21 @@
 /docs/*
 !/docs/README.md
 !/docs/provider-configuration.md
+!/docs/miara-webgal-scenario-design.md
 !/docs/architecture/
 !/docs/contracts/
 !/docs/development/
 !/docs/operations/
 !/docs/acceptance/
+!/docs/prompts/
+/docs/prompts/*
+!/docs/prompts/miara-webgal-implementation.md
 /docs/architecture/*
 !/docs/architecture/decisions.md
 !/docs/architecture/providers.md
+!/docs/architecture/narrative-runtime-design.md
+!/docs/architecture/webgal-interaction-design.md
+!/docs/architecture/scene-modules.md
 /docs/contracts/*
 !/docs/contracts/README.md
 !/docs/contracts/openapi.json
@@ -48,15 +55,21 @@
 !/docs/development/README.md
 !/docs/development/vscode.md
 !/docs/development/version-control.md
+!/docs/development/webgal-migration.md
 /docs/operations/*
 !/docs/operations/README.md
 !/docs/operations/nginx-production.conf
+!/docs/operations/connection-health.md
 /docs/acceptance/*
 !/docs/acceptance/implementation-plan.md
+!/docs/acceptance/todo-list.md
 !/docs/acceptance/live2d-migration.md
 !/docs/acceptance/deepgram-integration.md
 !/docs/acceptance/character-expressiveness.md
 !/docs/acceptance/demo.md
+!/docs/acceptance/webgal-migration.md
+!/docs/acceptance/miara-webgal-story.md
+!/docs/acceptance/narrative-ink.md
 
 # Credentials, backups, private media and generated outputs at any depth.
 .env
@@ -93,3 +106,6 @@ Thumbs.db
 *.key
 *.p12
 *.pfx
+
+# Ink bytecode is reproduced by scenarios:build, then copied by the server build.
+/apps/server/src/scenario/cafe/compiled.json

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 2560 1440">
+ <defs>
+  <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#142c42"/><stop offset="1" stop-color="#4a6473"/></linearGradient>
+  <linearGradient id="wall" x2="1" y2="1"><stop stop-color="#433b34"/><stop offset="1" stop-color="#302d31"/></linearGradient>
+  <linearGradient id="table" x2="0" y2="1"><stop stop-color="#997351"/><stop offset="1" stop-color="#5d4537"/></linearGradient>
+  <radialGradient id="glow"><stop stop-color="#ffd596" stop-opacity=".34"/><stop offset="1" stop-color="#ffd596" stop-opacity="0"/></radialGradient>
+  <pattern id="building-windows" width="62" height="80" patternUnits="userSpaceOnUse"><rect x="14" y="15" width="12" height="24" rx="2" fill="#ffd596" opacity=".5"/><rect x="39" y="15" width="12" height="24" rx="2" fill="#809caa" opacity=".18"/></pattern>
+ </defs>
+ <rect width="2560" height="1440" fill="url(#wall)"/>
+ <rect x="440" y="138" width="1770" height="970" rx="10" fill="#171f26"/>
+ <rect x="468" y="166" width="1714" height="914" fill="url(#sky)"/>
+ <circle cx="1785" cy="330" r="108" fill="#ffd596" opacity=".24"/>
+ <circle cx="1785" cy="330" r="55" fill="#ffd596" opacity=".6"/>
+ <path d="M468 798 650 755 780 780 980 720 1180 760 1430 690 1640 752 1800 705 1990 730 2182 670V1080H468Z" fill="#1b3341" opacity=".7"/>
+ <path d="M468 1080V692h188v388Zm250 0V560h210v520Zm284 0V660h170v420Zm235 0V505h245v575Zm315 0V635h186v445Zm245 0V555h222v525Zm288 0V720h160v360Z" fill="#1b3341"/>
+ <path d="M468 1080V692h188v388Zm250 0V560h210v520Zm284 0V660h170v420Zm235 0V505h245v575Zm315 0V635h186v445Zm245 0V555h222v525Zm288 0V720h160v360Z" fill="url(#building-windows)"/>
+ <rect x="468" y="166" width="1714" height="914" fill="#809caa" opacity=".07"/>
+ <path d="m600 166-132 914h90l132-914Zm850 0-134 914h23l134-914Z" fill="#fff" opacity=".045"/>
+ <g fill="#293232"><rect x="1020" y="138" width="24" height="970"/><rect x="1600" y="138" width="24" height="970"/><rect x="440" y="628" width="1770" height="22"/></g>
+ <rect x="412" y="1080" width="1820" height="54" rx="5" fill="#a08059"/>
+ <rect x="424" y="1134" width="1796" height="18" fill="#161e20" opacity=".7"/>
+ <ellipse cx="370" cy="530" rx="650" ry="700" fill="url(#glow)"/>
+ <path d="M318 0v260" stroke="#151e21" stroke-width="14"/>
+ <path d="m216 366 62-108h82l63 108Z" fill="#c4a273"/>
+ <ellipse cx="319" cy="365" rx="104" ry="20" fill="#ffd596"/>
+ <path d="M2310 0v226" stroke="#151e21" stroke-width="14"/>
+ <path d="m2217 321 58-98h72l58 98Z" fill="#bc9865"/>
+ <ellipse cx="2311" cy="320" rx="95" ry="18" fill="#ffd596"/>
+ <ellipse cx="2300" cy="618" rx="440" ry="650" fill="url(#glow)"/>
+ <path d="M0 1182q340-95 740-12v270H0Z" fill="#283836"/>
+ <path d="M0 1210q330-70 701-8v91H0Z" fill="#3a4d43"/>
+ <path d="M35 1210v230m233-253v253m234-250v250" stroke="#1d2d2c" stroke-width="8" opacity=".6"/>
+ <ellipse cx="1324" cy="1287" rx="695" ry="120" fill="#1c2223" opacity=".8"/>
+ <path d="M779 1248h1110l147 192H610Z" fill="url(#table)"/>
+ <path d="M779 1248h1110l19 25H760Z" fill="#c59d6e" opacity=".6"/>
+ <g transform="translate(1170 1195)"><ellipse cy="86" rx="104" ry="20" fill="#262927" opacity=".6"/><ellipse cy="62" rx="95" ry="14" fill="#d2c4a3"/><path d="M-56-4h112l-10 61q-46 27-92 0Z" fill="#e5d8bd"/><path d="M57 4q62 0 38 39-12 15-44 10" stroke="#dfcfb0" stroke-width="13" fill="none"/><ellipse cy="-4" rx="56" ry="13" fill="#baae94"/><ellipse cy="-4" rx="46" ry="8" fill="#4c3d32"/><path d="M-12-20q-21-25 0-44t0-40M13-25q20-23 0-43" stroke="#eee8ce" stroke-width="5" opacity=".35" fill="none" stroke-linecap="round"/></g>
+ <g transform="translate(1610 1250) rotate(-9)"><rect x="-125" y="-28" width="250" height="100" rx="5" fill="#253c3e"/><rect x="-116" y="-35" width="232" height="98" rx="4" fill="#d3bc92"/><path d="M-92-8H90M-92 8H20M-92 24H68" stroke="#a18d6f" stroke-width="4"/></g>
+ <g transform="translate(2260 1030)"><path d="M0 78q-100-270-131-294 118 24 154 259-25-271 38-326 40 166-27 332 84-225 158-202-35 130-133 245Z" fill="#4e6350"/><path d="M-72 43H82L61 172H-49Z" fill="#a47e58"/><ellipse cx="5" cy="43" rx="78" ry="18" fill="#b58d62"/></g>
+ <rect width="2560" height="1440" fill="#0d1b22" opacity=".08"/>
+</svg>

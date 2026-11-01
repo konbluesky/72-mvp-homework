@@ -1,0 +1,23 @@
+{
+  "name": "webgal-parser",
+  "version": "4.6.5",
+  "private": true,
+  "type": "module",
+  "license": "MPL-2.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./build/types/styleParser": {
+      "types": "./dist/styleParser/index.d.ts",
+      "default": "./dist/styleParser/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

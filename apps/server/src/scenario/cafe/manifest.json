@@ -1,0 +1,283 @@
+{
+  "id": "last-lamp",
+  "version": "1.1.0",
+  "inkVersion": "2.4.0",
+  "entry": "menu",
+  "voices": {
+    "hello": {
+      "text": "雨还在下。你也想在这里躲一会儿吗？",
+      "file": "hello.wav",
+      "emotion": "curious",
+      "action": "acknowledge"
+    },
+    "helloNext": {
+      "text": "我叫米拉。窗边的位置，留给你。",
+      "file": "helloNext.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "waiting": {
+      "text": "我在等一个很久没见的人。也许，她今天不会来了。",
+      "file": "waiting.wav",
+      "emotion": "guarded",
+      "action": "lookWindow"
+    },
+    "travel": {
+      "text": "你也喜欢旅行吗？我一直记得海边的那阵风。",
+      "file": "travel.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "comfort": {
+      "text": "谢谢你。有人愿意陪我坐一会儿，已经很好了。",
+      "file": "comfort.wav",
+      "emotion": "relieved",
+      "action": "none"
+    },
+    "photo": {
+      "text": "可以。这是我们在海边留下的照片，你看，天空很亮。",
+      "file": "photo.wav",
+      "emotion": "relieved",
+      "action": "offerPhoto"
+    },
+    "rain": {
+      "text": "雨好像小了一点。今晚，也没有刚才那么冷了。",
+      "file": "rain.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "refuse": {
+      "text": "好，我们不看照片。就听一会儿雨声吧。",
+      "file": "refuse.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "after": {
+      "text": "刚才那张照片，让我想起了很多温暖的事。",
+      "file": "after.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "storyDepart": {
+      "text": "好。这次，我想自己选下一站。",
+      "file": "storyDepart.wav",
+      "emotion": "relieved",
+      "action": "none"
+    },
+    "storyLetter": {
+      "text": "有些话，可以慢慢说。我想先给她留下回信。",
+      "file": "storyLetter.wav",
+      "emotion": "relieved",
+      "action": "none"
+    },
+    "storyStay": {
+      "text": "好。今晚，我们不急着回答所有问题。",
+      "file": "storyStay.wav",
+      "emotion": "relieved",
+      "action": "none"
+    },
+    "letterKnown": {
+      "text": "原来，阿岚下午来过。她给我的照片留了一面墙，我想重新和她联系。",
+      "file": "letterKnown.wav",
+      "emotion": "relieved",
+      "action": "focusProp"
+    },
+    "letterUnknown": {
+      "text": "我在等阿岚。但她今天来没来过，我还不确定。",
+      "file": "letterUnknown.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "gallery": {
+      "text": "那是我们一起办过的摄影展。后来，各自去了不同的地方。",
+      "file": "gallery.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "washroomPause": {
+      "text": "我带来了照片，却一直没有想好，重新联系她的第一句话。",
+      "file": "washroomPause.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "lastNight": {
+      "text": "今晚是旧店最后一晚营业。明天，这些桌椅就要搬走了。",
+      "file": "lastNight.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "storyReadLetter": {
+      "text": "这封信，写着我的名字。你陪我一起看看吧。",
+      "file": "storyReadLetter.wav",
+      "emotion": "relieved",
+      "action": "focusProp"
+    }
+  },
+  "phases": ["arrival", "exploration", "decision", "epilogue"],
+  "locations": {
+    "street-wide": "街角远景",
+    "cafe-front": "门头雨棚",
+    "lobby": "入口大堂",
+    "window-seat": "窗边座位",
+    "photo-corridor": "照片墙走廊",
+    "washroom": "公共洗手区",
+    "counter": "吧台结账台",
+    "street-walk": "店外街道"
+  },
+  "projection": {
+    "flags": [
+      "met",
+      "waiting_heard",
+      "companionship",
+      "letter_read",
+      "letter_reflected",
+      "notice_read",
+      "exhibition_read",
+      "reply_left",
+      "photo_seen",
+      "rain_softened"
+    ],
+    "revealed": {
+      "notice": "notice_read",
+      "exhibition": "exhibition_read",
+      "letter": "letter_read",
+      "reply": "reply_left"
+    },
+    "facts": {
+      "photo_revealed": "photo_seen",
+      "rain_softened": "rain_softened"
+    }
+  },
+  "directorNotes": [
+    {
+      "requires": ["letter_reflected"],
+      "text": "她已经读过信，也谈过自己的感受。可自然问用户今晚接下来想怎么过，推荐一句明确的共同决定和一句继续陪伴。用户仍可转移话题，不强推结局。",
+      "replyActions": ["choose-depart", "choose-stay"],
+      "chatReplies": ["我想再听听你的想法，不急着决定。"]
+    },
+    {
+      "requires": ["letter_read"],
+      "text": "信件已实际公开，可以顺着用户谈她的感受。若用户不知道怎么接话，轻轻问一句是否愿意听她说；不重复读信，也不催促结局。",
+      "replyActions": ["talk-letter-reflection", "talk-companionship"],
+      "chatReplies": ["慢慢说，我陪着你。"]
+    },
+    {
+      "locations": ["counter"],
+      "text": "这里只能知道署名和信封外观，纸张正文尚未公开。不编造内容；可自然提到这封信写着自己的名字，询问用户是否愿意陪自己看看。用户明确同意后才能打开。",
+      "replyActions": ["inspect-letter", "move-window-seat"],
+      "chatReplies": ["先不打开，我们聊点别的吧。"]
+    },
+    {
+      "requires": ["companionship"],
+      "text": "她已经接受陪伴。自然邀请继续坐坐或去吧台，不要求用户学习地点菜单；明确的决定可以来自会话。",
+      "replyActions": ["move-counter"],
+      "chatReplies": ["说说你最难忘的一次旅行吧。"]
+    },
+    {
+      "locations": ["photo-corridor"],
+      "text": "顺着对话提到墙上可见的海报，邀请一起看看；正文公开前不要提前讲出其中内容。",
+      "replyActions": ["inspect-exhibition", "move-counter"],
+      "chatReplies": ["先不看海报，陪你聊一会儿。"]
+    },
+    {
+      "requires": ["photo_seen"],
+      "locations": ["window-seat", "lobby", "washroom"],
+      "text": "照片已经展示过。可以问用户这片海让他想到什么，或者接受陪伴、邀请换个地方聊；不反复要求看同一张照片。",
+      "replyActions": ["talk-companionship", "move-counter"],
+      "chatReplies": ["这片海让你想起了什么？"]
+    },
+    {
+      "requires": ["waiting_heard"],
+      "locations": ["window-seat", "lobby", "washroom"],
+      "text": "用户已经听过她在等谁。顺着感受交流，可邀请看照片或继续陪伴，不再次要求用户询问等谁。",
+      "replyActions": ["view-photo", "talk-companionship"],
+      "chatReplies": ["如果不想细说，我们就聊点轻松的吧。"]
+    },
+    {
+      "locations": ["window-seat"],
+      "text": "以摄影、等候和陪伴自然交流。若用户不知怎么接话，可以问是否想看照片，或者愿不愿再坐一会儿；不把全部动作清单念给用户。",
+      "replyActions": ["view-photo", "talk-companionship"],
+      "chatReplies": ["先不看照片，你最近过得怎么样？"]
+    },
+    {
+      "text": "这是一次与角色持续交流的相遇。开场留一个容易回答的问题，顺着用户自然接话，用身边的事物邀请下一句，不要求用户先选模式或找热点。用户拒绝、想停留或转移话题时尊重，不编造未公开信息。",
+      "replyActions": ["talk-waiting"],
+      "chatReplies": ["你最难忘的一次旅行去了哪里？"]
+    }
+  ],
+  "entries": {
+    "story": "story_start",
+    "conversation": "conversation_start"
+  },
+  "actionDescriptions": {
+    "view-photo": "实际拿出并展示那张海岸照片。用户直接请求看照片（包括“能看看照片吗”这样的礼貌问句）就可执行；仅询问照片的故事或拒绝查看时不执行。无需再问一遍是否想看。",
+    "talk-waiting": "用户明确想听她在等谁时，说出等候旧友的简短回应。普通关于朋友的闲聊不必触发。",
+    "talk-companionship": "用户明确愿意陪她坐会儿时，接受陪伴；不读信也可以慢慢讨论今晚的选择。"
+  },
+  "openingVoice": "hello",
+  "playerReplies": {
+    "talk-waiting": "你是在等什么人吗？",
+    "view-photo": "可以给我看看那张照片吗？",
+    "talk-companionship": "我不赶时间，陪你坐一会儿吧。",
+    "talk-letter-reflection": "读完这封信，你现在是什么感受？",
+    "inspect-letter": "我们一起把这封信打开吧。",
+    "inspect-notice": "我想看看店里的营业告示。",
+    "inspect-exhibition": "给我看看那张联展海报吧。",
+    "inspect-reply": "可以再给我看看留下的回信吗？",
+    "choose-depart": "好，我们一起出去走走吧。",
+    "choose-letter": "我想留下回信，再和你告别。",
+    "choose-stay": "再陪你坐一杯吧。",
+    "move-counter": "我们去吧台聊聊吧。",
+    "move-window-seat": "去窗边坐坐吧。",
+    "move-photo-corridor": "带我去看看照片墙吧。",
+    "move-washroom": "我们去公共洗手区吧。",
+    "move-lobby": "我们进店里坐一会儿吧。",
+    "move-cafe-front": "陪我去门口看看吧。",
+    "move-street-wide": "我们回街角看看吧。",
+    "move-street-walk": "我们到店外的街道上走走吧。"
+  },
+  "presentation": {
+    "clientModule": "cafe",
+    "character": "mira",
+    "title": "雨停之前",
+    "subtitle": "最后一盏灯",
+    "speaker": "米拉",
+    "defaultCharacter": "haru",
+    "phaseLabels": {
+      "arrival": "序章",
+      "exploration": "探索",
+      "decision": "抉择",
+      "epilogue": "尾声"
+    },
+    "environment": {
+      "default": "rain",
+      "variants": [
+        {
+          "requires": ["rain_softened"],
+          "value": "rain-soft"
+        }
+      ]
+    },
+    "assetRoot": "/assets/cafe-story/",
+    "minimumBackgrounds": 8,
+    "speakerDescription": "旅行摄影师"
+  },
+  "recommendations": {
+    "decisionPhases": ["decision", "epilogue"],
+    "maxGuiding": 1
+  },
+  "ambiences": ["open", "closed", "last-lamp"],
+  "endings": ["depart", "letter", "stay"],
+  "resources": {
+    "travel_photo_01": {
+      "kind": "image",
+      "asset": "travel-photo",
+      "url": "/assets/travel-photo.svg"
+    }
+  },
+  "mock": {
+    "audioRoot": "assets/mock-audio",
+    "transcript": "能看看照片吗？"
+  },
+  "performanceActions": ["none", "lookWindow", "acknowledge", "focusProp"]
+}

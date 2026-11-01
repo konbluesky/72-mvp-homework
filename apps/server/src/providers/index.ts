@@ -5,9 +5,7 @@ import { DeepgramClient } from './deepgram/client.js';
 import { DeepgramStt } from './deepgram/stt.js';
 import { DeepgramTts } from './deepgram/tts.js';
 import { GptPlanner } from './openai/planner.js';
-import { createMockProviders } from './mock.js';
 export * from './types.js';
-export { createMockProviders } from './mock.js';
 
 export function createLiveProviders(config: Config, fetcher: Fetch = fetch): ProviderSet {
   const client = new DeepgramClient(
@@ -33,9 +31,15 @@ export function createLiveProviders(config: Config, fetcher: Fetch = fetch): Pro
     }),
   };
 }
-export function createProviders(config: Config, fetcher: Fetch = fetch): ProviderSet {
+export function createProviders(
+  config: Config,
+  fetcher: Fetch = fetch,
+  mockFactory?: () => ProviderSet,
+): ProviderSet {
+  if (config.APP_MODE === 'mock' && !mockFactory)
+    throw new Error('Mock content must be provided by the selected scenario.');
   const providers =
-    config.APP_MODE === 'mock' ? createMockProviders() : createLiveProviders(config, fetcher);
+    config.APP_MODE === 'mock' ? mockFactory!() : createLiveProviders(config, fetcher);
   if (config.STT_PROVIDER === 'disabled') return { planner: providers.planner, tts: providers.tts };
   return providers;
 }

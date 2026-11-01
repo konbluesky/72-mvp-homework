@@ -82,12 +82,14 @@ try {
   await expect(page.locator('main')).toHaveAttribute('data-state', 'speaking');
   await page.waitForTimeout(900);
   await page.getByRole('button', { name: '切换语音输入', exact: true }).click();
-  await page.getByRole('button', { name: '按住录音，松开发送，上滑取消' }).focus();
+  await page.getByRole('button', { name: '按住录音，松开预览，上滑取消' }).focus();
   await page.keyboard.down('Space');
   await expect(page.locator('main')).toHaveAttribute('data-state', 'listening');
   await page.waitForTimeout(1000);
   await page.keyboard.up('Space');
-  await expect(page.locator('.recent-user')).toContainText('语音示例');
+  await expect(page.getByRole('textbox', { name: '编辑语音消息' })).toBeVisible();
+  await page.getByRole('button', { name: '确认发送', exact: true }).click();
+  await expect(page.locator('.recent-user').last()).toContainText('语音示例');
   await idle();
   await at(123);
   await note(

@@ -134,6 +134,69 @@
       "source": "Rendered frame of the bundled official Haru sample; same sample-material terms",
       "bytes": 247944,
       "sha256": "f102e4e1b4c473d679a7b0fce9c5f8e1d65f15b2f027ed490a001cded4491cd2"
+    },
+    {
+      "path": "miara/miara_pro_t03.cdi3.json",
+      "source": "https://raw.githubusercontent.com/xShiroeNguyenx/desktop-companion/25ee0a10a2b5633a7e2c8714b108e6f68cd946da/app/media/live2d/Miara/miara_pro_t03.cdi3.json",
+      "bytes": 19685,
+      "sha256": "9f951dd9612b1b826211e0cc553c4d81435d4a97a6209697771a96b0ab5a95ad"
+    },
+    {
+      "path": "miara/miara_pro_t03.model3.json",
+      "source": "https://raw.githubusercontent.com/xShiroeNguyenx/desktop-companion/25ee0a10a2b5633a7e2c8714b108e6f68cd946da/app/media/live2d/Miara/miara_pro_t03.model3.json",
+      "bytes": 631,
+      "sha256": "b98f63e7b0978c9cf0e6f065698594e6fdd56cf358301df98e2902d03fcfd1a2"
+    },
+    {
+      "path": "miara/miara_pro_t03.moc3",
+      "source": "https://raw.githubusercontent.com/xShiroeNguyenx/desktop-companion/25ee0a10a2b5633a7e2c8714b108e6f68cd946da/app/media/live2d/Miara/miara_pro_t03.moc3",
+      "bytes": 544256,
+      "sha256": "e7c9614904068550f6083bbb8d7d3d559a1b33b2c6ed6ba9e4acd92b85f5647a"
+    },
+    {
+      "path": "miara/miara_pro_t03.physics3.json",
+      "source": "https://raw.githubusercontent.com/xShiroeNguyenx/desktop-companion/25ee0a10a2b5633a7e2c8714b108e6f68cd946da/app/media/live2d/Miara/miara_pro_t03.physics3.json",
+      "bytes": 47722,
+      "sha256": "49ca2b9340ea681459d8ce50fec2ac58895e26f9c1bec12b9b8b195e7b9480b3"
+    },
+    {
+      "path": "miara/miara_pro_t03.4096/texture_00.png",
+      "source": "https://raw.githubusercontent.com/xShiroeNguyenx/desktop-companion/25ee0a10a2b5633a7e2c8714b108e6f68cd946da/app/media/live2d/Miara/miara_pro_t03.4096/texture_00.png",
+      "bytes": 13457985,
+      "sha256": "6c206f27d61e123df3ab7ac5eafe702dc91c3c125884a2886184f5dd8d3f9e68"
+    },
+    {
+      "path": "miara/motion/Scene1.motion3.json",
+      "source": "https://raw.githubusercontent.com/xShiroeNguyenx/desktop-companion/25ee0a10a2b5633a7e2c8714b108e6f68cd946da/app/media/live2d/Miara/motion/Scene1.motion3.json",
+      "bytes": 28434,
+      "sha256": "ce20fa5ba3a7d5fabca2150408f16fcc4a0b91dc156a4c65f62a494f53b044fd"
+    },
+    {
+      "path": "miara/motion/Scene2.motion3.json",
+      "source": "https://raw.githubusercontent.com/xShiroeNguyenx/desktop-companion/25ee0a10a2b5633a7e2c8714b108e6f68cd946da/app/media/live2d/Miara/motion/Scene2.motion3.json",
+      "bytes": 23837,
+      "sha256": "df771aeb85903f55e7386a879ad677bd6cc7476d4d6bf02b4d97f04777f488e0"
+    },
+    {
+      "path": "miara/motion/Scene3.motion3.json",
+      "source": "https://raw.githubusercontent.com/xShiroeNguyenx/desktop-companion/25ee0a10a2b5633a7e2c8714b108e6f68cd946da/app/media/live2d/Miara/motion/Scene3.motion3.json",
+      "bytes": 29420,
+      "sha256": "6b49d8a6f15eb3a0b7ab6d0b7e4dc0c12cb3c1c99a4b24741bc42c08fd1a04e4"
     }
-  ]
+  ],
+  "additional_models": {
+    "miara": {
+      "copyright": "Live2D Inc.",
+      "official_page": "https://www.live2d.com/en/learn/sample/miara/",
+      "mirror": "https://github.com/xShiroeNguyenx/desktop-companion",
+      "mirror_commit": "25ee0a10a2b5633a7e2c8714b108e6f68cd946da",
+      "retrieved_on": "2026-10-31",
+      "modification": "Eight runtime/model/texture/motion files copied byte-for-byte from the pinned mirror. No editor source (.cmo3/.can3), sample audio, hit areas, or expression files included. Not connected to the product runtime yet.",
+      "verification": "SHA-256 matches the pinned public mirror; the official sample ZIP was unavailable, so an original upstream checksum was not independently verified.",
+      "terms": [
+        "vendor/licenses/Live2D-Free-Material.html",
+        "vendor/licenses/Live2D-Sample-Terms.html"
+      ]
+    }
+  }
 }

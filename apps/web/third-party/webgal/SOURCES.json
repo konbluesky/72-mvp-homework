@@ -1,0 +1,1225 @@
+{
+  "repository": "https://github.com/OpenWebGAL/WebGAL",
+  "commit": "15173bc21339a65da34b78463fca8a304e4d503a",
+  "engineVersion": "4.6.6",
+  "parserVersion": "4.6.5",
+  "license": "MPL-2.0",
+  "files": {
+    "apps/web/src/engine/webgal/App.tsx": {
+      "upstream": "packages/webgal/src/App.tsx",
+      "sha256": "f06ff878e7946a1b5f5af1466c07aa760c614fd1815826d186bc18f7431d2660"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/animationFunctions.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/animationFunctions.ts",
+      "sha256": "48eb71df14954d507bc4a397cd545933b0a737cb2667ce660dd71706ad189063"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/animationTracks.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/animationTracks.ts",
+      "sha256": "ab93d9b4ec29ccf28cca4217df50a725daf4c7a8f6375e451fa1863ed20c5d88"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/animations.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/animations.ts",
+      "sha256": "d1361d5c2f589cae5fc14793e91b1efc79f5795aba403faa9a30d2c21d0fe5dc"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/backlog.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/backlog.ts",
+      "sha256": "33715f7ccbbdad25f0a58ab9caced76241d5a886d0126c9a5c67f2113f2cd765"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/events.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/events.ts",
+      "sha256": "86a54ec50fb56452d152f1fb6cb602891e4693d18d3c4e8c715be95518e611b3"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/flowchart.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/flowchart.ts",
+      "sha256": "792be79d88d44dd93fb7771b312fff815463511a8f67b21cee7a83432a0e8a0e"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/gamePlay.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/gamePlay.ts",
+      "sha256": "fbef2da3b6b850280cc6ba67533c1f6c89deda4af493e933dd74929c6653350a"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/perform/performController.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/perform/performController.ts",
+      "sha256": "c09b56b7dfd2f051972dbd2735cb019d0de1f8153257d054655d645160b051b0"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/perform/performInterface.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/perform/performInterface.ts",
+      "sha256": "62873282f44b37565fa6ec2c38a628d7f6e3bd91308f3200de08c12e7dfec21e"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/readHistory.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/readHistory.ts",
+      "sha256": "e30c325e075c14175e0b64d9d6991a5826df16a39bc832a1820b06fadd2f28ca"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/scene.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/scene.ts",
+      "sha256": "d1ae8b812964cf1a0b228d00ce628b8a60b0b4da3c82a7e943a06d6f42798023"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/stage/dialogText.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/stage/dialogText.ts",
+      "sha256": "9fa8601f881e9e0cba74d585538cec698b168df570bc536c2f2a6afc5b054a96"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/stage/stageInterface.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/stage/stageInterface.ts",
+      "sha256": "86a7a40ac63a68efeb780a3857ef1991d9591ce137fa88f5b24aff706dcb7753"
+    },
+    "apps/web/src/engine/webgal/Core/Modules/stage/stageStateManager.ts": {
+      "upstream": "packages/webgal/src/Core/Modules/stage/stageStateManager.ts",
+      "sha256": "d174ba3b0da537c2c1dcc781526fd090275c772d21d024cec7bdc229da89c508"
+    },
+    "apps/web/src/engine/webgal/Core/WebGAL.ts": {
+      "upstream": "packages/webgal/src/Core/WebGAL.ts",
+      "sha256": "8296c232c66f0678727a50238f72a7fc2c9595a31f7d3c497e83344588a76ac9"
+    },
+    "apps/web/src/engine/webgal/Core/constants.ts": {
+      "upstream": "packages/webgal/src/Core/constants.ts",
+      "sha256": "2ba3aa98e18a2a6dba4d22b0e474367f96567b67a5a06c8a568229b36191610d"
+    },
+    "apps/web/src/engine/webgal/Core/controller/customUI/scss2cssinjsParser.ts": {
+      "upstream": "packages/webgal/src/Core/controller/customUI/scss2cssinjsParser.ts",
+      "sha256": "e245615b5202fdff0f4000065727e21f4971e7b8fdd09ff1a88feb2678111e8e"
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/autoPlay.ts": {
+      "upstream": "packages/webgal/src/Core/controller/gamePlay/autoPlay.ts",
+      "sha256": "3ed66d16ea7f9a62384a8740b0648ad10e9e7a00b3fd6aa3be232d7fdd645c9c"
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/backToTitle.ts": {
+      "upstream": "packages/webgal/src/Core/controller/gamePlay/backToTitle.ts",
+      "sha256": "b40ccce8373210f8f88f9aaaeee9ba25f0f42a0d830a82cc78be01955583e132"
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/fastSkip.ts": {
+      "upstream": "packages/webgal/src/Core/controller/gamePlay/fastSkip.ts",
+      "sha256": "e008288acc74d8b767e144d4144e1a491d9a1ca6a50726dd9f20ab3926f4f411"
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/nextSentence.ts": {
+      "upstream": "packages/webgal/src/Core/controller/gamePlay/nextSentence.ts",
+      "sha256": "77a372b3805712e8ec57030501cf522387404a45bbf34012c82e5ba81cce8e99"
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/runScript.ts": {
+      "upstream": "packages/webgal/src/Core/controller/gamePlay/runScript.ts",
+      "sha256": "a8cdccd986322a4a18eca157583a6ea3ad417dda1294005bddd108c6a258c203"
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/scriptExecutor.ts": {
+      "upstream": "packages/webgal/src/Core/controller/gamePlay/scriptExecutor.ts",
+      "sha256": "df8a739edcadaa89a8473e1555518b74be77ede7cf7034a6477ea0d60625484a"
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/startContinueGame.ts": {
+      "upstream": "packages/webgal/src/Core/controller/gamePlay/startContinueGame.ts",
+      "sha256": "1d778c64d05f8ea28641739139d1b87fdc1830a36ecfd89bbc1fa09b83b554ea"
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/stopAllPerform.ts": {
+      "upstream": "packages/webgal/src/Core/controller/gamePlay/stopAllPerform.ts",
+      "sha256": "7e80a66bc56a41b841805832e9304bb1fef6d7eff6d4614d3c9ecc5004936d59"
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/strIf.ts": {
+      "upstream": "packages/webgal/src/Core/controller/gamePlay/strIf.ts",
+      "sha256": "c79c0633e2e8d35ab293cc5a795cf5b0a00ece4cc4f9d43a2c592f0540e627f4"
+    },
+    "apps/web/src/engine/webgal/Core/controller/scene/callScene.ts": {
+      "upstream": "packages/webgal/src/Core/controller/scene/callScene.ts",
+      "sha256": "75ec08e25de1201d02165ca9a1bd4800c0b751b635114cba94fc9c799aa2ce86"
+    },
+    "apps/web/src/engine/webgal/Core/controller/scene/changeScene.ts": {
+      "upstream": "packages/webgal/src/Core/controller/scene/changeScene.ts",
+      "sha256": "cbfb61ddff386af9912091a920efb2df4850ab3e22ffa00a9a8e7ab9c3993b71"
+    },
+    "apps/web/src/engine/webgal/Core/controller/scene/restoreScene.ts": {
+      "upstream": "packages/webgal/src/Core/controller/scene/restoreScene.ts",
+      "sha256": "077ca290cbafa3a1e2dd2f32525190b9b23adc8d9f5aca44b177760780b59dc3"
+    },
+    "apps/web/src/engine/webgal/Core/controller/scene/returnFromScene.ts": {
+      "upstream": "packages/webgal/src/Core/controller/scene/returnFromScene.ts",
+      "sha256": "9b822e66939108ffdb35a7ef8e5ea0dc337c6a343f700352fd68bf2a2fa91f1f"
+    },
+    "apps/web/src/engine/webgal/Core/controller/scene/sceneFetcher.ts": {
+      "upstream": "packages/webgal/src/Core/controller/scene/sceneFetcher.ts",
+      "sha256": "f59b43da2546456492df2d4a4ee54b9eede9f404ac8b4a33668acb2144e3e0c0"
+    },
+    "apps/web/src/engine/webgal/Core/controller/scene/sceneInterface.ts": {
+      "upstream": "packages/webgal/src/Core/controller/scene/sceneInterface.ts",
+      "sha256": "8cd2a806708fa82b9f2f4c66c656ba5a54370a9b304734142ae66a44d3ee0879"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/GifResource.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/GifResource.ts",
+      "sha256": "1601c6d52bb6eab1fa2d289417ce7ef704535a15ebc00ade844a11df4e310a9b"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/PixiController.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/PixiController.ts",
+      "sha256": "af41953723349a1f6509ed65712bcf91aeeb2b543f4920e00a41c1fd74c754a3"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/WebGALPixiContainer.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/WebGALPixiContainer.ts",
+      "sha256": "f1a804995df0c763043beba6bceac240b45e83bc20b8c302a03e30281c24ef42"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/animations/generateTransformAnimationObj.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/animations/generateTransformAnimationObj.ts",
+      "sha256": "be969ecdf10510d901b42c36a4399ca08657325f2f6ec13dd4f2324f7dba7895"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/animations/index.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/animations/index.ts",
+      "sha256": "652085ebe9a72d0af8ddcf3fbf99e0b4888cb467be65cd345c23b64690cc115e"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/animations/template.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/animations/template.ts",
+      "sha256": "e6992906657f5d8947ddc11bfbd0f2691aeb4f5451a55ada4499e1df70ccc68c"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/animations/testblur.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/animations/testblur.ts",
+      "sha256": "8280d735f3e8c40e0cf1151a4d1b0d2bec987fb51b9044023f2c89e858f74b86"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/animations/timeline.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/animations/timeline.ts",
+      "sha256": "f33d622a18493c14c15337c15ff98d723ff841a83042e49d351cb08f52f56af9"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/animations/universalSoftIn.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/animations/universalSoftIn.ts",
+      "sha256": "8f1136f46ea93b09e8961090ac6cc62d5d44379d0ea199dd7253c0067d743b86"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/animations/universalSoftOff.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/animations/universalSoftOff.ts",
+      "sha256": "1c4bd39469209ea207802762dbc694a3b40282f44be62093bd77c07da01f8026"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/assets/AssetManager.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/assets/AssetManager.ts",
+      "sha256": "ad2e2c7dc86e8180289d05a944952e514fcf3e3a6781f4f8b776ea277b55a3a8"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/assets/README.md": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/assets/README.md",
+      "sha256": "229ca5bcf7656917284e49db20d0504fa1c506623e821d07bc0ad2d97ad15eb4"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/assets/assetParsers.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/assets/assetParsers.ts",
+      "sha256": "667aa78e5ce547a10d5d343e0956d29f758cde98cc67673da52a0e1d77a732e9"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/assets/live2dAssetCache.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/assets/live2dAssetCache.ts",
+      "sha256": "9c69e6c0d8cb1b52a4d7a8b8566e999a4151b1c427c3d61d794c05cc5aeae094"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/assets/live2dAssets.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/assets/live2dAssets.ts",
+      "sha256": "2933f4137dc9fc74e6520306df78b79da936c5af9e0f169ae428c86f5c01babd"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/assets/loadResource.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/assets/loadResource.ts",
+      "sha256": "3fc9d39bb201a4070bb659a25864e8027b5168e69e53bcb2064205760bf637df"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/assets/resourceTypes.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/assets/resourceTypes.ts",
+      "sha256": "f801fe77354c1acaf58dfcead732dc54bd0e3de6b04e7271d77b52d5ae2b1b7d"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/assets/spineAssets.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/assets/spineAssets.ts",
+      "sha256": "f11a7e87e8cabdb87f0dd4a410b157350dcec75b216837a7510a8863838ef0fe"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/assets/videoTexture.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/assets/videoTexture.ts",
+      "sha256": "97cf00c740d2d1aa5d815f15f7533545c00821e0f3592f285bef0cb6e8f2974c"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/figureDiff.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/figureDiff.ts",
+      "sha256": "78e396a626cd60958c294e3635414bb32d501b11a8f3636bed1ab7332d9bfa75"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/figureTextureBlend.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/figureTextureBlend.ts",
+      "sha256": "801389dcd2ebb33041250331bbe3975b188d452e1302787506203001b9afb105"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/prepareFigureDiff.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/prepareFigureDiff.ts",
+      "sha256": "ac1ab4ede9dea66271fe3497392dfbacd5a024a8c6d483855b173b416a540d29"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/referenceBox.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/referenceBox.ts",
+      "sha256": "7b7927f1cf2b161e4851dce301df9edff1249e101874a03314dec45ec21c075e"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/shaders/BevelFilter.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/shaders/BevelFilter.ts",
+      "sha256": "1425f41d9e1ce0c4bdb14c86c989d2be232ee6f1e66523ac649e7622dd1cf258"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/shaders/RadiusAlphaFilter.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/shaders/RadiusAlphaFilter.ts",
+      "sha256": "073beb063ff1088d1bd8d0a374e35c951a6104f97364876c1d6662c973c94f8c"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/spine.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/spine.ts",
+      "sha256": "05868243cca43744e6e1859139106aa643f6fa23c24beef44e7188a1fe492011"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/stageEffectTransform.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/stageEffectTransform.ts",
+      "sha256": "43970ba2f0f29dd188b0ea6b322e8d559705ce6bb6c88fcf31161f87ca33a028"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/syncPixiStageState.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/pixi/syncPixiStageState.ts",
+      "sha256": "308861c66b0ed8278a00959ea8aea800476bf5f9946c74c61727faf00e7f37ee"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/playBgm.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/playBgm.ts",
+      "sha256": "d83bbb1ccdecaf8e92888d84ec4504a078e5f0fba9d088ade30b5fd4c743cdc0"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/resetStage.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/resetStage.ts",
+      "sha256": "39ff62199fbe22b009157b5889110325596600cb0cef6d8a6a386d061f14e451"
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/setVolume.ts": {
+      "upstream": "packages/webgal/src/Core/controller/stage/setVolume.ts",
+      "sha256": "26d4712131d13f3343bf5d8a2210394f31f8c29de5b4b9e10d059912b6b874ae"
+    },
+    "apps/web/src/engine/webgal/Core/controller/storage/fastSaveLoad.ts": {
+      "upstream": "packages/webgal/src/Core/controller/storage/fastSaveLoad.ts",
+      "sha256": "918992cedc101f0a2f0c77d65208dc6fcdf42267f8b5de961ac0eca269f62aa5"
+    },
+    "apps/web/src/engine/webgal/Core/controller/storage/jumpFromBacklog.ts": {
+      "upstream": "packages/webgal/src/Core/controller/storage/jumpFromBacklog.ts",
+      "sha256": "f5bfa0d66b1f47fc62d8ebc3db14923e30538d3e3e7149f35bc60561f4c8baee"
+    },
+    "apps/web/src/engine/webgal/Core/controller/storage/loadGame.ts": {
+      "upstream": "packages/webgal/src/Core/controller/storage/loadGame.ts",
+      "sha256": "305c9bdd6ec4cf527687b2f2c5ab5c5eaa9e60182ec51b3deb1d57dc654ec0e1"
+    },
+    "apps/web/src/engine/webgal/Core/controller/storage/saveGame.ts": {
+      "upstream": "packages/webgal/src/Core/controller/storage/saveGame.ts",
+      "sha256": "4971a07e9db3ffc3a218267c3ab38734a03591e0b317b0f655dbe5f004ddda25"
+    },
+    "apps/web/src/engine/webgal/Core/controller/storage/savesController.ts": {
+      "upstream": "packages/webgal/src/Core/controller/storage/savesController.ts",
+      "sha256": "d778d1188813d0d3fe980f07f09b1aefd52b7af9f57c9c78d3d134f908e21dec"
+    },
+    "apps/web/src/engine/webgal/Core/controller/storage/storageController.ts": {
+      "upstream": "packages/webgal/src/Core/controller/storage/storageController.ts",
+      "sha256": "9e6d1d4e028bb91e4c80c0add535da1c86624132341da92e4071cb6a1771fee7"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/SCRIPT_AUTHORING.md": {
+      "upstream": "packages/webgal/src/Core/gameScripts/SCRIPT_AUTHORING.md",
+      "sha256": "c47f090dd895135904d6207949b5de9fbd2aa2dc70ba80bf1b3f1b601cabd9c4"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/applyStyle.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/applyStyle.ts",
+      "sha256": "6fed6ca894f99a5f093a370d5ccf7d6a17459e3ee67a2d9ce99aa5eb7a9c2bb9"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/bgm.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/bgm.ts",
+      "sha256": "9615baa056cabc019932ec3cdfc05bce6af6ef7100ae64c6685bbaf133e9adaf"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/callSceneScript.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/callSceneScript.ts",
+      "sha256": "584733f5ce9ddb55b25bb8b628119519f32f9d334e2a6a28a86a0c0406eb04d0"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/callSteam.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/callSteam.ts",
+      "sha256": "3923c66a8f86cd25617977e17e421260c50c92fee63a31c5345947f39c3b1bf1"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/changeBg/index.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/changeBg/index.ts",
+      "sha256": "4d78aa406694a0ebc498701351caa1d67776a65f9931fb6fab7ffa6570827cc7"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/changeBg/setEbg.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/changeBg/setEbg.ts",
+      "sha256": "e9a1506b05da7ec0eb0e890dad56df9658fea206d0a455157aa29b32a2799a6d"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/changeFigure.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/changeFigure.ts",
+      "sha256": "3365fb59689a4b01c8de34987d7403aacda4ea93157437882e88ab335dabc1b2"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/changeFigureDiff.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/changeFigureDiff.ts",
+      "sha256": "fb185fd94d2d7bd9e7dc6b1a03afcd235a7ba4f4f0b7d754a4beab95dd37e1b1"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/changeSceneScript.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/changeSceneScript.ts",
+      "sha256": "33ddd145bb550b75dc589d2812c1fb34a7f8c9933d193beb5d6d8e180bfba0b9"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/choose/choose.module.scss": {
+      "upstream": "packages/webgal/src/Core/gameScripts/choose/choose.module.scss",
+      "sha256": "5f027be09788294539904b870d1f6b7f1c68f63a7fbe9a7c760b3494bebdf1b9"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/choose/index.tsx": {
+      "upstream": "packages/webgal/src/Core/gameScripts/choose/index.tsx",
+      "sha256": "384af5fb78debfecbdc7c25609b7e29448c5b9a8b0409788a1ee2e986a145d42"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/comment.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/comment.ts",
+      "sha256": "4c44140f63abdba1df0a9f1f0ed30062e567c7be4c202e55838bd19275ad753d"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/end.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/end.ts",
+      "sha256": "2cbd9136943177d9150c53c0286467caa428c479459f493dbf6817029144fa20"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/figureAssociatedAnimation.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/figureAssociatedAnimation.ts",
+      "sha256": "33bb726bb790bef76300737f9318347dd73538522c4cbe54884eff615f375353"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/filmMode.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/filmMode.ts",
+      "sha256": "09155c175e76b91426078c2fb4c1164c16a984ffe96b8e2e60c615fc03bf7588"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/getUserInput/getUserInput.module.scss": {
+      "upstream": "packages/webgal/src/Core/gameScripts/getUserInput/getUserInput.module.scss",
+      "sha256": "c226b241a75c8875fbd6677846cc8b466bc19e9e21dbf15d64880e54c1f51dd2"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/getUserInput/index.tsx": {
+      "upstream": "packages/webgal/src/Core/gameScripts/getUserInput/index.tsx",
+      "sha256": "22802bc898033067af1b711623eac295075ff705b60001268c3fae8eca877f1e"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/intro.tsx": {
+      "upstream": "packages/webgal/src/Core/gameScripts/intro.tsx",
+      "sha256": "16c9d8501a5747fd90336b87d000066c84aeffd7f7dc8163dc6852886c2e5f80"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/jumpLabel.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/jumpLabel.ts",
+      "sha256": "ef66db8a042e8db4e0a02b4dd29a5a2380f980e0186ce2b274d02282eaecb727"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/label/index.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/label/index.ts",
+      "sha256": "b41e39a5c6ac1c35c1615c5fa74eb2fedb96e73682ab1dba4b6b2a784fb7d211"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/label/jmp.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/label/jmp.ts",
+      "sha256": "d326b503ece534880814eb513a3c6b6cb0b73ab73799b758b37297763259f825"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/label/jumpToLabel.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/label/jumpToLabel.ts",
+      "sha256": "ac88cb9b6b2eb1665550a1d80c7455060456f8f9d671a11c3ba3da8babea3efa"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/miniAvatar.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/miniAvatar.ts",
+      "sha256": "ef53096c81526d2957a8196dd477da971a9c7a698b42d1928973de1d0a3e4d29"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/parseTransformFrame.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/parseTransformFrame.ts",
+      "sha256": "088c9ea961154a345043151ee9eb73a0a3a10bbe5b56b0761a85a134684b21f4"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/pixi/index.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/pixi/index.ts",
+      "sha256": "0f4912596ee257c55b4a2aa1d2beea126b2339d8275862b9fb7c6a3d65f22c0d"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/pixi/performs/cherryBlossoms.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/pixi/performs/cherryBlossoms.ts",
+      "sha256": "f636cda2d446e86687fe84e8cd80b39e40234839dd36bcf2e20bc416ac154a7b"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/pixi/performs/rain.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/pixi/performs/rain.ts",
+      "sha256": "42677d35e139c4cfa0b7420564da9e320c553f03d3e7759b34ff1ef02eae2106"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/pixi/performs/snow.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/pixi/performs/snow.ts",
+      "sha256": "94e389a6896c79e873edd292a5ba892f09a28a2ca160c16493df56f5f4e74b51"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/pixi/pixiInit.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/pixi/pixiInit.ts",
+      "sha256": "6e0a61940878b97507ac1680e5f052a3ffed6717a69620d60efe51fb7c837655"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/playEffect.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/playEffect.ts",
+      "sha256": "b798bebe19d02b97666a36104ef18a9d4a287a2996e03be6f21df44ee727ef3e"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/playVideo.tsx": {
+      "upstream": "packages/webgal/src/Core/gameScripts/playVideo.tsx",
+      "sha256": "a709ed0b374c3a197d07256c913152e17555281ad892be13481a5de04da9e812"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/returnScript.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/returnScript.ts",
+      "sha256": "d0440bb106248ac1109e77c18b95ed9cf11bac1047c01f9d25ba2b016bcb30c3"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/say/createSayPerform.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/say/createSayPerform.ts",
+      "sha256": "e427f0fdf7e70fcf9a9204f61359231eb565fb1ee1e0a92e913be3078f677977"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/say/createSimulatedVocal.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/say/createSimulatedVocal.ts",
+      "sha256": "fc79314d058b3cb9af9ad186d846348d9647210c2cde7973b5fe59763bb7b0bb"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/say.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/say.ts",
+      "sha256": "e699c03ae54072eddac748ed40214ffec6882f332eecc8f75a139d0427e7dad7"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/setAnimation.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/setAnimation.ts",
+      "sha256": "b99a8a0cdfa4a5e6740d7557bc959b566eab59fc20b73467e23d0c7801eb9e42"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/setComplexAnimation.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/setComplexAnimation.ts",
+      "sha256": "d02898409727f3a457887373f50ba9e1879f1285704de172890d9ede807f4f2f"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/setFilter.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/setFilter.ts",
+      "sha256": "60d3bf1f287ca63126e393979397c7b6fe54abf78593e7224b614383e0570766"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/setTempAnimation.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/setTempAnimation.ts",
+      "sha256": "cfb9d1defee1288acf62e50087cf0d4ba37d02c5d2450497cc3cedf6ae234fee"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/setTextbox.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/setTextbox.ts",
+      "sha256": "54c6d487686200d01fcc769cf15c08fb94d878494cbfd4325f5ae7bd5830b1c2"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/setTransform.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/setTransform.ts",
+      "sha256": "59d4f7d33e0b2367469d75a20cb6132766a52a0535645f197e7845cdc6fe4327"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/setTransition.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/setTransition.ts",
+      "sha256": "bce6a9bf598cce443603204ee96db94d35d278365fd3a56813f84965523aec3b"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/setVar.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/setVar.ts",
+      "sha256": "c82823c451d0bf87e26aead4cb2147e891bcdf2328b8632e4e8308069356fe81"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/showVars.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/showVars.ts",
+      "sha256": "1f6b97b4484a509a6219241d103a6a1567b74f79f4e7c93aaa1cee91f4b45ffe"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/template.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/template.ts",
+      "sha256": "20e94ec2792f8a9dbec6e1982bc707cd4425879e07b6dbe12a249acfaf1b1305"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/unlockBgm.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/unlockBgm.ts",
+      "sha256": "ae92c9f18315f509b7ceeffa640bb1b27116c5bf57d1fd0a51828e831b4a88c1"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/unlockCg.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/unlockCg.ts",
+      "sha256": "818814528374ed234bf60fc381e2fd9e30612cf740ef359bef0e0d2d565cfb00"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/vocal/conentsCash.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/vocal/conentsCash.ts",
+      "sha256": "2d73d2ec463fc5ab1fd09b3e5a9a372a75c9495d167f1d73731bafae74434e68"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/vocal/index.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/vocal/index.ts",
+      "sha256": "dcb6d1ec228e872fcc678bd55a5ce01b05e59e5392dd8733ae7707ce8b5f85f6"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/vocal/vocalAnimation.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/vocal/vocalAnimation.ts",
+      "sha256": "3577ad2cfad814a77a8b8e97fc22d99a5c21b94656af7814761df28b08d35340"
+    },
+    "apps/web/src/engine/webgal/Core/gameScripts/wait.ts": {
+      "upstream": "packages/webgal/src/Core/gameScripts/wait.ts",
+      "sha256": "842b1a2aaf0d0eab4eef3ee6cb903b65ec3328110e8020a7b2163358c651c281"
+    },
+    "apps/web/src/engine/webgal/Core/initializeScript.ts": {
+      "upstream": "packages/webgal/src/Core/initializeScript.ts",
+      "sha256": "c7bf97713c630c7f23d86478714c47b5de96c6baca4c95720239d0ed1de551db"
+    },
+    "apps/web/src/engine/webgal/Core/integration/steamIntegration.ts": {
+      "upstream": "packages/webgal/src/Core/integration/steamIntegration.ts",
+      "sha256": "23d0e743f6037f2af459ee9d1a573d485860dd290cecf1136c46d4a0a4240e9e"
+    },
+    "apps/web/src/engine/webgal/Core/live2DCore.ts": {
+      "upstream": "packages/webgal/src/Core/live2DCore.ts",
+      "sha256": "7630fb1697396113ad456e34599ccab997a41df6f7c9ebfed526f2be21fa15fd"
+    },
+    "apps/web/src/engine/webgal/Core/parser/sceneParser.ts": {
+      "upstream": "packages/webgal/src/Core/parser/sceneParser.ts",
+      "sha256": "026e46181e16f93ce6f7c13d03835488417824d9e30e6d6870b95ad6f36eb302"
+    },
+    "apps/web/src/engine/webgal/Core/parser/utils.ts": {
+      "upstream": "packages/webgal/src/Core/parser/utils.ts",
+      "sha256": "1c97a03d729c75a0259a09551e786411afb13293958ba4fc59f5809dadb60d58"
+    },
+    "apps/web/src/engine/webgal/Core/util/constants.scss": {
+      "upstream": "packages/webgal/src/Core/util/constants.scss",
+      "sha256": "642bfbbfdd753a638fb12dc9b5563d8160ed10723a8e9a93a7c9ea61f45f3a45"
+    },
+    "apps/web/src/engine/webgal/Core/util/constants.ts": {
+      "upstream": "packages/webgal/src/Core/util/constants.ts",
+      "sha256": "59ace9da45bbe125f9ad8779051549158d35b9215697f1592399ac6738fbeae2"
+    },
+    "apps/web/src/engine/webgal/Core/util/coreInitialFunction/bindExtraFunc.ts": {
+      "upstream": "packages/webgal/src/Core/util/coreInitialFunction/bindExtraFunc.ts",
+      "sha256": "150ee552b7d894d346b2648ec6185b9018edf28b10a5188376ae47704a3347f0"
+    },
+    "apps/web/src/engine/webgal/Core/util/coreInitialFunction/infoFetcher.ts": {
+      "upstream": "packages/webgal/src/Core/util/coreInitialFunction/infoFetcher.ts",
+      "sha256": "f2b97839bc3b69889f3c6e7cb8e4296f309c95459f20317df06e0b504835a937"
+    },
+    "apps/web/src/engine/webgal/Core/util/coreInitialFunction/templateLoader.ts": {
+      "upstream": "packages/webgal/src/Core/util/coreInitialFunction/templateLoader.ts",
+      "sha256": "581424b75e113f39808e233faaa025b8371c1f4f11b9ce995eba5859c0042bd0"
+    },
+    "apps/web/src/engine/webgal/Core/util/fonts/fontOptions.ts": {
+      "upstream": "packages/webgal/src/Core/util/fonts/fontOptions.ts",
+      "sha256": "2bdae528da9936d74aac2a2bdd2bfd3fcd674e2dc203452470cc228a75fd56d2"
+    },
+    "apps/web/src/engine/webgal/Core/util/gameAssetsAccess/assetSetter.ts": {
+      "upstream": "packages/webgal/src/Core/util/gameAssetsAccess/assetSetter.ts",
+      "sha256": "902c8492b97e02e049d02b2d144435796ea952249db0f9223e67dd3dc1dd54d8"
+    },
+    "apps/web/src/engine/webgal/Core/util/getSentenceArg.ts": {
+      "upstream": "packages/webgal/src/Core/util/getSentenceArg.ts",
+      "sha256": "7f0e093d44c65129b99239c6a37fd7fb22e22a7c0be6099e3ebfc297f8fedbe8"
+    },
+    "apps/web/src/engine/webgal/Core/util/global.ts": {
+      "upstream": "packages/webgal/src/Core/util/global.ts",
+      "sha256": "38db271ac1afa10fc03d590b1368c2ded24ff8e114f96e297355c3e807bde045"
+    },
+    "apps/web/src/engine/webgal/Core/util/logger.ts": {
+      "upstream": "packages/webgal/src/Core/util/logger.ts",
+      "sha256": "f67d92cdca5a162494967b5ed960bee67384620a34dedeef0f5e150b64147b4f"
+    },
+    "apps/web/src/engine/webgal/Core/util/match.ts": {
+      "upstream": "packages/webgal/src/Core/util/match.ts",
+      "sha256": "2774a900cb3a37c577cf6544f794f70c69740397ac1d184f333ad4b2c962dd95"
+    },
+    "apps/web/src/engine/webgal/Core/util/pixiPerformManager/initRegister.ts": {
+      "upstream": "packages/webgal/src/Core/util/pixiPerformManager/initRegister.ts",
+      "sha256": "4d804a91d7132d21c98fc2d81e8c74a8757489c4d9ff3d11baa313f02fb290b7"
+    },
+    "apps/web/src/engine/webgal/Core/util/pixiPerformManager/pixiPerformManager.ts": {
+      "upstream": "packages/webgal/src/Core/util/pixiPerformManager/pixiPerformManager.ts",
+      "sha256": "f03c302704e8fbe0bf498ef290f3a4042d5e93a21505b6e719b982bb0471b7f1"
+    },
+    "apps/web/src/engine/webgal/Core/util/prefetcher/assetsPrefetcher.ts": {
+      "upstream": "packages/webgal/src/Core/util/prefetcher/assetsPrefetcher.ts",
+      "sha256": "6b28d46a92cf439c0d5cce43aa74dd1833e08f2a627886664b97089418128980"
+    },
+    "apps/web/src/engine/webgal/Core/util/prefetcher/pixiPrefetcher.ts": {
+      "upstream": "packages/webgal/src/Core/util/prefetcher/pixiPrefetcher.ts",
+      "sha256": "fb79f29c49373d4ff64c7d441baefe374701d044b2f1924cf62bcf3afa207a98"
+    },
+    "apps/web/src/engine/webgal/Core/util/prefetcher/progressPrefetcher.ts": {
+      "upstream": "packages/webgal/src/Core/util/prefetcher/progressPrefetcher.ts",
+      "sha256": "25671cd3cc46c718b0a0ddd93396036e930cc1a925e4c1b7e92e2f6737012a81"
+    },
+    "apps/web/src/engine/webgal/Core/util/prefetcher/scenePrefetcher.ts": {
+      "upstream": "packages/webgal/src/Core/util/prefetcher/scenePrefetcher.ts",
+      "sha256": "a980f18b849f5e1dfe2a5c2d075148d8207634509941afe8d8dfebfd17f6a1f5"
+    },
+    "apps/web/src/engine/webgal/Core/util/syncWithEditor/previewSetEffectTransform.ts": {
+      "upstream": "packages/webgal/src/Core/util/syncWithEditor/previewSetEffectTransform.ts",
+      "sha256": "c93efbe6d324fb595b433c6b08730fa0b2253ebc6b8f6a443170c8f8f42fe065"
+    },
+    "apps/web/src/engine/webgal/Core/util/syncWithEditor/previewSyncRuntime.ts": {
+      "upstream": "packages/webgal/src/Core/util/syncWithEditor/previewSyncRuntime.ts",
+      "sha256": "f574a81851d86571e6f9e0143d35ca4ffaf586a772510362e5e5fc6fca31e8da"
+    },
+    "apps/web/src/engine/webgal/Core/util/syncWithEditor/runtime/embeddedPreviewBootstrap.ts": {
+      "upstream": "packages/webgal/src/Core/util/syncWithEditor/runtime/embeddedPreviewBootstrap.ts",
+      "sha256": "523c6791e40a22c567da66765856f67a3cccc82c27cd3d072d49c1fcda5c24bc"
+    },
+    "apps/web/src/engine/webgal/Core/util/syncWithEditor/runtime/handlers/referenceBoxQueryHandler.ts": {
+      "upstream": "packages/webgal/src/Core/util/syncWithEditor/runtime/handlers/referenceBoxQueryHandler.ts",
+      "sha256": "1a77cf82c20ec873f6be2c616f11459af2d0062028d1137d551a7a45237c0763"
+    },
+    "apps/web/src/engine/webgal/Core/util/syncWithEditor/runtime/previewDebugVariables.ts": {
+      "upstream": "packages/webgal/src/Core/util/syncWithEditor/runtime/previewDebugVariables.ts",
+      "sha256": "1a07f599933d0ad004a5d1025791e63194aed524f2277f59e5dea93a325d0ffe"
+    },
+    "apps/web/src/engine/webgal/Core/util/syncWithEditor/runtime/previewSeekAnimation.ts": {
+      "upstream": "packages/webgal/src/Core/util/syncWithEditor/runtime/previewSeekAnimation.ts",
+      "sha256": "417b10168f4eea839a67f9a5ca636e7d5ff5b013bf82afa563504b33aa2ba767"
+    },
+    "apps/web/src/engine/webgal/Core/util/syncWithEditor/runtime/previewStopPoint.ts": {
+      "upstream": "packages/webgal/src/Core/util/syncWithEditor/runtime/previewStopPoint.ts",
+      "sha256": "ff7177666b009c4a02cc8b5fb3a494fe42317562a02413f3f5167b0f7f811e63"
+    },
+    "apps/web/src/engine/webgal/Core/util/syncWithEditor/runtime/previewSyncSceneCommand.ts": {
+      "upstream": "packages/webgal/src/Core/util/syncWithEditor/runtime/previewSyncSceneCommand.ts",
+      "sha256": "1de0f5ce4ccf191f9362565a5557b3fd25ba96409fe3d8755e04ba2b241e70d0"
+    },
+    "apps/web/src/engine/webgal/Core/util/syncWithEditor/runtime/previewSyncTransport.ts": {
+      "upstream": "packages/webgal/src/Core/util/syncWithEditor/runtime/previewSyncTransport.ts",
+      "sha256": "23c4957714d5129c6b7dfc40aec223875b2b5a31acbe5b3b62ca24590f3b0b28"
+    },
+    "apps/web/src/engine/webgal/Core/util/syncWithEditor/runtime/targetTransformBaseline.ts": {
+      "upstream": "packages/webgal/src/Core/util/syncWithEditor/runtime/targetTransformBaseline.ts",
+      "sha256": "d0b81865dcb3bcc9f04829cbc0336cfeb665d9e7b897cc9c567e4e4845e83404"
+    },
+    "apps/web/src/engine/webgal/Core/util/toSafeType.ts": {
+      "upstream": "packages/webgal/src/Core/util/toSafeType.ts",
+      "sha256": "766cfc33658047cd2ed5f04e0f4eb48cf3753fe1a96cfd747b17bcc75e8f3e2a"
+    },
+    "apps/web/src/engine/webgal/Core/webgalCore.ts": {
+      "upstream": "packages/webgal/src/Core/webgalCore.ts",
+      "sha256": "211e3a4436beb4d039e2f759de002625044571624e2f9dedad24dd9552047434"
+    },
+    "apps/web/src/engine/webgal/Stage/AudioContainer/AudioContainer.tsx": {
+      "upstream": "packages/webgal/src/Stage/AudioContainer/AudioContainer.tsx",
+      "sha256": "553d08983dcebc4d4965a04da24ca38d14d42f2cd5201e9205612089fd5eeef3"
+    },
+    "apps/web/src/engine/webgal/Stage/FigureContainer/FigureContainer.tsx": {
+      "upstream": "packages/webgal/src/Stage/FigureContainer/FigureContainer.tsx",
+      "sha256": "d9f18675ec38fdbb2422082dd79c8de02bde8e38ea242274540861c3a4c491b3"
+    },
+    "apps/web/src/engine/webgal/Stage/FigureContainer/figureContainer.module.scss": {
+      "upstream": "packages/webgal/src/Stage/FigureContainer/figureContainer.module.scss",
+      "sha256": "852d82120175f664028698e45e24624f495d66220245e64a46553e254a809486"
+    },
+    "apps/web/src/engine/webgal/Stage/FullScreenPerform/FullScreenPerform.tsx": {
+      "upstream": "packages/webgal/src/Stage/FullScreenPerform/FullScreenPerform.tsx",
+      "sha256": "45f7064a74179218ca729befd45edab35ef48ed2b5a033af5e72c943a67c87b0"
+    },
+    "apps/web/src/engine/webgal/Stage/FullScreenPerform/fullScreenPerform.module.scss": {
+      "upstream": "packages/webgal/src/Stage/FullScreenPerform/fullScreenPerform.module.scss",
+      "sha256": "0616bca871916300e98232ec406b5c8225fccfcb092f26f33ef75d93847d7250"
+    },
+    "apps/web/src/engine/webgal/Stage/OldStage/OldStage.tsx": {
+      "upstream": "packages/webgal/src/Stage/OldStage/OldStage.tsx",
+      "sha256": "971af036947ad41b34de58b63d3820419fd34f8d2bfaaf6be0f82fd56f5523ca"
+    },
+    "apps/web/src/engine/webgal/Stage/Stage.tsx": {
+      "upstream": "packages/webgal/src/Stage/Stage.tsx",
+      "sha256": "146cf961653b077dd8adfad7fbf5a6dcc9e0c86938a2ffac884f0105ce886dca"
+    },
+    "apps/web/src/engine/webgal/Stage/TextBox/IMSSTextbox.tsx": {
+      "upstream": "packages/webgal/src/Stage/TextBox/IMSSTextbox.tsx",
+      "sha256": "60c892642b085b39d187185f39e8f362378c608110551c1f023cf59a15808179"
+    },
+    "apps/web/src/engine/webgal/Stage/TextBox/TextBox.tsx": {
+      "upstream": "packages/webgal/src/Stage/TextBox/TextBox.tsx",
+      "sha256": "950eecdf87644356ee4dab4fb09c1f353821e0708ea91db9865e64573a2d8b54"
+    },
+    "apps/web/src/engine/webgal/Stage/TextBox/TextBoxFilm.tsx": {
+      "upstream": "packages/webgal/src/Stage/TextBox/TextBoxFilm.tsx",
+      "sha256": "d0a618bc68b63763cb074283eb45474c88bb369c6e878116f4b590d5d2bdf42d"
+    },
+    "apps/web/src/engine/webgal/Stage/TextBox/concatTextLines.ts": {
+      "upstream": "packages/webgal/src/Stage/TextBox/concatTextLines.ts",
+      "sha256": "f20dfac83c8fc844af6b53b46ee67ef77d59364a2355b9afe6151b2b428354a2"
+    },
+    "apps/web/src/engine/webgal/Stage/TextBox/legacy-themes/legacy-standard/StandardTextbox.tsx": {
+      "upstream": "packages/webgal/src/Stage/TextBox/legacy-themes/legacy-standard/StandardTextbox.tsx",
+      "sha256": "d71015d6d06c786d13931d2405292b1c0e079bca9fa552d9658e9defc54bdc4d"
+    },
+    "apps/web/src/engine/webgal/Stage/TextBox/legacy-themes/legacy-standard/standard.module.scss": {
+      "upstream": "packages/webgal/src/Stage/TextBox/legacy-themes/legacy-standard/standard.module.scss",
+      "sha256": "8e24778800a25d2af7829a3979e25214a6ab0752a02b9a02d8751477e3c58b05"
+    },
+    "apps/web/src/engine/webgal/Stage/TextBox/textbox.module.scss": {
+      "upstream": "packages/webgal/src/Stage/TextBox/textbox.module.scss",
+      "sha256": "3aaa73c190e3e2eadee1c724fbbd7fb42308d705b28921d80d1558dca545c4d2"
+    },
+    "apps/web/src/engine/webgal/Stage/TextBox/textboxFilm.module.scss": {
+      "upstream": "packages/webgal/src/Stage/TextBox/textboxFilm.module.scss",
+      "sha256": "fa4a0e38a24b3993c1c01d12fffe4556eea30f97646430a64360d928ce330a54"
+    },
+    "apps/web/src/engine/webgal/Stage/TextBox/types.ts": {
+      "upstream": "packages/webgal/src/Stage/TextBox/types.ts",
+      "sha256": "b5acb1d1fed061b6a062b60ed98f5090d2f09678ccd92b0ca2372653b0203d5f"
+    },
+    "apps/web/src/engine/webgal/Stage/introContainer/IntroContainer.tsx": {
+      "upstream": "packages/webgal/src/Stage/introContainer/IntroContainer.tsx",
+      "sha256": "513f344948e71f83e84cb4ad57f7eeb82e79df87a88c11983a8d621a525830b8"
+    },
+    "apps/web/src/engine/webgal/Stage/introContainer/introContainer.module.scss": {
+      "upstream": "packages/webgal/src/Stage/introContainer/introContainer.module.scss",
+      "sha256": "e2077f52e5e9b6b6cd2475a9769a1aa8cffb3e40dc94caf48043ecb5a1ef8588"
+    },
+    "apps/web/src/engine/webgal/Stage/stage.module.scss": {
+      "upstream": "packages/webgal/src/Stage/stage.module.scss",
+      "sha256": "9a58c5d627dd2b59c9c4cfb779b394fbb5b6de12a6b4dfc5ce9f394c2a4aa618"
+    },
+    "apps/web/src/engine/webgal/Stage/themeInterface.ts": {
+      "upstream": "packages/webgal/src/Stage/themeInterface.ts",
+      "sha256": "593c22d45647d435fdcfb319705182e8b440a160927855d949ff39dcff22dc36"
+    },
+    "apps/web/src/engine/webgal/UI/Backlog/Backlog.tsx": {
+      "upstream": "packages/webgal/src/UI/Backlog/Backlog.tsx",
+      "sha256": "793e678f8e07eb9dae3fcc2b141676033e4fa60c52cc6a8f2da5287fbbb2a06b"
+    },
+    "apps/web/src/engine/webgal/UI/Backlog/backlog.module.scss": {
+      "upstream": "packages/webgal/src/UI/Backlog/backlog.module.scss",
+      "sha256": "d3342a7237dcbbe93512287524b5b5dcbf4d2294e8016710b30426c0752531a5"
+    },
+    "apps/web/src/engine/webgal/UI/BottomControlPanel/BottomControlPanel.tsx": {
+      "upstream": "packages/webgal/src/UI/BottomControlPanel/BottomControlPanel.tsx",
+      "sha256": "b9f002ffc33351e5d2830545af727c9e8e85b10bc5f5e9c3838767d7f9732061"
+    },
+    "apps/web/src/engine/webgal/UI/BottomControlPanel/BottomControlPanelFilm.tsx": {
+      "upstream": "packages/webgal/src/UI/BottomControlPanel/BottomControlPanelFilm.tsx",
+      "sha256": "933a3276ad195b3e2abdf1ec3f26afb132523bce777c02b3b13ab486222af6cc"
+    },
+    "apps/web/src/engine/webgal/UI/BottomControlPanel/bottomControlPanel.module.scss": {
+      "upstream": "packages/webgal/src/UI/BottomControlPanel/bottomControlPanel.module.scss",
+      "sha256": "8efe10befcbd7be97568488f6f6331b82788f122716a9c815a4ef22961253fca"
+    },
+    "apps/web/src/engine/webgal/UI/BottomControlPanel/bottomControlPanelFilm.module.scss": {
+      "upstream": "packages/webgal/src/UI/BottomControlPanel/bottomControlPanelFilm.module.scss",
+      "sha256": "60b6a559f9006e0a1a4b1a102b7994002074b738811892c38c3d796b9cc25058"
+    },
+    "apps/web/src/engine/webgal/UI/DevPanel/DevPanel.tsx": {
+      "upstream": "packages/webgal/src/UI/DevPanel/DevPanel.tsx",
+      "sha256": "4759023ed6cae19a78249526fd6cde2c5d0b2da223e5c5978ba1c2555e4142d6"
+    },
+    "apps/web/src/engine/webgal/UI/DevPanel/devFunctions/getPixiSscreenshot.ts": {
+      "upstream": "packages/webgal/src/UI/DevPanel/devFunctions/getPixiSscreenshot.ts",
+      "sha256": "d9c404ba374591252b211b1d81531f398011bc3b58341c25653b1e9725af7d32"
+    },
+    "apps/web/src/engine/webgal/UI/DevPanel/devPanel.module.scss": {
+      "upstream": "packages/webgal/src/UI/DevPanel/devPanel.module.scss",
+      "sha256": "e7b6b95ff536609d69eb9dc8adec413d1fa7a5198a937bb96480eed8575e3dfe"
+    },
+    "apps/web/src/engine/webgal/UI/Extra/Extra.tsx": {
+      "upstream": "packages/webgal/src/UI/Extra/Extra.tsx",
+      "sha256": "98eb280ac0ced75b3e674cf40e7a1cef0c97228d660914945074153d63dcce81"
+    },
+    "apps/web/src/engine/webgal/UI/Extra/ExtraBgm.tsx": {
+      "upstream": "packages/webgal/src/UI/Extra/ExtraBgm.tsx",
+      "sha256": "88b64bc989da75537cebcc7b66e1931979df0366fb23739fefc7b7b0ddf0e023"
+    },
+    "apps/web/src/engine/webgal/UI/Extra/ExtraCg.tsx": {
+      "upstream": "packages/webgal/src/UI/Extra/ExtraCg.tsx",
+      "sha256": "2cdb986de755a1ec3ff42c6fbe06659dd79ff771719ec743198f4c355d6ab909"
+    },
+    "apps/web/src/engine/webgal/UI/Extra/ExtraCgElement.tsx": {
+      "upstream": "packages/webgal/src/UI/Extra/ExtraCgElement.tsx",
+      "sha256": "30efc6fee388f4de00413eb7ceacaf59f66336ad93a50af64fb2fe876898ac8e"
+    },
+    "apps/web/src/engine/webgal/UI/Extra/extra.module.scss": {
+      "upstream": "packages/webgal/src/UI/Extra/extra.module.scss",
+      "sha256": "daaadf410c85b1eb2b9b4d195b5a26e8e32636d194e6d408b5d1d0b57b5da581"
+    },
+    "apps/web/src/engine/webgal/UI/Extra/extraCG_animation_List.scss": {
+      "upstream": "packages/webgal/src/UI/Extra/extraCG_animation_List.scss",
+      "sha256": "1fa18e4c06a25af97bf3802611916cd26bccef531d16f6a5fbb3ae73deb6d804"
+    },
+    "apps/web/src/engine/webgal/UI/Flowchart/Flowchart.tsx": {
+      "upstream": "packages/webgal/src/UI/Flowchart/Flowchart.tsx",
+      "sha256": "f3cc7f90191d1e1151f7d173fd1c83ea4c89090174ee7872238a543a5d3304ff"
+    },
+    "apps/web/src/engine/webgal/UI/Flowchart/flowchart.module.scss": {
+      "upstream": "packages/webgal/src/UI/Flowchart/flowchart.module.scss",
+      "sha256": "cead97634dc010d4dec6ffc308e5ea888506ad1c321de2b6dec66efd19f18d8d"
+    },
+    "apps/web/src/engine/webgal/UI/GlobalDialog/GlobalDialog.tsx": {
+      "upstream": "packages/webgal/src/UI/GlobalDialog/GlobalDialog.tsx",
+      "sha256": "999ea08add18cd8f61ac5f011ea3fb4f748254d2682e630652729a90f2a79598"
+    },
+    "apps/web/src/engine/webgal/UI/GlobalDialog/globalDialog.module.scss": {
+      "upstream": "packages/webgal/src/UI/GlobalDialog/globalDialog.module.scss",
+      "sha256": "61bf24460f0de6866ae2fd4ccd33c87cbe2793a62d11f5875a9dda47021a209e"
+    },
+    "apps/web/src/engine/webgal/UI/Logo/Logo.tsx": {
+      "upstream": "packages/webgal/src/UI/Logo/Logo.tsx",
+      "sha256": "c04d05b241f1729f4468426b5184a2c59e3b67596b9433ed0162991862659eab"
+    },
+    "apps/web/src/engine/webgal/UI/Logo/logo.module.scss": {
+      "upstream": "packages/webgal/src/UI/Logo/logo.module.scss",
+      "sha256": "57540cdf926c9553c67158ca2f4c07c52aa91d75e0a0450a4bf471e7997fb43f"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Menu.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/Menu.tsx",
+      "sha256": "e1eec9f77cb44adda3fdf2861edd019dfcc1f3d685c381ed3ae1d5aca437c550"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/MenuPanel/MenuIconMap.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/MenuPanel/MenuIconMap.tsx",
+      "sha256": "aa8af9540640ae341021fef94ac919557c7b32313045b7aaca5156b626bf1c45"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/MenuPanel/MenuPanel.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/MenuPanel/MenuPanel.tsx",
+      "sha256": "12a53eb9f2d9f8008f4f6c90b88db160d8b92f131dce23465cb716c2094f98f4"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/MenuPanel/MenuPanelButton.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/MenuPanel/MenuPanelButton.tsx",
+      "sha256": "910a925310cbd5e6c0947083d0622a9da1f0e16c6c3284fc7939265691e7797f"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/MenuPanel/menuPanel.module.scss": {
+      "upstream": "packages/webgal/src/UI/Menu/MenuPanel/menuPanel.module.scss",
+      "sha256": "d41153b4d70189037e39caa9d2863c3d67bf8e9bceff6e5dd01af9f251eb0522"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/MenuPanel/menuPanelInterface.ts": {
+      "upstream": "packages/webgal/src/UI/Menu/MenuPanel/menuPanelInterface.ts",
+      "sha256": "0d70c5e02c40e3b59b22d7119c7633db6c15067342e956ddbf586369b09c014f"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/Display/Display.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/Display/Display.tsx",
+      "sha256": "33bcaf26c8242e8378c894e05a123b44d74a19825ccf38c2da28de830dda47a4"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/NormalButton.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/NormalButton.tsx",
+      "sha256": "f4120f68778251a9039a37873355aca6fe2c19cededac3ea8ef8b951d780243f"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/NormalOption.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/NormalOption.tsx",
+      "sha256": "ac3aa57c96c2a76e66206be313e3ca8e8ed20cad9a101e87ad720f2f856e9633"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/OptionInterface.ts": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/OptionInterface.ts",
+      "sha256": "b6cb75b4c3832e316d1845dddb4403e582f3848477f1c5db2147593ff5109ade"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/OptionSlider.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/OptionSlider.tsx",
+      "sha256": "4160bd0bcf65b29c9362569dbe7b152c342686293ed1695f53c7b9eed4ae73fe"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/Options.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/Options.tsx",
+      "sha256": "6de4f5efddbafad9f6a32159cc07382982c554ef10bc03f95806a18a9f3eeb7c"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/Sound/Sound.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/Sound/Sound.tsx",
+      "sha256": "9f8880c0f5124cd10fe1fe13f762471ccd5390bb458a6c1ff5b1e73ed64f5a85"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/System/About.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/System/About.tsx",
+      "sha256": "5177740144308b0586ca6ab9f583206ccc8d74b6cafecebd5ee15b4716c17d05"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/System/System.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/System/System.tsx",
+      "sha256": "8abfcf9e6251057d44ff7b42d21c71e416753379c860912b016f7693b907fc6e"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/System/about.module.scss": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/System/about.module.scss",
+      "sha256": "6bf8e43f506b73cc70a0c8cbc45f304590d01b54cf8d156d3f6749422ce0c651"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/TextPreview/TextPreview.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/TextPreview/TextPreview.tsx",
+      "sha256": "74dfbefb65018ce1c762e5d2e554f89c103223f9d36e05d3c38c429be47c1564"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/TextPreview/textPreview.module.scss": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/TextPreview/textPreview.module.scss",
+      "sha256": "749bcc0ac7e21a315111da4c6b4ee84a3978bf09c618646ee11acfff940860f1"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/normalButton.module.scss": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/normalButton.module.scss",
+      "sha256": "63b894d257b8f375b567b356e31809410d20ec8d996ef0bd1bf9ba8d4459d2fd"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/normalOption.module.scss": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/normalOption.module.scss",
+      "sha256": "6e1657d72dda2a29c5f4ac934b38c1b7af14ea1708331c40b03bb4c4b5313c75"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/options.module.scss": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/options.module.scss",
+      "sha256": "52fdf5add26fc34016edee6d24777f9270ea22c88664634a4c5b4f4cdf0eaf2a"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/Options/slider.css": {
+      "upstream": "packages/webgal/src/UI/Menu/Options/slider.css",
+      "sha256": "49458ad1c75f7a465384ce890c46a7a4c5badaf2fd184d3e26721bee0fb72b4e"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/SaveAndLoad/Load/Load.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/SaveAndLoad/Load/Load.tsx",
+      "sha256": "53995145008f8ac033f9c671a5e4449991b6f4a5216f1e704aefbe85cd68f193"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/SaveAndLoad/Save/Save.tsx": {
+      "upstream": "packages/webgal/src/UI/Menu/SaveAndLoad/Save/Save.tsx",
+      "sha256": "1e507eb34284dea83dc0b52cb4ee113e2395cfcd7de46c3372235e2970e9bd99"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/SaveAndLoad/SaveAndLoad.module.scss": {
+      "upstream": "packages/webgal/src/UI/Menu/SaveAndLoad/SaveAndLoad.module.scss",
+      "sha256": "09b07ff8e2666230889b45ba927692c0a00ba591c9e519efb11cdaded03fd1c8"
+    },
+    "apps/web/src/engine/webgal/UI/Menu/menu.module.scss": {
+      "upstream": "packages/webgal/src/UI/Menu/menu.module.scss",
+      "sha256": "d9f6b8153e166aa3453a44b25d7d1a0a821d2ff213d6bc677cf0f4d166a88ece"
+    },
+    "apps/web/src/engine/webgal/UI/PanicOverlay/PanicImage/PanicImage.tsx": {
+      "upstream": "packages/webgal/src/UI/PanicOverlay/PanicImage/PanicImage.tsx",
+      "sha256": "99b477de8f697a24e7529512a97cf7f45bcf3db017fd77c3e42c45413739a769"
+    },
+    "apps/web/src/engine/webgal/UI/PanicOverlay/PanicImage/panicImage.module.scss": {
+      "upstream": "packages/webgal/src/UI/PanicOverlay/PanicImage/panicImage.module.scss",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "apps/web/src/engine/webgal/UI/PanicOverlay/PanicOverlay.tsx": {
+      "upstream": "packages/webgal/src/UI/PanicOverlay/PanicOverlay.tsx",
+      "sha256": "ebf87d6aca6c58fe67c5b8a9debda49000b95b143eb647d9ff7242e14dc17087"
+    },
+    "apps/web/src/engine/webgal/UI/PanicOverlay/PanicYoozle/PanicYoozle.tsx": {
+      "upstream": "packages/webgal/src/UI/PanicOverlay/PanicYoozle/PanicYoozle.tsx",
+      "sha256": "517b271c39f8a3e63761d05dd0480c20f1854c22a61ad0ba5ee69d6de82a27e5"
+    },
+    "apps/web/src/engine/webgal/UI/PanicOverlay/PanicYoozle/panicYoozle.module.scss": {
+      "upstream": "packages/webgal/src/UI/PanicOverlay/PanicYoozle/panicYoozle.module.scss",
+      "sha256": "c81d72601bb6ba450f11d5397d7bdb838c4b56237c025ff528619e1ba3474666"
+    },
+    "apps/web/src/engine/webgal/UI/PanicOverlay/panicOverlay.module.scss": {
+      "upstream": "packages/webgal/src/UI/PanicOverlay/panicOverlay.module.scss",
+      "sha256": "00fb37bb3705d8c778a606ca452d86083a9ed774d5073d96df1f7b4c4ff41e73"
+    },
+    "apps/web/src/engine/webgal/UI/Title/Title.tsx": {
+      "upstream": "packages/webgal/src/UI/Title/Title.tsx",
+      "sha256": "dae83e745a2096e6d63ed51db4ea88153b60eb95af7b4cd86601355605b38ad6"
+    },
+    "apps/web/src/engine/webgal/UI/Title/title.module.scss": {
+      "upstream": "packages/webgal/src/UI/Title/title.module.scss",
+      "sha256": "f20d47c20aaed9d9ce6968ea9127afb06821644456fe3a0be5e2f2346281de99"
+    },
+    "apps/web/src/engine/webgal/UI/Translation/Translation.tsx": {
+      "upstream": "packages/webgal/src/UI/Translation/Translation.tsx",
+      "sha256": "345b7aa4bf55738e59ea0a92a5c8feed026d069110ff27b0e8edb7fcd8615971"
+    },
+    "apps/web/src/engine/webgal/UI/Translation/translation.module.scss": {
+      "upstream": "packages/webgal/src/UI/Translation/translation.module.scss",
+      "sha256": "6481227d544d80dd9f361da37d1792cb29726da3d24d05663f9d20638582ced1"
+    },
+    "apps/web/src/engine/webgal/UI/etc/QuickSL.tsx": {
+      "upstream": "packages/webgal/src/UI/etc/QuickSL.tsx",
+      "sha256": "bcfec5be438725522a952c8336e43ac7cf289f5e9718748b1cf6f8df92ce2242"
+    },
+    "apps/web/src/engine/webgal/UI/getTextSize.ts": {
+      "upstream": "packages/webgal/src/UI/getTextSize.ts",
+      "sha256": "43d5df6d01f7055fbbcd4d45d4feec5d407b4d7a7ea4eb58aa69d7fc5ef5cd04"
+    },
+    "apps/web/src/engine/webgal/assets/fonts/LICENSE-ResourceHanRounded": {
+      "upstream": "packages/webgal/src/assets/fonts/LICENSE-ResourceHanRounded",
+      "sha256": "8b219980c8603383dccc0d82c00e8be6880f0b91026e4509d41e0ad681a76b47"
+    },
+    "apps/web/src/engine/webgal/assets/fonts/OPPOSans-R.ttf": {
+      "upstream": "packages/webgal/src/assets/fonts/OPPOSans-R.ttf",
+      "sha256": "ea92535935f8b5da18b64bb23e5ffbfef1417b7ae4ff3fc15372a65ee95a9580"
+    },
+    "apps/web/src/engine/webgal/assets/fonts/ResourceHanRoundedCN-Regular.ttf": {
+      "upstream": "packages/webgal/src/assets/fonts/ResourceHanRoundedCN-Regular.ttf",
+      "sha256": "1c5c623f008eabef10c45135a48b01b46311f9369c28857355872cfe05f48dc0"
+    },
+    "apps/web/src/engine/webgal/assets/fonts/SourceHanSerifCN-Regular.ttf": {
+      "upstream": "packages/webgal/src/assets/fonts/SourceHanSerifCN-Regular.ttf",
+      "sha256": "1e60cc2eedfa25bf5e4ecaa794402f581ad770d4c8be46d338bf52064b307ec7"
+    },
+    "apps/web/src/engine/webgal/assets/se/click.mp3": {
+      "upstream": "packages/webgal/src/assets/se/click.mp3",
+      "sha256": "c4a7d04bfe3036d8b457af739af2d391b800967769ea9882ff1f9cad22d829c2"
+    },
+    "apps/web/src/engine/webgal/assets/se/dialog.mp3": {
+      "upstream": "packages/webgal/src/assets/se/dialog.mp3",
+      "sha256": "d5b912353085e44e2fd975dfbfbe6561c38d1c3705687b22bb9bd065791e6bfe"
+    },
+    "apps/web/src/engine/webgal/assets/se/license.txt": {
+      "upstream": "packages/webgal/src/assets/se/license.txt",
+      "sha256": "498270c14ba7b0a1062ff79d5f948724d5015e6486b295ab01ae74dcd5e7bc04"
+    },
+    "apps/web/src/engine/webgal/assets/se/mouse-enter.mp3": {
+      "upstream": "packages/webgal/src/assets/se/mouse-enter.mp3",
+      "sha256": "dc250510450f2a24ea1205fe25f77335683aca1e930f2f40f75233922293d758"
+    },
+    "apps/web/src/engine/webgal/assets/se/page-flip-1.mp3": {
+      "upstream": "packages/webgal/src/assets/se/page-flip-1.mp3",
+      "sha256": "7df32409e65c6c56707f030a59327de24865e24ad38e243a9ad4a604f4a19161"
+    },
+    "apps/web/src/engine/webgal/assets/se/switch-1.mp3": {
+      "upstream": "packages/webgal/src/assets/se/switch-1.mp3",
+      "sha256": "99b576bc49cf679b735460e30f1b97f7a07e9f3dc053c266a27d6b719f5e8b5b"
+    },
+    "apps/web/src/engine/webgal/assets/style/animation.scss": {
+      "upstream": "packages/webgal/src/assets/style/animation.scss",
+      "sha256": "5645f8e7bb5b3261623394af0289f16a753e4e92664da5c4a3b0f330b2834588"
+    },
+    "apps/web/src/engine/webgal/assets/tex/cherryBlossoms.webp": {
+      "upstream": "packages/webgal/src/assets/tex/cherryBlossoms.webp",
+      "sha256": "56cf09c9a41863994f7000786d8972b03dcc214f692c479b78962608109bb0e3"
+    },
+    "apps/web/src/engine/webgal/assets/tex/rain.png": {
+      "upstream": "packages/webgal/src/assets/tex/rain.png",
+      "sha256": "e0935c5335c65986437f2c2e0e7c7cdc3c6bd1e603edf6acf6bf8d232331bb4a"
+    },
+    "apps/web/src/engine/webgal/assets/tex/snow.png": {
+      "upstream": "packages/webgal/src/assets/tex/snow.png",
+      "sha256": "5313a7b0259c483f1329b57c2d2744fe4ee506163a7876b3c8a6111ba8e01978"
+    },
+    "apps/web/src/engine/webgal/config/index.ts": {
+      "upstream": "packages/webgal/src/config/index.ts",
+      "sha256": "3633bf403cd53d85a8686bd05f487d5fc13c2bb00083c074c8538aeb7d3e40b0"
+    },
+    "apps/web/src/engine/webgal/config/info.ts": {
+      "upstream": "packages/webgal/src/config/info.ts",
+      "sha256": "b727e98774d3df9531e83bf319dedb3be413289bb7c19590f0d9532ec7b4ceb5"
+    },
+    "apps/web/src/engine/webgal/config/language.ts": {
+      "upstream": "packages/webgal/src/config/language.ts",
+      "sha256": "f24f8f7c60c79fd9a89741b3d91a206d2d4d97fb37e3e7415f4dced1aff253e8"
+    },
+    "apps/web/src/engine/webgal/hooks/useApplyStyle.ts": {
+      "upstream": "packages/webgal/src/hooks/useApplyStyle.ts",
+      "sha256": "503fdf0f4a446e1f85c70dddf8d55e608bfb20c990473d8cb2ce7c4f17aa1d99"
+    },
+    "apps/web/src/engine/webgal/hooks/useConfigData.ts": {
+      "upstream": "packages/webgal/src/hooks/useConfigData.ts",
+      "sha256": "a3ec99234bb8d2e1d4f4b1db72681beb84b01d604331910a9728540934a2fe5b"
+    },
+    "apps/web/src/engine/webgal/hooks/useEscape.ts": {
+      "upstream": "packages/webgal/src/hooks/useEscape.ts",
+      "sha256": "f1759d6da1b27509845481dfad6b009d24a463bbb2a7729fa207e9c958d2a9b7"
+    },
+    "apps/web/src/engine/webgal/hooks/useFontFamily.ts": {
+      "upstream": "packages/webgal/src/hooks/useFontFamily.ts",
+      "sha256": "84cd4d9d14e252326e43a35f38efb37f382b38184ae69dec90c487eb9d21168b"
+    },
+    "apps/web/src/engine/webgal/hooks/useFullScreen.ts": {
+      "upstream": "packages/webgal/src/hooks/useFullScreen.ts",
+      "sha256": "5e3d6b899b6c4caf5e89e3fdad751b5de5b229619c63076300dce8b2b55f1f9a"
+    },
+    "apps/web/src/engine/webgal/hooks/useGenSyncRef.ts": {
+      "upstream": "packages/webgal/src/hooks/useGenSyncRef.ts",
+      "sha256": "09fd6ad10356fbcb72acd5f2122ef48ea55bbfa11dc2b6653982020677d7343d"
+    },
+    "apps/web/src/engine/webgal/hooks/useHotkey.tsx": {
+      "upstream": "packages/webgal/src/hooks/useHotkey.tsx",
+      "sha256": "423c47316aefe116c4db1b2b9f9c68faae29d3ebb58eb409fc0453fac01f6351"
+    },
+    "apps/web/src/engine/webgal/hooks/useLanguage.ts": {
+      "upstream": "packages/webgal/src/hooks/useLanguage.ts",
+      "sha256": "446a670ad5035816354ab8635735202bf6e6b908cb2fa8cc6a179c6cbc072414"
+    },
+    "apps/web/src/engine/webgal/hooks/useLifeCycle.ts": {
+      "upstream": "packages/webgal/src/hooks/useLifeCycle.ts",
+      "sha256": "f5a9e30a6be977c74d3396c998a5419727adc2c92c6e75f3eeaa501608290ab6"
+    },
+    "apps/web/src/engine/webgal/hooks/useNotFirstEffect.ts": {
+      "upstream": "packages/webgal/src/hooks/useNotFirstEffect.ts",
+      "sha256": "9a0446d03e9fd1bf70ca610901fd33273945b5271d9839259ba85937700dfdf2"
+    },
+    "apps/web/src/engine/webgal/hooks/useSoundEffect.ts": {
+      "upstream": "packages/webgal/src/hooks/useSoundEffect.ts",
+      "sha256": "7a1653e6be59302ff640bd9b0545340a30fe2f25d4c6b52d917fe700ce69651a"
+    },
+    "apps/web/src/engine/webgal/hooks/useStageState.ts": {
+      "upstream": "packages/webgal/src/hooks/useStageState.ts",
+      "sha256": "dcd810ad0895450c3b12fbc7d98634d4334a8d6fd07e6d79efb073f34bdb39ac"
+    },
+    "apps/web/src/engine/webgal/hooks/useTextOptions.ts": {
+      "upstream": "packages/webgal/src/hooks/useTextOptions.ts",
+      "sha256": "f0bb6bb4744efe66ac4116366b01f9cd6fed3e56d780a4938fac157800cd0b31"
+    },
+    "apps/web/src/engine/webgal/hooks/useTrans.ts": {
+      "upstream": "packages/webgal/src/hooks/useTrans.ts",
+      "sha256": "7d617c687867c4de539800fab6daa6fa00ba54442b4da68d0de90a5f1deff83c"
+    },
+    "apps/web/src/engine/webgal/hooks/useValue.ts": {
+      "upstream": "packages/webgal/src/hooks/useValue.ts",
+      "sha256": "8abbb789036aacec6dd5cdb8ffe471882458e81695b468a41c3fd811cce4e051"
+    },
+    "apps/web/src/engine/webgal/index.scss": {
+      "upstream": "packages/webgal/src/index.scss",
+      "sha256": "d250cf5d9b9f7e4c8bc712576ad6ae544c60749dd85060e2a8b54f324f6a6254"
+    },
+    "apps/web/src/engine/webgal/main.tsx": {
+      "upstream": "packages/webgal/src/main.tsx",
+      "sha256": "3d5e721e8b5cef98a44ee8b78781d41b337782cfc938baec9ea684ec994ccd74"
+    },
+    "apps/web/src/engine/webgal/store/GUIReducer.ts": {
+      "upstream": "packages/webgal/src/store/GUIReducer.ts",
+      "sha256": "1ed09f3da7155889bef291cc8ae574bc409e768683f34af83361a132ea512d86"
+    },
+    "apps/web/src/engine/webgal/store/guiInterface.ts": {
+      "upstream": "packages/webgal/src/store/guiInterface.ts",
+      "sha256": "ae78c1f2299f662d109d05f0c83a34195592916ecfc9acd91060d0bd4cc14c54"
+    },
+    "apps/web/src/engine/webgal/store/savesReducer.ts": {
+      "upstream": "packages/webgal/src/store/savesReducer.ts",
+      "sha256": "32ac49cc837f823a51536c549c08c626c3e555429e448dbdf698e95297a3cca3"
+    },
+    "apps/web/src/engine/webgal/store/store.ts": {
+      "upstream": "packages/webgal/src/store/store.ts",
+      "sha256": "4101d746a9be6e7daade00408495483118f97716461c45a4d5d7dcf5c27fb364"
+    },
+    "apps/web/src/engine/webgal/store/userDataInterface.ts": {
+      "upstream": "packages/webgal/src/store/userDataInterface.ts",
+      "sha256": "97fb9680361d8374743a736b52ffb711e36768e3fb46290d7bd742e553fcf0a2"
+    },
+    "apps/web/src/engine/webgal/store/userDataReducer.ts": {
+      "upstream": "packages/webgal/src/store/userDataReducer.ts",
+      "sha256": "e6239339600ec4ae15f2330c199fbdb29a3b9a9f7e77b77a21bd5bcf36ffb84c"
+    },
+    "apps/web/src/engine/webgal/translations/de.ts": {
+      "upstream": "packages/webgal/src/translations/de.ts",
+      "sha256": "34893d4466ba847c380105791b52c5bee59eb59b20502a71057f956cd67df2c3"
+    },
+    "apps/web/src/engine/webgal/translations/en.ts": {
+      "upstream": "packages/webgal/src/translations/en.ts",
+      "sha256": "fd2d6c38f0143edbf495aec4c76cb3dce7376abb7c576121ac398c986e8bf1aa"
+    },
+    "apps/web/src/engine/webgal/translations/fr.ts": {
+      "upstream": "packages/webgal/src/translations/fr.ts",
+      "sha256": "913bc5bc1be719c2921a4c10746402dc5e57d501c8db9dd6a1ecefffb49f1644"
+    },
+    "apps/web/src/engine/webgal/translations/jp.ts": {
+      "upstream": "packages/webgal/src/translations/jp.ts",
+      "sha256": "5488c1d9b899549e05fe84a67d0697ff2fc6ac1071e88d8a8663fff229e0b4b2"
+    },
+    "apps/web/src/engine/webgal/translations/ko.ts": {
+      "upstream": "packages/webgal/src/translations/ko.ts",
+      "sha256": "89713c0d4870c46d694bbf64bd52d7d6f6aa5859f244582673c57701748df7f1"
+    },
+    "apps/web/src/engine/webgal/translations/pt-br.ts": {
+      "upstream": "packages/webgal/src/translations/pt-br.ts",
+      "sha256": "a7ddae498a9b7f4cfcf7efe485c027adc4b1475d49367cead3cc12ff9921ca74"
+    },
+    "apps/web/src/engine/webgal/translations/zh-cn.ts": {
+      "upstream": "packages/webgal/src/translations/zh-cn.ts",
+      "sha256": "6c56716a8675efe67a3f9ac6a3e445b5fd7733ef0e6a83160437b29d68d592e5"
+    },
+    "apps/web/src/engine/webgal/translations/zh-tw.ts": {
+      "upstream": "packages/webgal/src/translations/zh-tw.ts",
+      "sha256": "2e912586f07c708b945b586a3f281bc9a49055c4f328de6c44be696f3142c5ab"
+    },
+    "apps/web/src/engine/webgal/types/angular-expressions.d.ts": {
+      "upstream": "packages/webgal/src/types/angular-expressions.d.ts",
+      "sha256": "0f4078b99a32de154f506f6a66dd2731199de4a7d10bc03749fc298deb44d7ea"
+    },
+    "apps/web/src/engine/webgal/types/editorPreviewProtocol.ts": {
+      "upstream": "packages/webgal/src/types/editorPreviewProtocol.ts",
+      "sha256": "6c33b7c788389fae3c866a30a298bbf8c278fad193b6482cdff613826e045cad"
+    },
+    "apps/web/src/engine/webgal/types/electron.d.ts": {
+      "upstream": "packages/webgal/src/types/electron.d.ts",
+      "sha256": "be96107f9ba96ab7ddf73017dd57b555241fb2c5c7ee0669124221363038adf5"
+    },
+    "apps/web/src/engine/webgal/types/template.ts": {
+      "upstream": "packages/webgal/src/types/template.ts",
+      "sha256": "632682e373e480706c7d6af0fd7c76eee36aca53d7bdef1befe2e4f970f1aeb8"
+    },
+    "apps/web/src/engine/webgal/vite-env.d.ts": {
+      "upstream": "packages/webgal/src/vite-env.d.ts",
+      "sha256": "8affa1c48519eac7d7710631cc336992a826cd6e3629871158ab4b9f174d0934"
+    },
+    "packages/webgal-parser/src/config/scriptConfig.ts": {
+      "upstream": "packages/parser/src/config/scriptConfig.ts",
+      "sha256": "941cb152cee9019f066cc731a31203a6775bd177a3f2d43cd645ee010dfafcb4"
+    },
+    "packages/webgal-parser/src/configParser/configParser.ts": {
+      "upstream": "packages/parser/src/configParser/configParser.ts",
+      "sha256": "58dc4c7f09ff41bfc404b9ca06663ca1030e28616fd2a57d0fedfe866aa672f7"
+    },
+    "packages/webgal-parser/src/index.ts": {
+      "upstream": "packages/parser/src/index.ts",
+      "sha256": "af1d0ed09a433a90a876c6b93fec58f0dc8d5dd146d35844f92d8c17afdc7acb"
+    },
+    "packages/webgal-parser/src/interface/assets.ts": {
+      "upstream": "packages/parser/src/interface/assets.ts",
+      "sha256": "4f3ca374ed651b613cf48e57b6a32a9808427c53c722e4d38a0ffdbaccf38369"
+    },
+    "packages/webgal-parser/src/interface/runtimeInterface.ts": {
+      "upstream": "packages/parser/src/interface/runtimeInterface.ts",
+      "sha256": "73025548d851d1c4405086ec2922646e9966ee343944da36b57a3f228f2b12ba"
+    },
+    "packages/webgal-parser/src/interface/sceneInterface.ts": {
+      "upstream": "packages/parser/src/interface/sceneInterface.ts",
+      "sha256": "959a6b08dbf854b641f0ba37c5d81fe002b10320b80739ba639850029c306b0e"
+    },
+    "packages/webgal-parser/src/parser4/index.ts": {
+      "upstream": "packages/parser/src/parser4/index.ts",
+      "sha256": "4aa991ca7b17a9f2bb53e50b132fba4b220bae82092f20721d756ebb39bd902b"
+    },
+    "packages/webgal-parser/src/sceneParser.ts": {
+      "upstream": "packages/parser/src/sceneParser.ts",
+      "sha256": "34ba121457bfb6510a420bad4719b48b79701559c5b1f8165bde43273ced4ae2"
+    },
+    "packages/webgal-parser/src/sceneTextPreProcessor.ts": {
+      "upstream": "packages/parser/src/sceneTextPreProcessor.ts",
+      "sha256": "2f030a776ab535b0d90ddf0d3571e10c9ad89a617f5ecd4c26b58fbb03dded53"
+    },
+    "packages/webgal-parser/src/scriptParser/argsParser.ts": {
+      "upstream": "packages/parser/src/scriptParser/argsParser.ts",
+      "sha256": "e14b2be5ca7c17610354544c5d904f5fcd37ce9a5e4d4a501ab94fe086e64a5d"
+    },
+    "packages/webgal-parser/src/scriptParser/assetsScanner.ts": {
+      "upstream": "packages/parser/src/scriptParser/assetsScanner.ts",
+      "sha256": "40493abfc9b74281d93b4c6938222fbde9059a7221d83db83fd8f90594ab339f"
+    },
+    "packages/webgal-parser/src/scriptParser/commandParser.ts": {
+      "upstream": "packages/parser/src/scriptParser/commandParser.ts",
+      "sha256": "140389e9dc076224fa17e0cf45c80bf50a67681e95fc424bbb82a3d15a9652d1"
+    },
+    "packages/webgal-parser/src/scriptParser/contentParser.ts": {
+      "upstream": "packages/parser/src/scriptParser/contentParser.ts",
+      "sha256": "e629ee01c4e874aa2dfeec29b4c59c64d1adcad9328df8d76294e0b5ec6ef45a"
+    },
+    "packages/webgal-parser/src/scriptParser/scriptParser.ts": {
+      "upstream": "packages/parser/src/scriptParser/scriptParser.ts",
+      "sha256": "5649611715859cf055f78ebf4d8be1c2db8b746413a25fe9806163c8f4327660"
+    },
+    "packages/webgal-parser/src/scriptParser/subSceneScanner.ts": {
+      "upstream": "packages/parser/src/scriptParser/subSceneScanner.ts",
+      "sha256": "de63801da6f86477681abf20c4f80d04e73364a2a7a1e02adb90bb5d89763301"
+    },
+    "packages/webgal-parser/src/styleParser/index.ts": {
+      "upstream": "packages/parser/src/styleParser/index.ts",
+      "sha256": "9ccc74a800df936a29b517998bf70d106814041ecd36ca6b2a48aa9e6b48dc63"
+    }
+  }
+}

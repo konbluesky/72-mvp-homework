@@ -5,9 +5,16 @@
       "emotion": "relieved",
       "action": "offerPhoto",
       "events": [
-        { "type": "photo", "resourceId": "travel_photo_01" },
-        { "type": "environment", "environment": "rain-soft" }
+        {
+          "type": "photo",
+          "resourceId": "travel_photo_01"
+        },
+        {
+          "type": "environment",
+          "environment": "rain-soft"
+        }
       ]
     }
-  ]
+  ],
+  "suggestions": []
 }

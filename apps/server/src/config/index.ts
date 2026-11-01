@@ -102,10 +102,12 @@ const base = z.object({
   DEEPGRAM_ENCODING: z.literal('mp3').default('mp3'),
   TTS_TIMEOUT_MS: positive(10000),
   SESSION_STORE: z.literal('memory').default('memory'),
+  CONTEXT_HISTORY_TOKENS: positive(1800, 16000),
   SESSION_TTL_SECONDS: positive(1800, 86400),
   MAX_SESSIONS: positive(100, 10000),
   MAX_ACTIVE_TURNS: positive(8, 100),
   MAX_TURNS_PER_SESSION: positive(24, 100),
+  RATE_LIMIT_ENABLED: z.enum(['true', 'false']).transform((value) => value === 'true'),
   MAX_INPUTS_PER_MINUTE: positive(12, 1000),
   MAX_SESSIONS_PER_MINUTE: positive(10, 1000),
   HEARTBEAT_INTERVAL_MS: positive(10000, 60000),
@@ -225,7 +227,12 @@ function parseConfiguration(
   env: Record<string, string | undefined>,
   schema: ReturnType<typeof configurationSchema>,
 ): Config {
-  const parsed = schema.safeParse(env);
+  const parsed = schema.safeParse({
+    ...env,
+    RATE_LIMIT_ENABLED:
+      env.RATE_LIMIT_ENABLED ??
+      ((env.NODE_ENV ?? 'development') === 'development' ? 'false' : 'true'),
+  });
   if (!parsed.success) {
     // Do not include Zod input values: these fields may contain API keys.
     throw new Error(

@@ -19,9 +19,21 @@ docker compose --profile demo down
 
 Pages仓库根构建：`npm ci && npm run build:web`；输出 `apps/web/dist`。构建环境 `NODE_VERSION=26.13.0`、`VITE_API_BASE_URL=https://api.example.com`，示例域名需替换。`public/_redirects` 提供 SPA 回退。每个预览环境显式配置API origin，后端CORS只列可信的完整origin。生产前端不使用Pages Functions。
 
+### 72-mvp 前端持续部署
+
+Cloudflare Pages 项目 `72-mvp` 连接 `konbluesky/72-mvp-homework`，生产分支为 `main`，自定义域名为 `https://72-mvp.telegrow.app`。框架预设选择 None，根目录留空，构建命令使用 `npm ci && npm run build:web`，输出目录为 `apps/web/dist`。设置 `NODE_VERSION=26.13.0`、`NPM_VERSION=11.20.0` 和 `SKIP_DEPENDENCY_INSTALL=true`，由构建命令统一执行锁文件安装。
+
+推送到 `main` 后由 Pages Git 集成自动构建和发布；其他分支用于预览。GitHub Actions 的独立 Frontend build job 也会构建前端并保留 7 天的 `frontend-dist` 构建产物，原有完整验证 job 继续执行。Pages 构建不依赖 GitHub Actions 的完成状态。
+
+首次上线仅包含前端，后端单独部署，因此暂不配置 `VITE_API_BASE_URL`，会话、对话和语音暂不可用。后端就绪后，在 Pages 的生产构建变量中填入其 HTTPS origin，并重新部署；后端 CORS 允许 `https://72-mvp.telegrow.app`。原版入口为 `/`，WebGAL 入口为 `/webgal.html`。
+
 云服务器构建 `infra/docker/server.Dockerfile`，由secret manager/env_file注入后端配置（勿把真实env加入镜像）。只运行一个Node进程/副本，绑定回环端口或私有容器网络。使用 [nginx示例](nginx-production.conf) 终止TLS，禁用SSE buffering/cache，保持心跳及140秒read timeout。公开部署前核验域名、证书、代理信任IP/CIDR与防火墙；配置明确允许的origin，不能通配所有Pages预览域。
 
 `GET /healthz` 只查存活，`GET /readyz` 只查已加载模式；都不产生模型费用。Live凭证不完整启动失败，探针不证明远程账户可用。
+
+## 页面连接监测与自动恢复
+
+页面使用独立常驻SSE检测连接，并以轻量HTTP请求采样RTT；具体接口、状态、所有权与不重播边界见[连接监测说明](connection-health.md)。不增加WebSocket，也不以健康探针调用付费Provider。Compose nginx明确代理旧healthz/readyz，不能让SPA回退的HTML 200充当健康JSON。
 
 ## 资源和故障预算
 
@@ -37,7 +49,7 @@ Pages仓库根构建：`npm ci && npm run build:web`；输出 `apps/web/dist`。
 - STT/LLM/TTS失败：本轮结束，可换文字/再发新轮，不自动重复计费。
 - 下载/解码失败：可重试声音或逐句字幕确认；嘴部不假装发声。
 - 照片失败：继续对话或重新请求；不写photo事实，也不执行依赖它的环境变化。
-- SSE断流：取消原stream任务，新轮不受旧finally影响；恢复后查快照，不自动重播。
+- SSE断流：取消原stream任务，新轮不受旧finally影响；自动恢复监测与会话，补交回执后查快照，不自动重发输入或重播。
 - 容量/限流：等待窗口释放；不要通过扩大模型并发掩盖故障。
 
 回滚使用上一已验证镜像与对应前端构建；schemaVersion变更应一起协调发布。首版无数据库迁移，但API重启丢失会话。扩容前必须设计共享状态、任务归属与取消路由，不能直接增加replicas。

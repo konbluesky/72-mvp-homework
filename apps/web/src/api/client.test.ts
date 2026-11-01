@@ -42,3 +42,46 @@ describe('browser API boundary', () => {
     expect(() => api.snapshot()).toThrow('故事连接已结束');
   });
 });
+
+describe('monitoring API and controlled failures', () => {
+  it('does not send the private session token to public monitoring routes', async () => {
+    const headers: Headers[] = [];
+    const fetcher: typeof fetch = async (url, init) => {
+      headers.push(new Headers(init?.headers));
+      return new Response(
+        JSON.stringify(
+          String(url).endsWith('/ping') ? { schemaVersion: 3, status: 'ok' } : session,
+        ),
+      );
+    };
+    const api = new ApiClient('http://localhost:3000', fetcher);
+    await api.createSession();
+    await api.probeConnection(new AbortController().signal);
+    expect(headers.at(-1)?.has('Authorization')).toBe(false);
+    expect(headers.at(-1)?.has('X-Session-Id')).toBe(false);
+  });
+  it('keeps an unstructured HTTP error distinct from a network outage', async () => {
+    const api = new ApiClient(
+      'http://localhost:3000',
+      async () => new Response('<html>Bad gateway</html>', { status: 502 }),
+    );
+    await expect(api.createSession()).rejects.toMatchObject({
+      code: 'HTTP_ERROR',
+      httpStatus: 502,
+      retryable: true,
+    });
+  });
+  it('bounds a request even if its fetch implementation ignores cancellation', async () => {
+    vi.useFakeTimers();
+    try {
+      const api = new ApiClient('http://localhost:3000', () => new Promise(() => {}));
+      const result = api.createSession();
+      const assertion = expect(result).rejects.toMatchObject({ code: 'REQUEST_TIMEOUT' });
+      await vi.advanceTimersByTimeAsync(10001);
+      await assertion;
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

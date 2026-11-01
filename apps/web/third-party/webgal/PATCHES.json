@@ -1,0 +1,65 @@
+{
+  "commit": "15173bc21339a65da34b78463fca8a304e4d503a",
+  "files": {
+    "apps/web/src/engine/webgal/Core/initializeScript.ts": {
+      "sha256": "1a1968b3ea2f1391eaa2a5590f1e727dcd2d3f43d0c952c0b2618a9132e3e82b",
+      "reason": "Reject native bootstrap outside story mode before network, SDK, preview and storage side effects."
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/nextSentence.ts": {
+      "sha256": "21b8a4cbeb3c5ed3250f2a3b4e9f32e896c2930b047bf3e0228ac788a5bebc68",
+      "reason": "Reject native forward, commit, next and continuation in interactive mode before state or event changes."
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/runScript.ts": {
+      "sha256": "e0dfde46747f628ea6ab588ac671a93534da1bc5fec0d5928b2f6ccb13dc21cc",
+      "reason": "Reject arbitrary native script execution in the B0 interactive host; scoped cue compilation is a later stage."
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/autoPlay.ts": {
+      "sha256": "69b45e0021e28a7e2da6c30e8dc6813dcebbb2b120e4f25e5cf9fd9eab68a9b4",
+      "reason": "Reject native auto timers and next callbacks in interactive mode."
+    },
+    "apps/web/src/engine/webgal/Core/controller/gamePlay/fastSkip.ts": {
+      "sha256": "c5757c5b7558d54eda3d19c32cecb599a5182d6e6bb8a3ba838b7d63916f95af",
+      "reason": "Reject native fast and temporary-fast timers in interactive mode."
+    },
+    "apps/web/src/engine/webgal/Core/live2DCore.ts": {
+      "sha256": "648f29ce112d95bf529cc6105632809a460e059cce962ba8d1156e8dcb83cc42",
+      "reason": "Explicit/lazy SDK lifecycle; interactive host initializes the pinned Cubism4-only module after the local Core, sharing engine Pixi and disabling SDK sound. Existing story-mode initialization retained."
+    },
+    "apps/web/src/engine/webgal/config/info.ts": {
+      "sha256": "4b88206d56aee66d2cbc4df9f5c815f3c169dec25eb4c3b1110c18de8c6519f2",
+      "reason": "Use the pinned upstream engine version instead of Yarn/unplugin-info virtual imports."
+    },
+    "apps/web/src/engine/webgal/vite-env.d.ts": {
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
+      "reason": "Use the root Vite types without an upstream build plugin dependency."
+    },
+    "apps/web/src/engine/webgal/main.tsx": {
+      "sha256": "9d18ae91d62d31ee46c97b9184e80f843c340717fbd79efd7e6319e9ceb9acf7",
+      "reason": "Configure story explicitly for the retained native source entry; the product workbench uses a separate interactive bootstrap."
+    },
+    "apps/web/src/engine/webgal/hooks/useHotkey.tsx": {
+      "sha256": "48d7dd48576710a46b058d18dccfaa591335547e364361b2cada9e5dc7e7230e",
+      "reason": "Add DOM event types for React 18 useCallback; remove unused blur event arguments."
+    },
+    "apps/web/src/engine/webgal/Stage/TextBox/legacy-themes/legacy-standard/StandardTextbox.tsx": {
+      "sha256": "b6e87412ba2b628da8b6eee7dadb30de10fab6cbbb00ca1eb2f01c1b8a64c081",
+      "reason": "Render flattened EnhancedNode.reactNode values rather than object arrays; required for React 18 type compatibility."
+    },
+    "apps/web/src/engine/webgal/index.scss": {
+      "sha256": "7d1ef78ba251994d609d7a102c06fbaae6b010269564eea3aa2d4c3e6f2cc4e3",
+      "reason": "Remove the optional proprietary OPPOSans face; the interactive host uses system fonts."
+    },
+    "apps/web/src/engine/webgal/host/runtimeMode.ts": {
+      "sha256": "b4718069eaac52778cee14e58844501f469a03d2ff5a9166f853aae1afae2b69",
+      "reason": "Local extension: configure mode before Core import, deny unconfigured story execution, and prevent page-level mode switches."
+    },
+    "apps/web/src/engine/webgal/assets/fonts/OPPOSans-R.ttf": {
+      "omitted": true,
+      "reason": "Optional native GUI font not required by the interactive host; no separate redistribution terms provided in the upstream source. Remove its font-face instead of introducing an unnecessary binary."
+    },
+    "apps/web/src/engine/webgal/Core/controller/stage/pixi/assets/AssetManager.ts": {
+      "sha256": "341018db97c497c111bbe8157ae3f99311dd13deb821a83a0c3e114464460ba9",
+      "reason": "Expose renderer detach for host-owned teardown, so pending asset loads cannot prepare against a destroyed renderer. Preview textures remain a bounded page cache across stage rebuilds."
+    }
+  }
+}

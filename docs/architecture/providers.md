@@ -41,3 +41,15 @@ const app = await createApp({ config, providers });
 `npm run providers:probe -- --stage capabilities`默认离线；显式stt/plan/tts逐阶段命令见[配置说明](../provider-configuration.md)。样本有时长/大小限制，调用有45秒总上限，探测不自动重试。单阶段诊断只要求该阶段凭证（如STT不需要GPT key）；正式应用仍校验完整Live配置。业务Graph记录每阶段选中的provider/model、耗时和可用request ID；错误只记录安全code/status/retryable，不输出对话、录音、鉴权头或Provider正文。没有真实usage则继续写unknown，不推导成本。
 
 当前采用按住录音的REST链路和逐句合成；WebSocket流式输入、VAD及全双工是另一个交付范围。未来流式Provider需要独立流式接口，不能用现在的Promise接口伪装为完整流式协议。
+
+Planner 的输出还包含 `suggestions`（用户下一条发言的label/draft列表），与角色回复同次生成、同样由共享schema校验和最多一次修复；不增加独立recommendation provider或额外LLM请求。MockPlanner提供模拟候选，Live由GPT结合PlanInput中的text/history/facts与本次回复规划生成。候选不会被TTS朗读或自动提交给planner。
+
+## 语音输入失败与连接状态
+
+Deepgram HTTP200空transcript保留为NO_SPEECH，公开映射为422，不再混入INVALID_REQUEST/400。预览失败只终结自己的turn，语音输入错误有独立投影，connected和sessionExpired不因此改变；用户可重录或直接发送文字。音频收尾先等最终编码块，再释放tracks，2秒无完成事件则关闭设备并丢弃迟到结果。
+
+解码后仅记录整体RMS/峰值dBFS与数字静音标记；真实录音与转录不进入日志、源码或报告。没有以音量门限拒绝合法轻声，也没有把输入能量直接等同语音。Provider/model/language可通过离线capabilities查看；这不证明真实录音已恢复。
+
+## Ink上下文与私有规划输出
+
+PlanInput额外接受场景提供的systemPrompt与allowedActions，供应商适配不持有具体咖啡馆剧情。请求使用PlannerOutputSchema，在当前非explicit动作集合上约束actionId；Graph验证后分流普通回复与Ink beat。推荐kind/relatedActionId用于内部过滤，公开仍为label/draft。模板和actor的世界操作由scenario授权，不能由模型任意设置。

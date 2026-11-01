@@ -3,14 +3,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { ReplyPlanSchema } from '@mira/protocol';
 import { z } from 'zod';
 import { loadConfig, type Config } from '../config/index.js';
-import { MIRA_SYSTEM_PROMPT } from '../scenario/prompt.js';
+import { PLANNER_RULES as MIRA_SYSTEM_PROMPT } from '../scenario/runtime/context.js';
 import { DeepgramTts } from './deepgram/tts.js';
 import { DeepgramClient } from './deepgram/client.js';
 import { GptPlanner } from './openai/planner.js';
 import { createLiveProviders } from './index.js';
 import { validateAudio } from '../media/audio-format.js';
 import { boundedBody, type Fetch } from './http.js';
-import { createMockProviders, MOCK_LINES, mockPlan } from './mock.js';
+import { createMockProviders, MOCK_LINES, mockPlan } from '../scenario/cafe/mock.js';
 
 const signal = () => new AbortController().signal;
 const config = loadConfig({
@@ -239,9 +239,11 @@ describe('provider contracts without paid network calls', () => {
         expect(body.response_format).toEqual({ type: 'json_object' });
         expect(system).toContain('不得添加额外字段');
         expect(system).toContain('不要输出 Markdown');
-        expect(JSON.parse(system!.split('ReplyPlan JSON Schema:\n')[1]!)).toEqual(
-          z.toJSONSchema(ReplyPlanSchema),
+        const schema = JSON.parse(system!.split('ReplyPlan JSON Schema:\n')[1]!);
+        expect(schema.required).toEqual(
+          expect.arrayContaining(['segments', 'suggestions', 'actionId']),
         );
+        expect(schema.properties.actionId).toEqual({ type: 'null' });
       } else {
         expect(system).toBe(MIRA_SYSTEM_PROMPT);
       }

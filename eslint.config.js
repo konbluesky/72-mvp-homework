@@ -4,6 +4,8 @@ export default tseslint.config(
   {
     ignores: [
       '**/dist/**',
+      'apps/web/src/engine/webgal/**',
+      'packages/webgal-parser/src/**',
       '**/public/assets/live2d/**',
       'node_modules/**',
       'outputs/**',

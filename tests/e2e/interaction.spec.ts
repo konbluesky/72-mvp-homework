@@ -6,7 +6,7 @@ async function enter(page: Page): Promise<SessionCreated> {
     (response) =>
       response.url().endsWith('/api/sessions') && response.request().method() === 'POST',
   );
-  await page.goto('/');
+  await page.goto('/legacy.html');
   const created = SessionCreatedSchema.parse(await (await session).json());
   await expect(page.locator('#text-input')).toBeEnabled();
   return created;
@@ -38,7 +38,7 @@ test('advertised speech capability controls microphone independently of mode', a
   await expect(page.locator('#text-input')).toBeEnabled();
   await send(page, '你好');
   await expect(page.locator('main')).toHaveAttribute('data-state', 'speaking');
-  await page.getByRole('button', { name: '暂停，换我说', exact: true }).click();
+  await page.getByRole('button', { name: '停止当前回复', exact: true }).click();
   await expect(page.locator('main')).toHaveAttribute('data-state', 'idle');
 });
 
@@ -60,7 +60,7 @@ test('real backend audio, photo receipts, interruption and continuous context', 
   await expect(page.locator('main')).toHaveAttribute('data-state', 'speaking');
   await expect(page.locator('main')).toHaveAttribute('data-emotion', 'guarded');
   await expect(page.locator('main')).toHaveAttribute('data-action', 'lookWindow');
-  await page.getByRole('button', { name: '暂停，换我说', exact: true }).click();
+  await page.getByRole('button', { name: '停止当前回复', exact: true }).click();
   await expect(page.locator('main')).toHaveAttribute('data-state', 'idle');
   await expect(page.locator('main')).toHaveAttribute('data-action', 'none');
   expect(
@@ -71,7 +71,7 @@ test('real backend audio, photo receipts, interruption and continuous context', 
   await expect
     .poll(async () => (await snapshot(page, session)).scene.facts.photo_revealed)
     .toBe(true);
-  await expect(page.locator('main')).toHaveAttribute('data-weather', 'rain-soft', {
+  await expect(page.locator('main')).toHaveAttribute('data-weather', 'rain', {
     timeout: 20000,
   });
   await send(page, '不要看照片');
@@ -126,7 +126,7 @@ test('audio download failure uses explicit text acknowledgements', async ({ page
     .toBe(2);
 });
 
-test('failed image never commits photo or its dependent weather', async ({ page }) => {
+test('failed image never commits photo or unrelated weather', async ({ page }) => {
   const session = await enter(page);
   await page.route('**/assets/travel-photo.svg', (route) => route.abort());
   await send(page, '能看看照片吗？');
@@ -142,14 +142,18 @@ test('actual MediaRecorder upload with fake microphone is explicitly simulated t
 }) => {
   await enter(page);
   await page.getByRole('button', { name: '切换语音输入', exact: true }).click();
-  const hold = page.getByRole('button', { name: '按住录音，松开发送，上滑取消' });
+  const hold = page.getByRole('button', { name: '按住录音，松开预览，上滑取消' });
   await hold.focus();
   await page.keyboard.down('Space');
   await expect(page.locator('main')).toHaveAttribute('data-state', 'listening');
   // This measures a real recorder capture interval; not a readiness wait.
   await page.waitForTimeout(650);
   await page.keyboard.up('Space');
-  await expect(page.locator('.recent-user')).toContainText('语音示例', { timeout: 15000 });
+  await expect(page.locator('.voice-preview-bar')).toContainText('模拟识别草稿');
+  await expect(page.getByRole('textbox', { name: '编辑语音消息' })).toHaveValue('能看看照片吗？');
+  await expect(page.locator('.recent-user')).toHaveCount(0);
+  await page.getByRole('button', { name: '确认发送', exact: true }).click();
+  await expect(page.locator('.recent-user').last()).toContainText('语音示例', { timeout: 15000 });
   await expect(page.locator('[data-photo]')).toBeVisible();
 });
 
@@ -162,10 +166,11 @@ test('offline interruption stops playback and reconnects without replay', async 
   await expect(page.locator('main')).toHaveAttribute('data-state', 'speaking');
   await context.setOffline(true);
   await expect(page.locator('main')).toHaveAttribute('data-state', 'idle');
-  await expect(page.getByRole('alert')).toContainText('网络断开了');
+  await expect(page.getByRole('alert')).toContainText('自动重连');
   await context.setOffline(false);
-  await page.getByRole('button', { name: '重新连接', exact: true }).click();
-  await expect(page.locator('#text-input')).toBeEnabled();
+  // Online resumes monitoring and restores the session; no manual reconnect or input replay.
+  await expect(page.locator('#text-input')).toBeEnabled({ timeout: 40000 });
+  await expect(page.locator('.connection-status')).toHaveAttribute('data-state', 'connected');
   await send(page, '谢谢你');
   await expect(page.locator('.subtitle')).toContainText('谢谢你');
 });
@@ -187,7 +192,7 @@ test('320px, 390px and desktop retain visible accessible input controls', async 
     expect(box?.height).toBeGreaterThanOrEqual(44);
     await page.getByRole('button', { name: '切换语音输入', exact: true }).click();
     await expect(
-      page.getByRole('button', { name: '按住录音，松开发送，上滑取消' }),
+      page.getByRole('button', { name: '按住录音，松开预览，上滑取消' }),
     ).toBeInViewport();
     await page.getByRole('button', { name: '切换文字输入', exact: true }).click();
     await page.screenshot({
@@ -195,4 +200,18 @@ test('320px, 390px and desktop retain visible accessible input controls', async 
       fullPage: true,
     });
   }
+});
+
+test('voice input mode retains reply recommendations and selecting one opens an editable text draft', async ({
+  page,
+}) => {
+  await enter(page);
+  await send(page, '你在等谁？');
+  await expect(page.locator('.suggestions button').first()).toBeVisible({ timeout: 20000 });
+  await page.getByRole('button', { name: '切换语音输入', exact: true }).click();
+  await expect(page.locator('.suggestions button').first()).toBeVisible();
+  await page.locator('.suggestions button').first().click();
+  await expect(page.locator('#text-input')).toHaveValue('你们有多久没见面了？');
+  await expect(page.locator('#text-input')).toBeFocused();
+  await expect(page.locator('.recent-user')).toHaveCount(1);
 });

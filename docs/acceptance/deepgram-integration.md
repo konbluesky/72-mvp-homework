@@ -44,3 +44,11 @@
 实际配置与命令见[Provider配置](../provider-configuration.md)，类边界、替换示例、测试复用见[Provider架构](../architecture/providers.md)。现有Deepgram key即可；新增识别模型/语言有已核验默认值，TTS继续使用已有音色。前后端需一起升级（后端先发布），新前端需要capabilities字段。
 
 原始截图、录像与机器证据仅本地留存，未纳入公开仓库；此处为既有执行摘要，本次版本控制整理未重新执行这些测试。
+
+## 2026-10-31：空转录问题的代码修正
+
+用户日志显示STT选择Deepgram/Nova-3，约2082ms后HTTP200但NO_SPEECH，入口再映射为400/INVALID_REQUEST；随后健康ping持续200。本段证据只定位到语音识别无文本，不能据此认定GPT/TTS失效，也不能从日志断定是麦克风静音还是识别质量问题。
+
+已修正MediaRecorder收尾过早关闭tracks的顺序，等待最终数据/stop后释放并增加2秒deadline；取消仍立即释放。NO_SPEECH独立返回422，页面将预览/采集失败与连接故障分开，并提供重录/文字入口。增加只含时长和能量摘要的诊断，配置info包含language，健康成功请求使用warn日志级别降低干扰。
+
+离线capabilities确认当前STT为nova-3/zh-CN，官方模型语言表支持该组合。新增收尾/超时/重复回调/语音失败后继续文字的测试源码；遵守AGENTS未执行功能、E2E、运行时测试，未调用真实STT/GPT/TTS或保存/重放用户录音。修正的编译/契约检查不等于真实麦克风及识别质量验收；原录音未提供，当前无法确诊其信号质量。

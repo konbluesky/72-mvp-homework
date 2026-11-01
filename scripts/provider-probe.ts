@@ -3,11 +3,13 @@ import { open, writeFile, mkdir } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { config as loadEnv } from 'dotenv';
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
-import { ReplyPlanSchema } from '@mira/protocol';
+import { ReplyPlanSchema, PlannerOutputSchema } from '@mira/protocol';
 import { loadProbeConfig, ProbeStageSchema, serverRoot } from '../apps/server/src/config/index.js';
+// The diagnostic composition chooses its offline fixture package without loading Ink bytecode.
+import { createMockProviders } from '../apps/server/src/scenario/cafe/mock.js';
 import { createProviders, ProviderError } from '../apps/server/src/providers/index.js';
 import { normalizeRecording } from '../apps/server/src/providers/audio-input.js';
-import { validateStory } from '../apps/server/src/scenario/rules.js';
+import { validateReply } from '../apps/server/src/scenario/runtime/context.js';
 
 // Offline by default. A named stage is an explicit, bounded external-service probe in Live.
 let stage = 'capabilities';
@@ -29,7 +31,7 @@ try {
     { ...process.env, GPT_MAX_RETRIES: '0', GPT_MAX_OUTPUT_TOKENS: '300' },
     selected,
   );
-  const providers = createProviders(config);
+  const providers = createProviders(config, fetch, createMockProviders);
   const signal = AbortSignal.timeout(45_000);
   const started = performance.now();
   const summary: Record<string, unknown> = { stage, mode: config.APP_MODE };
@@ -73,8 +75,21 @@ try {
       .addEdge('probe', END)
       .compile();
     const result = await graph.invoke({ raw: null }, { signal, recursionLimit: 3 });
-    const plan = ReplyPlanSchema.parse(result.raw);
-    validateStory(plan, values.text, { photo_revealed: false, rain_softened: false });
+    const output = PlannerOutputSchema.safeParse(result.raw);
+    if (output.success && output.data.actionId !== null)
+      throw new Error('Planner probe cannot execute scene actions.');
+    const plan = ReplyPlanSchema.parse(
+      output.success
+        ? {
+            segments: output.data.segments,
+            suggestions: output.data.suggestions.map((item) => ({
+              label: item.label,
+              draft: item.draft,
+            })),
+          }
+        : result.raw,
+    );
+    validateReply(plan);
     Object.assign(summary, {
       ...providers.planner.info,
       segments: plan.segments.length,

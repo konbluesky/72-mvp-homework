@@ -1,3 +1,4 @@
+import type { StoryAction } from '@mira/protocol';
 export interface ProviderInfo {
   readonly provider: string;
   readonly model: string;
@@ -17,6 +18,9 @@ export interface PlanInput {
   text: string;
   history: Array<{ role: 'user' | 'assistant'; text: string }>;
   facts: string[];
+  scene?: unknown;
+  systemPrompt?: string;
+  allowedActions?: StoryAction[];
   repair?: unknown;
 }
 export interface SpeechToTextProvider {

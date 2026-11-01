@@ -1,4 +1,15 @@
 import { z } from 'zod';
+import {
+  StoryStateSchema,
+  ContentIdSchema,
+  StoryInteractionSchema,
+  LocationEventSchema,
+  PropEventSchema,
+  AmbienceEventSchema,
+  EndingEventSchema,
+  BeatEventSchema,
+} from './story.js';
+export * from './story.js';
 
 /**
  * 前后端共用的数据契约：Zod 校验网络边界，TypeScript 类型从 schema 推导。
@@ -11,7 +22,7 @@ import { z } from 'zod';
 // 基础：标识、轮次身份与业务状态
 
 /** 业务事件版本；未知版本由客户端拒绝，避免按旧含义执行。 */
-export const SCHEMA_VERSION = 1 as const;
+export const SCHEMA_VERSION = 3 as const;
 
 /** 不透明标识，只允许短字符集；不承载路径、URL 或权限。 */
 export const IdSchema = z
@@ -49,31 +60,69 @@ export const EmotionSchema = z.enum(['guarded', 'curious', 'relieved']);
 export type Emotion = z.infer<typeof EmotionSchema>;
 
 /** 一次性业务动作，由渲染适配器解释；不暴露模型文件或运行时参数。 */
-export const ActionSchema = z.enum(['none', 'lookWindow', 'offerPhoto']);
+export const ActionSchema = z.enum([
+  'none',
+  'lookWindow',
+  'offerPhoto',
+  'acknowledge',
+  'focusProp',
+]);
 
 export type Action = z.infer<typeof ActionSchema>;
 
 /** 本场景的雨势状态；跨轮保留已确认变化。 */
-export const EnvironmentSchema = z.enum(['rain', 'rain-soft']);
+export const EnvironmentSchema = ContentIdSchema;
 
 // 会话：能力、已确认场景与上下文
 
 /** 服务端由合法呈现回执提交的剧情事实；计划下发不等于事实成立。 */
 export const FactsSchema = z
-  .object({ photo_revealed: z.boolean(), rain_softened: z.boolean() })
-  .strict();
+  .record(ContentIdSchema, z.boolean())
+  .refine((facts) => Object.keys(facts).length <= 64, 'Too many public facts');
 
 export type Facts = z.infer<typeof FactsSchema>;
 
 /** 单角色场景快照：身份、环境和事实，不携带播放器或渲染实例。 */
-export const SceneSchema = z.object({
-  character: z.literal('mira'),
-  environment: EnvironmentSchema,
-  facts: FactsSchema,
-});
+export const SceneSchema = z
+  .object({
+    character: ContentIdSchema,
+    scenario: z
+      .object({ id: ContentIdSchema, version: z.string().min(1).max(80) })
+      .strict()
+      .optional(),
+    environment: EnvironmentSchema,
+    facts: FactsSchema,
+    story: StoryStateSchema.optional(),
+  })
+  .strict();
 
 /** 实际 Provider 组合支持的入口；UI 按能力开放录音，不按 mock/live 猜测。 */
 export const CapabilitiesSchema = z.object({ voiceInput: z.boolean() }).strict();
+
+export const CreateSessionSchema = z
+  .object({ entry: z.enum(['story', 'conversation']).default('story') })
+  .strict();
+
+/** 可直接提交的玩家发言。WebGAL 点击即发送 draft；兼容宿主可先编辑。与手写/语音同样校验意图，候选不直接授权剧情。 */
+export const ReplySuggestionSchema = z
+  .object({
+    label: z.string().trim().min(1).max(20),
+    draft: z.string().trim().min(1).max(120),
+  })
+  .strict();
+
+export type ReplySuggestion = z.infer<typeof ReplySuggestionSchema>;
+export const ReplySuggestionsSchema = z.array(ReplySuggestionSchema).max(3);
+
+/** 故事包提供的初始文字与下一句；不是已播放音频，不产生呈现回执。 */
+export const SessionOpeningSchema = z
+  .object({
+    text: z.string().trim().min(1).max(160),
+    revision: z.number().int().nonnegative(),
+    suggestions: ReplySuggestionsSchema,
+  })
+  .strict();
+export type SessionOpening = z.infer<typeof SessionOpeningSchema>;
 
 /** 创建匿名会话的响应。token 仅在浏览器内存持有，后续请求用鉴权头发送。 */
 export const SessionCreatedSchema = z.object({
@@ -84,6 +133,7 @@ export const SessionCreatedSchema = z.object({
   mode: z.enum(['mock', 'live']),
   capabilities: CapabilitiesSchema,
   scene: SceneSchema,
+  opening: SessionOpeningSchema.optional(),
 });
 
 export type SessionCreated = z.infer<typeof SessionCreatedSchema>;
@@ -110,8 +160,8 @@ export const SessionSnapshotSchema = z.object({
 
 /** 模型可提议的照片/环境事件；资源固定白名单，剧情许可由服务端另行校验。 */
 export const PlanEventSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('photo'), resourceId: z.literal('travel_photo_01') }).strict(),
-  z.object({ type: z.literal('environment'), environment: z.literal('rain-soft') }).strict(),
+  z.object({ type: z.literal('photo'), resourceId: ContentIdSchema }).strict(),
+  z.object({ type: z.literal('environment'), environment: EnvironmentSchema }).strict(),
 ]);
 
 /** 一句台词及同步演出意图；同一 text 用于语音和字幕，避免内容分叉。 */
@@ -128,10 +178,51 @@ export type PlanSegment = z.infer<typeof PlanSegmentSchema>;
 
 /** 单轮 proposed 计划；限制句数、句长和事件数，约束生成与播放资源。 */
 export const ReplyPlanSchema = z
-  .object({ segments: z.array(PlanSegmentSchema).min(1).max(4) })
+  .object({
+    segments: z.array(PlanSegmentSchema).min(1).max(4),
+    suggestions: ReplySuggestionsSchema,
+  })
   .strict();
 
 export type ReplyPlan = z.infer<typeof ReplyPlanSchema>;
+
+/** Private planner contract: normal conversation or a current, non-secret action suggestion. */
+export const PlannerOutputSchema = z
+  .object({
+    segments: z
+      .array(
+        PlanSegmentSchema.extend({
+          events: z.array(PlanEventSchema).max(0),
+          action: ActionSchema.exclude(['offerPhoto']),
+        }),
+      )
+      .max(4),
+    suggestions: z
+      .array(
+        ReplySuggestionSchema.extend({
+          kind: z.enum(['chat', 'explore', 'decision']),
+          relatedActionId: z.string().max(80).nullable(),
+        }).strict(),
+      )
+      .max(3),
+    // Whole current input as evidence; confirmed intent is required before any story action.
+    actionRequest: z
+      .object({
+        quote: z.string().trim().min(1).max(1000),
+        confirmed: z.boolean(),
+      })
+      .strict()
+      .nullable(),
+    actionId: z
+      .string()
+      .min(1)
+      .max(80)
+      .regex(/^[a-z0-9-]+$/)
+      .nullable(),
+  })
+  .strict();
+
+export type PlannerOutput = z.infer<typeof PlannerOutputSchema>;
 
 // 下发内容：服务端赋予可追踪的呈现身份
 
@@ -141,16 +232,21 @@ export const PresentationEventSchema = z.discriminatedUnion('type', [
     .object({
       eventId: IdSchema,
       type: z.literal('photo'),
-      resourceId: z.literal('travel_photo_01'),
+      resourceId: ContentIdSchema,
     })
     .strict(),
   z
     .object({
       eventId: IdSchema,
       type: z.literal('environment'),
-      environment: z.literal('rain-soft'),
+      environment: EnvironmentSchema,
     })
     .strict(),
+  LocationEventSchema.extend({ eventId: IdSchema }).strict(),
+  PropEventSchema.extend({ eventId: IdSchema }).strict(),
+  AmbienceEventSchema.extend({ eventId: IdSchema }).strict(),
+  EndingEventSchema.extend({ eventId: IdSchema }).strict(),
+  BeatEventSchema.extend({ eventId: IdSchema }).strict(),
 ]);
 
 export type PresentationEvent = z.infer<typeof PresentationEventSchema>;
@@ -170,6 +266,18 @@ export const AudioReadyPayloadSchema = z
 
 export type AudioReadyPayload = z.infer<typeof AudioReadyPayloadSchema>;
 
+export const PresentationReadyPayloadSchema = z
+  .object({
+    presentationId: IdSchema,
+    caption: z.string().max(240),
+    events: z.array(PresentationEventSchema).min(1).max(8),
+    storyAfter: StoryStateSchema.optional(),
+    factsAfter: FactsSchema.optional(),
+    environmentAfter: EnvironmentSchema.optional(),
+  })
+  .strict();
+export type PresentationReadyPayload = z.infer<typeof PresentationReadyPayloadSchema>;
+
 // 呈现回执：实际发生后，才能确认事实
 
 /**
@@ -184,7 +292,16 @@ export const ReceiptSchema = TurnIdentitySchema.extend({
   receiptId: IdSchema,
   // 指向下发的片段或视觉事件，不是 SSE 帧的 eventId。
   targetId: IdSchema,
-  kind: z.enum(['segment', 'photo', 'environment']),
+  kind: z.enum([
+    'segment',
+    'photo',
+    'environment',
+    'location',
+    'prop',
+    'ambience',
+    'ending',
+    'beat',
+  ]),
   status: z.enum(['presented', 'failed']),
   // 句子用 audio 标记播完、text 标记字幕确认；视觉事件无需填写。
   mode: z.enum(['audio', 'text']).optional(),
@@ -239,6 +356,15 @@ export const TextInputSchema = z
   })
   .strict();
 
+export const InteractionInputSchema = z
+  .object({
+    generation: z.number().int().positive(),
+    inputId: IdSchema,
+    interaction: StoryInteractionSchema,
+  })
+  .strict();
+export const JsonInputSchema = z.union([TextInputSchema, InteractionInputSchema]);
+
 /** multipart 的 metadata 字段；音频另用 audio 文件上传，不放入 JSON/SSE。 */
 export const AudioInputMetadataSchema = z
   .object({
@@ -249,6 +375,12 @@ export const AudioInputMetadataSchema = z
     durationMs: z.number().min(200).max(15000),
   })
   .strict();
+
+/** 仅识别的语音草稿；不写入会话历史，不触发规划与合成。 */
+export const TranscriptionPreviewSchema = TurnIdentitySchema.extend({
+  text: z.string().trim().min(1).max(1000),
+  simulated: z.boolean(),
+}).strict();
 
 /** 只取消路由指定的轮次，并提交最终快照；旧取消不能影响新轮。 */
 export const CancelTurnSchema = z
@@ -265,6 +397,7 @@ export const CancelTurnSchema = z
 /** HTTP 与流内错误共用的稳定分类，供恢复逻辑使用。 */
 export const ErrorCodeSchema = z.enum([
   'INVALID_REQUEST',
+  'NO_SPEECH',
   'UNAUTHORIZED',
   'SESSION_EXPIRED',
   'TURN_CONFLICT',
@@ -327,9 +460,17 @@ export const ServerEventSchema = z.discriminatedUnion('type', [
   // 音频可下载后才能入队，实际播放开始仍由调度器决定。
   Envelope.extend({ type: z.literal('audio.ready'), payload: AudioReadyPayloadSchema }),
   Envelope.extend({
+    type: z.literal('presentation.ready'),
+    payload: PresentationReadyPayloadSchema,
+  }),
+  Envelope.extend({
     // 仅表示生成结束；正常 EOF 后，有效音频仍可继续播放并提交回执。
     type: z.literal('reply.done'),
-    payload: z.object({ segmentCount: z.number().int().min(0).max(4) }),
+    payload: z.object({
+      segmentCount: z.number().int().min(0).max(4),
+      // 与台词同次规划；客户端等全部呈现完成再展示。兼容旧服务端未发送此字段。
+      suggestions: ReplySuggestionsSchema.optional(),
+    }),
   }),
   // 流开始后用此事件结束失败，不再发送第二个 HTTP JSON 响应。
   Envelope.extend({ type: z.literal('error'), payload: PublicErrorSchema }),
@@ -353,3 +494,25 @@ export const HealthSchema = z.object({ status: z.literal('ok') });
 
 /** 配置就绪与运行模式，不调用付费服务，也不证明远端账户可用。 */
 export const ReadySchema = z.object({ status: z.literal('ready'), mode: z.enum(['mock', 'live']) });
+
+// Stateless connection monitoring: no conversation, credentials, or presentation events.
+export const CONNECTION_HEARTBEAT_MS = 5_000 as const;
+export const CONNECTION_IDLE_MS = 15_000 as const;
+export const ConnectionEventSchema = z
+  .object({
+    schemaVersion: z.literal(SCHEMA_VERSION),
+    type: z.enum(['connection.ready', 'connection.heartbeat']),
+    connectionId: IdSchema,
+    seq: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    status: z.literal('ready'),
+    heartbeatIntervalMs: z.literal(CONNECTION_HEARTBEAT_MS),
+  })
+  .strict();
+export type ConnectionEvent = z.infer<typeof ConnectionEventSchema>;
+export const ConnectionProbeSchema = z
+  .object({
+    schemaVersion: z.literal(SCHEMA_VERSION),
+    status: z.literal('ok'),
+  })
+  .strict();
+export type ConnectionProbe = z.infer<typeof ConnectionProbeSchema>;

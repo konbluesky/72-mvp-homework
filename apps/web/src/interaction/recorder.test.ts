@@ -92,7 +92,7 @@ describe('recording intent ownership', () => {
       expect(h.port.start).not.toHaveBeenCalled();
     },
   );
-  it('records actual chunks and MIME, stops tracks on release, and submits only once stopped', async () => {
+  it('preserves the final encoded chunk before stopping tracks and submits only once', async () => {
     const h = harness();
     const press = h.controller.press();
     h.request.resolve(h.lease);
@@ -101,12 +101,17 @@ describe('recording intent ownership', () => {
     h.callbacks()?.chunk(new Blob(['audio'], { type: 'audio/webm' }));
     h.controller.release();
     expect(h.port.stop).toHaveBeenCalledOnce();
-    expect(h.stopTracks).toHaveBeenCalled();
+    expect(h.stopTracks).not.toHaveBeenCalled();
     expect(h.submit).not.toHaveBeenCalled();
+    h.callbacks()?.chunk(new Blob(['final-tail'], { type: 'audio/webm' }));
     h.callbacks()?.stopped();
+    expect(h.stopTracks).toHaveBeenCalled();
     expect(h.submit).toHaveBeenCalledOnce();
     expect(h.submit.mock.calls[0]?.[0].type).toBe('audio/webm');
     expect(h.submit.mock.calls[0]?.[1]).toBe(900);
+    expect(h.submit.mock.calls[0]?.[0].size).toBe(new Blob(['audiofinal-tail']).size);
+    h.callbacks()?.stopped();
+    expect(h.submit).toHaveBeenCalledOnce();
   });
   it('freezes duration on release even when the final recorder callback arrives late', async () => {
     const h = harness();
@@ -146,5 +151,38 @@ describe('recording intent ownership', () => {
     expect(h.fail).toHaveBeenCalledWith('录音太大了，请缩短后重试。');
     h.callbacks()?.stopped();
     expect(h.submit).not.toHaveBeenCalled();
+  });
+});
+
+describe('recording finalization budget', () => {
+  it('stops a stuck encoder and discards a late final chunk', async () => {
+    vi.useFakeTimers();
+    const h = harness();
+    const press = h.controller.press();
+    h.request.resolve(h.lease);
+    await press;
+    h.time(1000);
+    h.controller.release();
+    expect(h.stopTracks).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(2001);
+    expect(h.stopTracks).toHaveBeenCalled();
+    expect(h.fail).toHaveBeenCalledWith('录音未能完成，请重新录制或先使用文字。');
+    h.callbacks()?.chunk(new Blob(['late']));
+    h.callbacks()?.stopped();
+    expect(h.submit).not.toHaveBeenCalled();
+  });
+  it('repeated release cannot request stop or final upload twice', async () => {
+    const h = harness();
+    const press = h.controller.press();
+    h.request.resolve(h.lease);
+    await press;
+    h.time(900);
+    h.controller.release();
+    h.controller.release();
+    expect(h.port.stop).toHaveBeenCalledOnce();
+    h.callbacks()?.chunk(new Blob(['final']));
+    h.callbacks()?.stopped();
+    h.callbacks()?.stopped();
+    expect(h.submit).toHaveBeenCalledOnce();
   });
 });

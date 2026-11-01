@@ -1,3 +1,4 @@
+import { cafeScenario } from './scenario/cafe/index.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   SessionCreatedSchema,
@@ -119,7 +120,7 @@ describe('Fastify API boundaries', () => {
     const { app } = await setup();
     expect((await app.inject('/healthz')).json()).toEqual({ status: 'ok' });
     expect((await app.inject('/api/connection/ping')).json()).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 3,
       status: 'ok',
     });
     expect((await app.inject('/readyz')).json()).toEqual({ status: 'ready', mode: 'mock' });
@@ -312,6 +313,37 @@ describe('Fastify API boundaries', () => {
     expect(result.statusCode).toBe(429);
     expect(result.json().error.code).toBe('RATE_LIMITED');
   });
+  it('allows demo creation beyond the per-minute quota but retains session capacity', async () => {
+    const { app } = await setup({
+      RATE_LIMIT_ENABLED: 'false',
+      MAX_SESSIONS_PER_MINUTE: '1',
+      MAX_SESSIONS: '3',
+    });
+    for (let i = 0; i < 2; i++)
+      expect((await app.inject({ method: 'POST', url: '/api/sessions' })).statusCode).toBe(201);
+    const full = await app.inject({ method: 'POST', url: '/api/sessions' });
+    expect(full.statusCode).toBe(503);
+    expect(full.json().error.code).toBe('CAPACITY_EXCEEDED');
+  });
+  it('does not charge failed initialization or report it as a provider failure', async () => {
+    const config = testConfig({ RATE_LIMIT_ENABLED: 'true', MAX_SESSIONS_PER_MINUTE: '1' });
+    const providers = testProviders();
+    const plan = vi.spyOn(providers.planner, 'plan');
+    const synthesize = vi.spyOn(providers.tts, 'synthesize');
+    const app = await createApp({ config, providers, media: testMedia(config), logger: false });
+    apps.push(app);
+    vi.spyOn(app.services.sessions, 'create').mockImplementationOnce(() => {
+      throw new Error('private-initialization-details');
+    });
+    const failure = await app.inject({ method: 'POST', url: '/api/sessions' });
+    expect(failure.statusCode).toBe(500);
+    expect(failure.json().error).toMatchObject({ code: 'INTERNAL_ERROR', retryable: false });
+    expect(failure.payload).not.toContain('private-initialization-details');
+    expect((await app.inject({ method: 'POST', url: '/api/sessions' })).statusCode).toBe(201);
+    expect((await app.inject({ method: 'POST', url: '/api/sessions' })).statusCode).toBe(429);
+    expect(plan).not.toHaveBeenCalled();
+    expect(synthesize).not.toHaveBeenCalled();
+  });
   it('accepts multipart audio with real MIME, and rejects oversized files before providers', async () => {
     const { app, headers, base, providers } = await setup({ MAX_UPLOAD_BYTES: '256' });
     const spy = vi.spyOn(providers.stt, 'transcribe');
@@ -452,74 +484,73 @@ it('normalizes an actual multipart recording before simulated STT and the shared
   expect(spy.mock.calls[0]?.[0].mimeType).toBe('audio/wav');
 });
 
-it('preserves a presented photo when aborting the socket beats the explicit frozen snapshot', async () => {
-  const { app, headers, base, providers, created } = await setup();
-  providers.planner.plan = async () => ({
-    suggestions: [],
-    segments: [
-      {
-        text: '给你看照片。',
-        emotion: 'relieved',
-        action: 'offerPhoto',
-        events: [{ type: 'photo', resourceId: 'travel_photo_01' }],
-      },
-      {
-        text: '雨小了。',
-        emotion: 'relieved',
-        action: 'lookWindow',
-        events: [{ type: 'environment', environment: 'rain-soft' }],
-      },
-    ],
-  });
+it('merges a receipt-confirmed Ink prefix when disconnect beats the frozen snapshot', async () => {
+  const { app, headers, base, created } = await setup();
+  const session = app.services.sessions.authenticate(created.sessionId, headers.authorization);
+  for (const action of ['move-lobby', 'move-counter'])
+    for (const beat of cafeScenario.propose(action, session.narrative))
+      session.narrative = cafeScenario.accept(session.narrative, beat.checkpoint);
+  const frame = cafeScenario.frame(session.narrative);
+  session.story = frame.story;
+  session.facts = frame.facts;
   const origin = await app.listen({ port: 0, host: '127.0.0.1' });
   const abort = new AbortController();
   const response = await fetch(`${origin}${base}/turns/turn/input`, {
     method: 'POST',
     headers: { ...headers, 'content-type': 'application/json' },
-    body: JSON.stringify({ generation: 1, inputId: 'photo', text: '能看看照片吗？' }),
+    body: JSON.stringify({
+      generation: 1,
+      inputId: 'read',
+      interaction: { kind: 'inspect', prop: 'letter' },
+    }),
     signal: abort.signal,
   });
   const reader = response.body!.getReader();
   let body = '';
-  while (!body.includes('"audio.ready"')) {
+  while (!body.includes('"presentation.ready"')) {
     const chunk = await reader.read();
-    if (chunk.done) throw new Error('stream ended before photo');
+    if (chunk.done) throw new Error('missing presentation');
     body += new TextDecoder().decode(chunk.value);
   }
-  const audio = events(body).find((event) => event.type === 'audio.ready');
-  if (!audio || audio.type !== 'audio.ready') throw new Error('missing audio');
-  const photo = audio.payload.events.find((event) => event.type === 'photo');
-  if (!photo) throw new Error('missing photo');
+  const frames = events(body);
+  const audio = frames.find((event) => event.type === 'audio.ready');
+  const presentation = frames.find((event) => event.type === 'presentation.ready');
+  if (audio?.type !== 'audio.ready' || presentation?.type !== 'presentation.ready')
+    throw new Error('missing story targets');
   abort.abort();
-  // Model a real response-close notification arriving before the subsequent HTTP begin.
-  await vi.waitFor(() =>
-    expect(
-      app.services.sessions.authenticate(created.sessionId, headers.authorization).current?.abort
-        .signal.aborted,
-    ).toBe(true),
-  );
-  const receipt = {
-    sessionId: created.sessionId,
-    turnId: 'turn',
-    generation: 1,
-    receiptId: 'seen-photo',
-    targetId: photo.eventId,
-    kind: 'photo',
-    status: 'presented',
-  };
+  await vi.waitFor(() => expect(session.current?.abort.signal.aborted).toBe(true));
+  const identity = { sessionId: created.sessionId, generation: 1, turnId: 'turn' };
+  const receipts = [
+    {
+      ...identity,
+      receiptId: 'heard',
+      targetId: audio.payload.segmentId,
+      kind: 'segment',
+      status: 'presented',
+      mode: 'audio',
+    },
+    {
+      ...identity,
+      receiptId: 'read',
+      targetId: presentation.payload.events[0]!.eventId,
+      kind: 'prop',
+      status: 'presented',
+    },
+  ];
   const next = await fetch(`${origin}${base}/turns`, {
     method: 'POST',
     headers: { ...headers, 'content-type': 'application/json' },
     body: JSON.stringify({
       generation: 2,
       turnId: 'next',
-      receipts: [receipt],
-      frozenTurns: [{ generation: 1, turnId: 'turn', receipts: [receipt] }],
+      receipts,
+      frozenTurns: [{ generation: 1, turnId: 'turn', receipts }],
     }),
   });
   expect(next.status).toBe(200);
   const snapshot = (await app.inject({ url: base, headers })).json();
-  expect(snapshot.scene.facts).toEqual({ photo_revealed: true, rain_softened: false });
+  expect(snapshot.scene.story.revealed).toContain('letter');
+  expect(snapshot.scene.story.phase).toBe('exploration');
   expect(snapshot.generation).toBe(2);
 });
 

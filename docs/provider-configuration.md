@@ -17,7 +17,7 @@ GPT 默认 Chat Completions + JSON Schema，确有兼容性需要时才配置 `G
 
 ## Deepgram 完整语音链路
 
-Live语音输入经过真实MediaRecorder → 有界上传/FFmpeg规范化 → Deepgram STT → LangGraph内GPT规划 → Deepgram TTS → 私有媒体下载/实际播放/回执。文字输入跳过采集与识别，其余共用。统一使用 `DEEPGRAM_API_KEY`，不需要第二套云识别账户或token。
+Live页面语音输入经过真实MediaRecorder → 有界上传/FFmpeg规范化 → Deepgram STT → 可编辑预览 → 用户确认发送 → LangGraph内GPT规划 → Deepgram TTS → 私有媒体下载/实际播放/回执。预览不调用GPT/TTS，也不写会话历史；确认后仅提交编辑后的文字，不重复识别。文字输入跳过采集与识别，其余共用。统一使用 `DEEPGRAM_API_KEY`，不需要第二套云识别账户或token。
 
 - STT：`POST /v1/listen?model=nova-3&language=zh-CN&smart_format=true`，Token鉴权，正文是实际WAV二进制（不是URL或Base64 JSON）。检查HTTP、JSON、metadata和唯一声道的首候选转录。空白结果返回未听清，不生成虚假用户消息，不调用GPT/TTS。
 - TTS：继续用既有 `DEEPGRAM_MODEL` 指定的中文Flux音色，`POST /v2/speak` 返回MP3。该字段只控制合成，不拿来选择识别模型。
@@ -47,7 +47,7 @@ Compose 演示当前固定 `APP_MODE=mock`，未注入后端 env；本地文件�
 | responses        | json_schema、function_calling            | 均有受控契约测试                   |
 | responses        | json_mode                                | 配置明确拒绝，未启用该组合         |
 
-方法分别映射 LangChain `jsonSchema/jsonMode/functionCalling`。共享 Zod ReplyPlan 生成 JSON Schema；`json_mode` 会把该 Schema 和只输出严格 JSON 的要求附加到 system prompt，避免仅给模型一个没有定义的 ReplyPlan 名称。返回值仍由 Graph 执行运行时与剧情校验，不将 JSON mode 当作严格结构保证；额外字段也会拒绝并进入受限修复。SDK structured parser 使用 includeRaw 的受控结果，解析失败传回 Graph 校验/一次修复，原始模型响应不暴露浏览器。用户模型名和 base URL 保持原样，不默认发送 temperature/reasoning。`GPT_EXTRA_BODY_JSON` 只允许显式数字 `temperature` 与 `top_p`，`GPT_HEADERS_JSON` 只允许字符串 `X-*` 头；不能覆盖鉴权、模型、消息、工具或输出协议。模型能力和用户兼容端点是否真正支持所选组合仍需 Live 验证。
+方法分别映射 LangChain `jsonSchema/jsonMode/functionCalling`。共享 Zod PlannerOutput 生成 JSON Schema；`json_mode` 会把该 Schema 和只输出严格 JSON 的要求附加到 system prompt，避免仅给模型一个没有定义的 ReplyPlan 名称。返回值仍由 Graph 执行运行时与剧情校验，不将 JSON mode 当作严格结构保证；额外字段也会拒绝并进入受限修复。SDK structured parser 使用 includeRaw 的受控结果，解析失败传回 Graph 校验/一次修复，原始模型响应不暴露浏览器。用户模型名和 base URL 保持原样，不默认发送 temperature/reasoning。`GPT_EXTRA_BODY_JSON` 只允许显式数字 `temperature` 与 `top_p`，`GPT_HEADERS_JSON` 只允许字符串 `X-*` 头；不能覆盖鉴权、模型、消息、工具或输出协议。模型能力和用户兼容端点是否真正支持所选组合仍需 Live 验证。
 
 官方依据（本轮实际读取）：[OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)、[LangChain ChatOpenAI](https://docs.langchain.com/oss/javascript/integrations/chat/openai)。不使用自动选择模型或未验证的专有参数。
 
@@ -56,6 +56,14 @@ Compose 演示当前固定 `APP_MODE=mock`，未注入后端 env；本地文件�
 浏览器采集与上传使用真实 MIME。服务端由受限 FFmpeg 解码到 16 kHz、单声道、16-bit PCM WAV，按实际样本数校验 15 秒（250 ms 编码尾部容差），不信任客户端时长或容器摘要。之后交给所选识别器；Mock明确标注模拟转录，Deepgram返回simulated=false。
 
 解码器使用可信管理员配置的 `FFMPEG_PATH`（默认 `ffmpeg`）；无 shell，禁网络/文件协议，限制格式、2 个并发、5 秒墙钟、4 KiB stderr 与约 488 KiB PCM 输出；超限或取消即停止子进程。文字与不支持录音的 Live 路径不会启动解码器。测试使用真实 FFmpeg 验证 WAV/WebM/Ogg/MP4/MP3、超长、取消及缺工具。
+
+## 识别为空时的排查
+
+`HTTP 200 + NO_SPEECH`表示请求和响应契约成功，但没有识别文本，不等于GPT、TTS或整台服务掉线。HTTP入口现在返回422/NO_SPEECH，页面允许直接重录或切换文字，保留当前会话。
+
+浏览器松开后等待MediaRecorder最终dataavailable/stop再关闭tracks，最多2秒收尾；取消/隐藏仍立即释放。录音日志包含解码时长、字节数、采样率及audioSignal摘要（rmsDbfs、peakDbfs、silent），Deepgram配置日志增加language。完全静音的dB值用null表示，不打印PCM、波形、转录、设备ID或凭证。摘要只辅助区分静音/弱输入与有信号但无识别，不能充当准确VAD或语音质量验收。
+
+可先用离线capabilities确认model/language。Nova-3与zh-CN组合已按[官方模型语言表](https://developers.deepgram.com/docs/models-languages-overview)核查支持；不因一条NO_SPEECH擅自切模型、Mock或自动重试付费请求。若新录音继续失败，结合该轮recording摘要与provider request ID定位；本轮没有重放用户录音或调用真实识别服务验收。
 
 ## Deepgram 官方 TTS
 
@@ -93,3 +101,7 @@ npm run providers:probe -- --stage tts --text "你好，请坐。" --output outp
 ```
 
 诊断读取apps/server/.env，进程环境优先。正式应用启动校验全部必要服务；单阶段probe只要求该阶段的凭证，capabilities无需凭证且不联网；其他stage在APP_MODE=live时是付费Provider请求，45秒总上限，最多一次调用，planner上限300输出tokens，失败不会切Mock。输出仅provider/model、耗时、字节/字数、request ID及安全错误码/status；不打印原始转录、对话、配置、鉴权头或Provider错误正文。详细类职责、替换例子与复用测试见[Provider架构](architecture/providers.md)。
+
+## 场景规划边界
+
+GPT适配不再直接导入咖啡馆身份/prompt，由Graph传入scenario的systemPrompt、已公开scene与allowedActions。私有PlannerOutput含actionId和推荐元数据，Graph再转换为公开ReplyPlan或Ink演出。普通聊天保留同次生成推荐，关键explicit选择不由模型自行执行。CONTEXT_HISTORY_TOKENS默认1800，使用本地估算与LangChain trimMessages裁剪历史，不代表GPT总context上限，不调用额外计数或摘要服务。

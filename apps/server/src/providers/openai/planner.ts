@@ -1,8 +1,8 @@
 import { ChatOpenAI } from '@langchain/openai';
-import { ReplyPlanSchema } from '@mira/protocol';
+import { PlannerOutputSchema } from '@mira/protocol';
 import { z } from 'zod';
 import type { Config } from '../../config/index.js';
-import { MIRA_SYSTEM_PROMPT } from '../../scenario/prompt.js';
+import { PLANNER_RULES } from '../../scenario/runtime/context.js';
 import { withTimeout, type Fetch } from '../http.js';
 import {
   ProviderError,
@@ -73,11 +73,19 @@ export class GptPlanner implements ReplyPlanner {
         json_mode: 'jsonMode',
         function_calling: 'functionCalling',
       } as const;
-      const schema = z.toJSONSchema(ReplyPlanSchema);
+      const actions = (input.allowedActions ?? []).map((action) => action.id);
+      const schema = z.toJSONSchema(
+        PlannerOutputSchema.extend({
+          actionId: actions.length
+            ? z.enum([actions[0]!, ...actions.slice(1)]).nullable()
+            : z.null(),
+        }),
+      );
+      const prompt = input.systemPrompt ?? PLANNER_RULES;
       const systemPrompt =
         this.config.GPT_STRUCTURED_OUTPUT === 'json_mode'
-          ? `${MIRA_SYSTEM_PROMPT}\n严格按照下方 JSON Schema 输出一个完整的 ReplyPlan JSON 对象。必须包含所有必填字段，只使用声明的字段和枚举值，不得添加额外字段。不要输出 Markdown 代码块、解释或 JSON 之外的文字。\nReplyPlan JSON Schema:\n${JSON.stringify(schema)}`
-          : MIRA_SYSTEM_PROMPT;
+          ? `${prompt}\n严格按照下方 JSON Schema 输出一个完整的 ReplyPlan JSON 对象。必须包含所有必填字段，只使用声明的字段和枚举值，不得添加额外字段。不要输出 Markdown 代码块、解释或 JSON 之外的文字。\nReplyPlan JSON Schema:\n${JSON.stringify(schema)}`
+          : prompt;
       const structured = model.withStructuredOutput(schema, {
         name: 'mira_reply',
         includeRaw: true,
@@ -93,11 +101,15 @@ export class GptPlanner implements ReplyPlanner {
               userText: input.text,
               committedHistory: input.history,
               committedFacts: input.facts,
+              scene: input.scene,
+              allowedActions: input.allowedActions ?? [],
               ...(input.repair === undefined
                 ? {}
                 : {
                     repair:
-                      'Previous output did not meet the reply schema. Return a valid reply plan once.',
+                      typeof input.repair === 'string'
+                        ? input.repair
+                        : 'Previous output did not meet the reply schema. Return a valid reply plan once.',
                   }),
             }),
           },
