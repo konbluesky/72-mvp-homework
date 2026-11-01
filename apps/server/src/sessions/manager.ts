@@ -83,7 +83,7 @@ export class SessionManager {
   create(entry: 'story' | 'conversation' = 'story'): Omit<SessionCreated, 'capabilities'> {
     this.sweep();
     if (this.closing || this.sessions.size >= this.config.MAX_SESSIONS) {
-      throw new AppError('CAPACITY_EXCEEDED', 503, '店里暂时有些忙，请稍后再来。', true);
+      throw new AppError('CAPACITY_EXCEEDED', 503, '服务暂时繁忙，请稍后再试。', true);
     }
     const id = this.id();
     const token = randomBytes(32).toString('base64url');
@@ -116,11 +116,11 @@ export class SessionManager {
     const session = this.sessions.get(id);
     if (!session || session.expiresAt <= this.now()) {
       if (session) this.remove(session);
-      throw new AppError('SESSION_EXPIRED', 410, '这次相遇已结束，请重新进入咖啡馆。', true);
+      throw new AppError('SESSION_EXPIRED', 410, '这次相遇已结束，请重新开始会话。', true);
     }
     const token = authorization?.startsWith('Bearer ') ? authorization.slice(7) : '';
     if (!token || !timingSafeEqual(session.tokenHash, hash(token))) {
-      throw new AppError('UNAUTHORIZED', 401, '请重新进入咖啡馆。');
+      throw new AppError('UNAUTHORIZED', 401, '请重新开始会话。');
     }
     return session;
   }
@@ -150,7 +150,7 @@ export class SessionManager {
     input: { generation: number; turnId: string; receipts: Receipt[]; frozenTurns: FrozenTurn[] },
   ) {
     if (this.closing)
-      throw new AppError('CAPACITY_EXCEEDED', 503, '咖啡馆正在整理，请稍后再来。', true);
+      throw new AppError('CAPACITY_EXCEEDED', 503, '服务正在维护，请稍后再来。', true);
     if (input.generation < session.generation)
       throw new AppError('STALE_TURN', 409, '旧的回应已结束。');
     if (

@@ -41,9 +41,9 @@ function mockContent(text: string, facts: string[]): Pick<ReplyPlan, 'segments'>
     return {
       segments: [segment(MOCK_LINES.photo, 'relieved', 'offerPhoto', [])],
     };
-  if (/(等谁|等什么|在等|为什么|伤心)/.test(text))
+  if (/(等谁|等什么|在等|伤心)/.test(text))
     return { segments: [segment(MOCK_LINES.waiting, 'guarded', 'lookWindow')] };
-  if (/(旅行|海边|风景|远方)/.test(text))
+  if (/(旅行|海边|风景|远方|空乘|空姐|乘务|航班|飞行|工作|下班|休息)/.test(text))
     return { segments: [segment(MOCK_LINES.travel, 'curious', 'lookWindow')] };
   if (/(陪|没关系|谢谢|别难过|安慰|会好的)/.test(text))
     return { segments: [segment(MOCK_LINES.comfort, 'relieved')] };
@@ -77,7 +77,7 @@ export function mockPlan(text: string, facts: string[]): ReplyPlan {
       ...content,
       suggestions: [
         { label: '听一会儿雨', draft: '好，就这样安静坐一会儿吧。' },
-        { label: '聊聊旅行', draft: '旅行中有没有让你舍不得离开的地方？' },
+        { label: '聊聊下班后', draft: '下班后你一般怎么放松？' },
       ],
     };
   if (reply === MOCK_LINES.waiting)
@@ -100,14 +100,14 @@ export function mockPlan(text: string, facts: string[]): ReplyPlan {
     return {
       ...content,
       suggestions: [
-        { label: '聊聊那次旅行', draft: '那次海边的旅行，最让你难忘的是什么？' },
-        { label: '问问下一站', draft: '以后你还想去什么地方拍照？' },
+        { label: '聊聊那次旅行', draft: '那次休息时去海边，最让你难忘的是什么？' },
+        { label: '问问下一站', draft: '下次休息时，你想去哪里走走？' },
       ],
     };
   return {
     ...content,
     suggestions: [
-      { label: '聊聊摄影', draft: '你是什么时候开始喜欢摄影的？' },
+      { label: '聊聊下班后', draft: '做空乘之外，你平时喜欢做些什么？' },
       { label: '陪她坐一会儿', draft: '我不赶时间，可以陪你聊一会儿。' },
     ],
   };

@@ -1,5 +1,6 @@
 === enter_washroom ===
 ~ location = "washroom"
 # cue:location:washroom
-洗手台上搭着湿手帕。门外仍有雨声，这里可以让话慢下来。
+# voice:washroomPause
+公共洗手区的镜子映着门外暖光。她看了一眼镜中的自己，又把目光转回来；这里可以整理情绪，也可以保留独处的空间。
 -> menu

@@ -2,52 +2,58 @@
 ~ location = "cafe-front"
 # cue:location:cafe-front
 # voice:storyDepart
-她选择主动出发，和你一起走到门头。
+你们从店内的暖光走到门头。檐下滴水，刚才没说完的话也跟着出来。
 ~ ambience = "closed"
 # cue:ambience:closed
-营业牌翻面，旧店的招牌缓缓暗下来。
+营业牌翻面，旧店的灯一盏盏暗下去。米拉回头看了一眼，再转向你。
 ~ location = "street-walk"
 # cue:location:street-walk
-你们走到路灯下，回望同一家店。
+{chemistry && (not boundary_set || boundary_repaired):
+    # voice:leaveSpark
+    走到路灯下，她偏过头，像是认真等一个答案，又像还准备着接你的下一句玩笑。
+- else:
+    # voice:leaveQuiet
+    你们保持舒服的距离，安静走过一段街道。
+}
 ~ rain_softened = true
 # cue:environment:rain-soft
-雨势渐渐缓和，路面仍有暖色的反光。
+雨势缓和，路面仍有暖色的反光。
 ~ ending = "depart"
 ~ phase = 3
 # cue:ending:depart
-《下一站，由我决定》：路还很长，你们仍可以继续聊。
+{appointment:《下次，不等雨》：今晚先走到这里，另一次专门的见面已经约好。|《不在航线上的一晚》：这一段路没有预定目的地，走过时却没有觉得浪费。}
 -> menu
 
 === ending_letter ===
 ~ location = "counter"
 # cue:location:counter
 # voice:storyLetter
-她回到吧台，想先留下一句话。
+她回到吧台，用一张便笺给今晚留下自己的落款。
 ~ reply_left = true
 # cue:prop:reply
-{letter_read:回信放进托盘，回应了已经读过的邀请。|她留下自己的联系卡，没有假装已经知道那封信的内容。}
+便笺放在托盘里，落款只有她的名字。窗边的灯把纸角照得暖了一点。
 ~ location = "cafe-front"
 # cue:location:cafe-front
-门前，她向你道别，感谢你陪她把这句话说完。
+门前，你们好好说再见。
 ~ ambience = "closed"
 # cue:ambience:closed
 门牌翻为休息，檐下仍有滴水声。
 ~ ending = "letter"
 ~ phase = 3
 # cue:ending:letter
-《给未说出口的话》：今晚的决定已经留下，故事仍可以慢慢说。
+《一句好好的晚安》：檐下的道别没有拖得很长，回头时却还有一个人愿意挥手。
 -> menu
 
 === ending_stay ===
 ~ location = "window-seat"
 # cue:location:window-seat
 # voice:storyStay
-你们回到窗边，没有急着为所有事情作答。
+你们回到窗边，多留一会儿。那些互相逗弄的话，也给真诚让出一个位置。
 ~ ambience = "last-lamp"
 # cue:ambience:last-lamp
-其他地方收了灯，窗边保留一盏桌灯。
+其他区域收了灯，窗边还留着一盏桌灯。
 ~ ending = "stay"
 ~ phase = 3
 # cue:ending:stay
-《再坐一杯》：你们仍可以聊，雨也可以继续下。
+《今晚没有返程》：桌灯留下一小圈暖光。这一晚剩下的时间，暂时不用拿来赶路。
 -> menu

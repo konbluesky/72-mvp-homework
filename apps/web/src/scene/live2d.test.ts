@@ -215,7 +215,11 @@ describe('Haru manifest and parameter ownership', () => {
     expect(resting.ParamMouthForm).toBeGreaterThanOrEqual(0);
     expect(attentive.ParamBodyAngleY).toBeGreaterThan(resting.ParamBodyAngleY);
     expect(attentive.ParamAngleZ).toBeLessThan(resting.ParamAngleZ - 8);
-    expect(thinking.ParamAngleZ).toBeGreaterThan(resting.ParamAngleZ + 8);
+    // Thought is carried by gaze; avoid reintroducing the squint/frown or a large head tilt.
+    expect(Math.abs(thinking.ParamAngleZ)).toBeLessThan(8);
+    expect(thinking.ParamEyeLOpen).toBeGreaterThanOrEqual(0.9);
+    expect(thinking.ParamEyeLOpen).toBe(thinking.ParamEyeROpen);
+    expect(thinking.ParamMouthForm).toBeGreaterThanOrEqual(0);
     expect(thinking.ParamEyeBallY).toBeGreaterThan(resting.ParamEyeBallY);
     expect(HARU_MANIFEST.capabilities.specializedPhotoGesture).toBe(false);
   });

@@ -1,0 +1,149 @@
+# 《雨停之前》动漫场景生成稿
+
+日期：2026-11-01。用户授权使用项目已配置的图像 API，并追加要求“不要 AI 感太浓”“注意动漫风”。
+
+使用 imagegen 技能的内置 CLI，经项目配置的 OpenAI 兼容服务调用 `gpt-image-2`。基础门头使用 generate；其余七地点将新门头作为风格和建筑参考，经 edit 生成独立视角；三张打烊图使用各自对应基础图进行灯光编辑。未使用角色模型、用户录音或私有照片作为图像输入。
+
+原生返回 1672×941；请求 2560×1440 未被该服务按原尺寸返回。运行资源轻微校正为 1664×936 WebP，无插值放大。PNG 成品保存于本地 `outputs/cafe-art-refresh/final/`，不作为运行依赖。
+
+风格：日系动漫手绘背景，水粉/薄涂笔触、概括材质、低饱和度、适量生活痕迹、柔和室内光。统一同一店铺的门窗、木作、旧灰泥、海绿座椅；禁止过量炫光、HDR、金色装饰和密集花草。没有绘制人物；Live2D 单独叠加。
+
+本文件记录最终使用的完整提示词。图像属于 AI 生成项目素材，手绘是审美描述，不是人工绘制来源声明。
+
+## cafe-front
+
+```text
+Use case: stylized-concept
+Asset type: final hand-painted environment background for a quiet visual novel. One full-bleed 16:9 scene.
+Primary request: a modest hand-painted animation background of an ordinary old neighborhood cafe. Use the restrained art direction below throughout the picture, with quiet everyday architecture, no ornamental fantasy scenery.
+Scene: a small ordinary neighborhood cafe on a drizzly evening. Door on the left, broad divided window on the right, dark walnut joinery, a plain faded green canvas awning, cream-gray plaster and a few exposed old bricks. Plain dark-green rectangular sign with exactly “雨停之前”, modest simple painted Chinese lettering, no gold borders or filigree. Small functional “营业中” sign beside the left door. Simple brass bell. Upstairs mostly cropped, dark windows. A small paper moving notice beside the door with no readable text. At most ONE small unremarkable potted plant on the left, no ivy, flowers, ornamental greenery, vines, watering cans, decorative lanterns, extravagant molding, gilding, or fanciful architecture. Do not add new props.
+Painterly treatment: restrained traditional animation background painted in gouache, thin washes over lightly visible paper, believable but understated brush strokes, simple grouped shapes, selective detail around the door and window, lost-and-found edges, slight natural irregularity. Mostly matte surfaces. Not an outline-heavy cartoon, not flat vector art. Less tiny texture, less sharpness, less ornamental detail. No uniformly noisy microtexture, no hyper-detailed bricks or foliage, no plastic 3D sheen, no photographic HDR, no concept-art rendering tricks.
+Lighting: diffuse cool gray evening with a little warm cream light inside. Make the warm-cool contrast subtle and realistic, not saturated orange against teal. Ordinary soft pendant lights inside, no blazing amber windows, lens glow, bloom, god rays, spotlights, or bright rim outlines. Damp asphalt has scattered dull reflections, not a mirrored floor or golden river. Natural modest exposure; readable midtones and gentle shadows.
+Composition: fixed straight-on eye-level facade view, lived-in and slightly imperfect, normal believable neighborhood proportions. Leave a calm open patch of pavement in the lower-right for a separately rendered character. Keep the whole setting quiet and unshowy. No falling rain painted in; the engine controls rain.
+Constraints: no people, silhouettes, faces, human reflections, animals, captions, UI, watermark, signature, photo border, collage. Only the exact sign text requested above. The emotional effect comes from an ordinary empty cafe and a modest light left on, not from decoration or dramatic effects.
+```
+
+## street-wide
+
+```text
+Use case: stylized-concept
+Asset type: a finished 16:9 visual novel background, no characters. Produce ONE full-bleed independent environment painting, never a montage.
+Input image: the cafe-front image is a STYLE AND ARCHITECTURAL REFERENCE only. Create a NEW scene and camera viewpoint described below; do not simply crop, recolor, or add an inset to the reference.
+Shared identity: the same quiet old neighborhood cafe “雨停之前”, its last rainy evening before moving. Dark walnut frames, muted sea-green upholstery and awning, cream aged plaster, warm amber glass lamps, restrained brass details. Outside facade has a glass entrance on its left and a large window to its right. Upstairs windows are dark. Indoors the side corridor leads to the photo wall and a public washbasin area; the counter is at the back. Preserve this recognizable design language.
+Art direction: match the supplied REVISED reference: understated hand-painted traditional animation background in gouache and thin washes. Muted natural colors, matte surfaces, simple grouped shapes with selective detail, subtle visible brushwork and lost-and-found edges. Believable ordinary human-scale architecture and slight natural irregularity. Gentle cool-gray evening light and modest warm cream indoor light, low warm-cool contrast. Readable soft midtones, no dramatic stage lighting. This is a modest everyday old cafe, NOT a fancy fantasy cafe. No photographic HDR, bloom, golden highlights everywhere, teal/orange grading, highly glossy mirror-like floors, tiny noisy texture covering every surface, hyper-detailed CGI, gilding, filigree, ornamental molding, vines or flower arrangements. At most one ordinary small plant per room. Do not add decorative props to fill empty space. The empty spaces and imperfect brushwork matter. Keep camera perspective and practical object construction accurate.
+Weather: wet surfaces and a few delicate rain beads on exterior glass, but no baked-in falling rain streaks or dense fog. The game adds animated rain. Indoor surfaces are dry.
+Constraints: no people, silhouettes, faces, human reflections, animals, watermark, credits, captions, UI, frames, or unrelated narrative text. No extra readable words beyond text explicitly specified in this prompt. Low-detail bottom 15% suitable for a dialogue overlay. Leave the requested actor space unobstructed; a Live2D character will be rendered separately.
+
+Scene: an establishing wide street-corner view from the opposite sidewalk, complete two-storey cafe building in the middle, neighboring narrow urban buildings framing both sides, dark upstairs windows, gently lit ground-floor windows. A rain-dark zebra crossing sweeps across the foreground and leads the eye toward the small welcoming cafe. Correctly scaled sidewalk, curb, tactile wet asphalt and restrained dull reflected light. This is far wider than the reference entrance shot; show the building roofline and surrounding street. No figures anywhere. Keep the cafe name exactly “雨停之前” as a small credible upper facade sign, no other readable text. Street is empty and intimate, not a grand avenue. The opening has no actor, but preserve a quiet lower-right pavement area for later return visits.
+```
+
+## lobby
+
+```text
+Use case: stylized-concept
+Asset type: a finished 16:9 visual novel background, no characters. Produce ONE full-bleed independent environment painting, never a montage.
+Input image: the cafe-front image is a STYLE AND ARCHITECTURAL REFERENCE only. Create a NEW scene and camera viewpoint described below; do not simply crop, recolor, or add an inset to the reference.
+Shared identity: the same quiet old neighborhood cafe “雨停之前”, its last rainy evening before moving. Dark walnut frames, muted sea-green upholstery and awning, cream aged plaster, warm amber glass lamps, restrained brass details. Outside facade has a glass entrance on its left and a large window to its right. Upstairs windows are dark. Indoors the side corridor leads to the photo wall and a public washbasin area; the counter is at the back. Preserve this recognizable design language.
+Art direction: match the supplied REVISED reference: understated hand-painted traditional animation background in gouache and thin washes. Muted natural colors, matte surfaces, simple grouped shapes with selective detail, subtle visible brushwork and lost-and-found edges. Believable ordinary human-scale architecture and slight natural irregularity. Gentle cool-gray evening light and modest warm cream indoor light, low warm-cool contrast. Readable soft midtones, no dramatic stage lighting. This is a modest everyday old cafe, NOT a fancy fantasy cafe. No photographic HDR, bloom, golden highlights everywhere, teal/orange grading, highly glossy mirror-like floors, tiny noisy texture covering every surface, hyper-detailed CGI, gilding, filigree, ornamental molding, vines or flower arrangements. At most one ordinary small plant per room. Do not add decorative props to fill empty space. The empty spaces and imperfect brushwork matter. Keep camera perspective and practical object construction accurate.
+Weather: wet surfaces and a few delicate rain beads on exterior glass, but no baked-in falling rain streaks or dense fog. The game adds animated rain. Indoor surfaces are dry.
+Constraints: no people, silhouettes, faces, human reflections, animals, watermark, credits, captions, UI, frames, or unrelated narrative text. No extra readable words beyond text explicitly specified in this prompt. Low-detail bottom 15% suitable for a dialogue overlay. Leave the requested actor space unobstructed; a Live2D character will be rendered separately.
+
+Scene: eye-level medium-wide interior view just inside the entrance. A large rain-dark divided window occupies the left 4–26% of image width, between 13–58% image height. To its right, at 34–48% width, an open hallway leads to the gallery corridor. At the rear right, a warm walnut counter, shelving and restrained ceramic coffee equipment. A few taped moving boxes near the right back counter, two sea-green chairs partly stacked or set aside, showing a thoughtful move rather than neglect. The center around 47% width is clear floor space for a standing actor; do not put a chair, box or table in this zone. Deep diagonal floorboards and warm plaster walls, a few amber pendants above. Small moving notice near the left doorway can have indistinct print only. No readable text. Natural eye-level camera, broad realistic interior with soft ordinary warm light, mostly matte old flooring.
+```
+
+## window-seat
+
+```text
+Use case: stylized-concept
+Asset type: a finished 16:9 visual novel background, no characters. Produce ONE full-bleed independent environment painting, never a montage.
+Input image: the cafe-front image is a STYLE AND ARCHITECTURAL REFERENCE only. Create a NEW scene and camera viewpoint described below; do not simply crop, recolor, or add an inset to the reference.
+Shared identity: the same quiet old neighborhood cafe “雨停之前”, its last rainy evening before moving. Dark walnut frames, muted sea-green upholstery and awning, cream aged plaster, warm amber glass lamps, restrained brass details. Outside facade has a glass entrance on its left and a large window to its right. Upstairs windows are dark. Indoors the side corridor leads to the photo wall and a public washbasin area; the counter is at the back. Preserve this recognizable design language.
+Art direction: match the supplied REVISED reference: understated hand-painted traditional animation background in gouache and thin washes. Muted natural colors, matte surfaces, simple grouped shapes with selective detail, subtle visible brushwork and lost-and-found edges. Believable ordinary human-scale architecture and slight natural irregularity. Gentle cool-gray evening light and modest warm cream indoor light, low warm-cool contrast. Readable soft midtones, no dramatic stage lighting. This is a modest everyday old cafe, NOT a fancy fantasy cafe. No photographic HDR, bloom, golden highlights everywhere, teal/orange grading, highly glossy mirror-like floors, tiny noisy texture covering every surface, hyper-detailed CGI, gilding, filigree, ornamental molding, vines or flower arrangements. At most one ordinary small plant per room. Do not add decorative props to fill empty space. The empty spaces and imperfect brushwork matter. Keep camera perspective and practical object construction accurate.
+Weather: wet surfaces and a few delicate rain beads on exterior glass, but no baked-in falling rain streaks or dense fog. The game adds animated rain. Indoor surfaces are dry.
+Constraints: no people, silhouettes, faces, human reflections, animals, watermark, credits, captions, UI, frames, or unrelated narrative text. No extra readable words beyond text explicitly specified in this prompt. Low-detail bottom 15% suitable for a dialogue overlay. Leave the requested actor space unobstructed; a Live2D character will be rendered separately.
+
+Scene: intimate seated eye-level view of a two-person walnut table beside the cafe’s large rain window. The window fills x=15–84%, y=7–70% of the picture; dark walnut mullions and distant rainy city lights outside. A sea-green empty chair sits on the LEFT, not centered. A person will be composited sitting at about x=64%; keep that seat and upper center-right uncluttered. The broad walnut tabletop begins near y=83%, spanning x=30–74% at its far edge and widening toward the bottom corners; preserve a clean straight table edge for later foreground occlusion. Warm small brass table lamp on the LEFT of table at x=40%, y=76%, a ceramic coffee cup, and a plain closed kraft photo sleeve near x=40%, y=87%. No visible photograph, no writing, no letters exposed. Additional restrained warm light at either extreme edge, but no hanging lamp in front of the actor. Subtle wood grain, cool quiet window atmosphere, gentle amber tabletop pools. Camera shows enough room around the table, not an extreme close-up. No text.
+```
+
+## photo-corridor
+
+```text
+Use case: stylized-concept
+Asset type: a finished 16:9 visual novel background, no characters. Produce ONE full-bleed independent environment painting, never a montage.
+Input image: the cafe-front image is a STYLE AND ARCHITECTURAL REFERENCE only. Create a NEW scene and camera viewpoint described below; do not simply crop, recolor, or add an inset to the reference.
+Shared identity: the same quiet old neighborhood cafe “雨停之前”, its last rainy evening before moving. Dark walnut frames, muted sea-green upholstery and awning, cream aged plaster, warm amber glass lamps, restrained brass details. Outside facade has a glass entrance on its left and a large window to its right. Upstairs windows are dark. Indoors the side corridor leads to the photo wall and a public washbasin area; the counter is at the back. Preserve this recognizable design language.
+Art direction: match the supplied REVISED reference: understated hand-painted traditional animation background in gouache and thin washes. Muted natural colors, matte surfaces, simple grouped shapes with selective detail, subtle visible brushwork and lost-and-found edges. Believable ordinary human-scale architecture and slight natural irregularity. Gentle cool-gray evening light and modest warm cream indoor light, low warm-cool contrast. Readable soft midtones, no dramatic stage lighting. This is a modest everyday old cafe, NOT a fancy fantasy cafe. No photographic HDR, bloom, golden highlights everywhere, teal/orange grading, highly glossy mirror-like floors, tiny noisy texture covering every surface, hyper-detailed CGI, gilding, filigree, ornamental molding, vines or flower arrangements. At most one ordinary small plant per room. Do not add decorative props to fill empty space. The empty spaces and imperfect brushwork matter. Keep camera perspective and practical object construction accurate.
+Weather: wet surfaces and a few delicate rain beads on exterior glass, but no baked-in falling rain streaks or dense fog. The game adds animated rain. Indoor surfaces are dry.
+Constraints: no people, silhouettes, faces, human reflections, animals, watermark, credits, captions, UI, frames, or unrelated narrative text. No extra readable words beyond text explicitly specified in this prompt. Low-detail bottom 15% suitable for a dialogue overlay. Leave the requested actor space unobstructed; a Live2D character will be rendered separately.
+
+Scene: an intimate perspective corridor in the same cafe. Left wall recedes toward a softly lit opening to the public handwashing area in the center distance. On the left foreground wall at x=7–26%, y=12–51%, a tasteful vertical exhibition poster with a tiny painted empty coastal landscape, no people. The only readable poster heading is exactly “同一片海”, with the smaller names exactly “米拉 × 阿岚”. A few remaining modest black walnut photo frames and pale rectangles where other frames have already been removed. Use still-life or unpeopled coastal landscapes in frames only. Warm wall sconces reveal textured plaster and frame shadows. The lower-right and x=76% are open walking space for a standing actor. Elegant but modest old cafe gallery; no giant museum hall, no futuristic architecture, no ominous horror mood. Floor perspective must remain coherent.
+```
+
+## washroom
+
+```text
+Use case: stylized-concept
+Asset type: a finished 16:9 visual novel background, no characters. Produce ONE full-bleed independent environment painting, never a montage.
+Input image: the cafe-front image is a STYLE AND ARCHITECTURAL REFERENCE only. Create a NEW scene and camera viewpoint described below; do not simply crop, recolor, or add an inset to the reference.
+Shared identity: the same quiet old neighborhood cafe “雨停之前”, its last rainy evening before moving. Dark walnut frames, muted sea-green upholstery and awning, cream aged plaster, warm amber glass lamps, restrained brass details. Outside facade has a glass entrance on its left and a large window to its right. Upstairs windows are dark. Indoors the side corridor leads to the photo wall and a public washbasin area; the counter is at the back. Preserve this recognizable design language.
+Art direction: match the supplied REVISED reference: understated hand-painted traditional animation background in gouache and thin washes. Muted natural colors, matte surfaces, simple grouped shapes with selective detail, subtle visible brushwork and lost-and-found edges. Believable ordinary human-scale architecture and slight natural irregularity. Gentle cool-gray evening light and modest warm cream indoor light, low warm-cool contrast. Readable soft midtones, no dramatic stage lighting. This is a modest everyday old cafe, NOT a fancy fantasy cafe. No photographic HDR, bloom, golden highlights everywhere, teal/orange grading, highly glossy mirror-like floors, tiny noisy texture covering every surface, hyper-detailed CGI, gilding, filigree, ornamental molding, vines or flower arrangements. At most one ordinary small plant per room. Do not add decorative props to fill empty space. The empty spaces and imperfect brushwork matter. Keep camera perspective and practical object construction accurate.
+Weather: wet surfaces and a few delicate rain beads on exterior glass, but no baked-in falling rain streaks or dense fog. The game adds animated rain. Indoor surfaces are dry.
+Constraints: no people, silhouettes, faces, human reflections, animals, watermark, credits, captions, UI, frames, or unrelated narrative text. No extra readable words beyond text explicitly specified in this prompt. Low-detail bottom 15% suitable for a dialogue overlay. Leave the requested actor space unobstructed; a Live2D character will be rendered separately.
+
+Scene: the shared public washbasin area of the same old cafe, no private stall, no toilet. Eye-level view with one wide aged-brass framed mirror across x=17–71%, y=13–60%; a warm wall sconce beside it; reflective mirror shows only the opposite empty plaster wall and light, never a person. Cream ceramic basin and brass tap on a warm stone vanity across x=11–78%, y=70–100%; cream upper tile and desaturated green lower cabinet. A softly crumpled damp handkerchief on the LEFT near x=27%, y=88%. A right-side open doorway at x=79–95% shows warm corridor light. Reserve x=63% foreground for a separately rendered standing actor, with the lower vanity edge able to cover the lower body; no objects at face height. Detailed glazed ceramic, fine grout, stone grain and quiet amber reflection. No text.
+```
+
+## counter
+
+```text
+Use case: stylized-concept
+Asset type: a finished 16:9 visual novel background, no characters. Produce ONE full-bleed independent environment painting, never a montage.
+Input image: the cafe-front image is a STYLE AND ARCHITECTURAL REFERENCE only. Create a NEW scene and camera viewpoint described below; do not simply crop, recolor, or add an inset to the reference.
+Shared identity: the same quiet old neighborhood cafe “雨停之前”, its last rainy evening before moving. Dark walnut frames, muted sea-green upholstery and awning, cream aged plaster, warm amber glass lamps, restrained brass details. Outside facade has a glass entrance on its left and a large window to its right. Upstairs windows are dark. Indoors the side corridor leads to the photo wall and a public washbasin area; the counter is at the back. Preserve this recognizable design language.
+Art direction: match the supplied REVISED reference: understated hand-painted traditional animation background in gouache and thin washes. Muted natural colors, matte surfaces, simple grouped shapes with selective detail, subtle visible brushwork and lost-and-found edges. Believable ordinary human-scale architecture and slight natural irregularity. Gentle cool-gray evening light and modest warm cream indoor light, low warm-cool contrast. Readable soft midtones, no dramatic stage lighting. This is a modest everyday old cafe, NOT a fancy fantasy cafe. No photographic HDR, bloom, golden highlights everywhere, teal/orange grading, highly glossy mirror-like floors, tiny noisy texture covering every surface, hyper-detailed CGI, gilding, filigree, ornamental molding, vines or flower arrangements. At most one ordinary small plant per room. Do not add decorative props to fill empty space. The empty spaces and imperfect brushwork matter. Keep camera perspective and practical object construction accurate.
+Weather: wet surfaces and a few delicate rain beads on exterior glass, but no baked-in falling rain streaks or dense fog. The game adds animated rain. Indoor surfaces are dry.
+Constraints: no people, silhouettes, faces, human reflections, animals, watermark, credits, captions, UI, frames, or unrelated narrative text. No extra readable words beyond text explicitly specified in this prompt. Low-detail bottom 15% suitable for a dialogue overlay. Leave the requested actor space unobstructed; a Live2D character will be rendered separately.
+
+Scene: eye-level close medium shot of the cafe’s checkout counter, viewed from the customer side. Walnut shelves in the upper-left with tidy ceramic cups and small jars; a discreet old register at x=24%, y=45%; rainy window in upper-right at x=67–93%, y=13–60%. A full-width plain walnut counter occupies the lower part, with its near front lip beginning at y=78%; straight horizontal edge suitable for foreground occlusion. At x=65%, y=72%, a small shallow brass tray holding a closed cream envelope addressed only with the two characters “米拉”. Nearby a small blank moving-address card, no readable address and no visible letter body. Reserve x=41% above the counter for a separately composited character, avoid tall objects there. Counter surface has tactile wood grain and soft muted light. No cafe staff, no people in reflection, no printed story paragraphs, no opened letter. A calm moment of discovery, not a cluttered commercial bar.
+```
+
+## street-walk
+
+```text
+Use case: stylized-concept
+Asset type: a finished 16:9 visual novel background, no characters. Produce ONE full-bleed independent environment painting, never a montage.
+Input image: the cafe-front image is a STYLE AND ARCHITECTURAL REFERENCE only. Create a NEW scene and camera viewpoint described below; do not simply crop, recolor, or add an inset to the reference.
+Shared identity: the same quiet old neighborhood cafe “雨停之前”, its last rainy evening before moving. Dark walnut frames, muted sea-green upholstery and awning, cream aged plaster, warm amber glass lamps, restrained brass details. Outside facade has a glass entrance on its left and a large window to its right. Upstairs windows are dark. Indoors the side corridor leads to the photo wall and a public washbasin area; the counter is at the back. Preserve this recognizable design language.
+Art direction: match the supplied REVISED reference: understated hand-painted traditional animation background in gouache and thin washes. Muted natural colors, matte surfaces, simple grouped shapes with selective detail, subtle visible brushwork and lost-and-found edges. Believable ordinary human-scale architecture and slight natural irregularity. Gentle cool-gray evening light and modest warm cream indoor light, low warm-cool contrast. Readable soft midtones, no dramatic stage lighting. This is a modest everyday old cafe, NOT a fancy fantasy cafe. No photographic HDR, bloom, golden highlights everywhere, teal/orange grading, highly glossy mirror-like floors, tiny noisy texture covering every surface, hyper-detailed CGI, gilding, filigree, ornamental molding, vines or flower arrangements. At most one ordinary small plant per room. Do not add decorative props to fill empty space. The empty spaces and imperfect brushwork matter. Keep camera perspective and practical object construction accurate.
+Weather: wet surfaces and a few delicate rain beads on exterior glass, but no baked-in falling rain streaks or dense fog. The game adds animated rain. Indoor surfaces are dry.
+Constraints: no people, silhouettes, faces, human reflections, animals, watermark, credits, captions, UI, frames, or unrelated narrative text. No extra readable words beyond text explicitly specified in this prompt. Low-detail bottom 15% suitable for a dialogue overlay. Leave the requested actor space unobstructed; a Live2D character will be rendered separately.
+
+Scene: walking away from the cafe along the wet sidewalk, eye-level near-street viewpoint. Strong diagonal perspective into a small quiet city lane. The same cafe is now behind and to the LEFT, visible on the left third, recognizable sea-green awning and left door/right window, far smaller than in the entrance shot. Its sign reads exactly “雨停之前”. An simple dark metal streetlamp stands toward the RIGHT, lamp head high around 70% width and 16% height, with warm light pooling onto wet pavement. A simple understated direction sign can have no legible writing. The right-center x=66% is clear standing/walking room for a Live2D companion; keep lamp pole farther right, not through the actor. Wet stone pavement, thin irregular puddles, soft reflections, varied distant roofline. Enough foreground depth to feel like taking a next step. This camera is totally different from the opposite-side wide establishing shot. No traffic, no crowd, no extra story text.
+```
+
+## cafe-front-closed
+
+```text
+Use case: lighting-weather
+Asset type: matching closed-state background for a visual novel.
+Input image: EDIT TARGET. Keep the entire composition, architecture, every object, camera position, perspective, crop, restrained hand-painted gouache style, detail, and dimensions unchanged.
+Primary request: the SAME cafe has just closed for the night. Switch off its illuminated cafe sign and main interior shop lights, reduce amber shop reflections in the wet pavement correspondingly, and leave only one faint warm light deeper inside. If the small door sign is legible, change only “营业中” to exactly “已打烊”. Keep the cafe name “雨停之前” physically present on its unlit sign. Preserve independent streetlamps and neighboring window lights, cool blue-gray ambient night light, visible surface textures and rain beads. Do not turn the entire painting black: only the cafe's operating lights are extinguished. Maintain a readable, gentle quiet ending. No new objects, no figures, no captions, no extra rain, no changes to buildings or layout. Full-bleed 16:9.
+```
+
+## street-wide-closed
+
+```text
+Use case: lighting-weather
+Asset type: matching closed-state background for a visual novel.
+Input image: EDIT TARGET. Keep the entire composition, architecture, every object, camera position, perspective, crop, restrained hand-painted gouache style, detail, and dimensions unchanged.
+Primary request: the SAME cafe has just closed for the night. Switch off its illuminated cafe sign and main interior shop lights, reduce amber shop reflections in the wet pavement correspondingly, and leave only one faint warm light deeper inside. If the small door sign is legible, change only “营业中” to exactly “已打烊”. Keep the cafe name “雨停之前” physically present on its unlit sign. Preserve independent streetlamps and neighboring window lights, cool blue-gray ambient night light, visible surface textures and rain beads. Do not turn the entire painting black: only the cafe's operating lights are extinguished. Maintain a readable, gentle quiet ending. No new objects, no figures, no captions, no extra rain, no changes to buildings or layout. Full-bleed 16:9.
+```
+
+## street-walk-closed
+
+```text
+Use case: lighting-weather
+Asset type: matching closed-state background for a visual novel.
+Input image: EDIT TARGET. Keep the entire composition, architecture, every object, camera position, perspective, crop, restrained hand-painted gouache style, detail, and dimensions unchanged.
+Primary request: the SAME cafe has just closed for the night. Switch off its illuminated cafe sign and main interior shop lights, reduce amber shop reflections in the wet pavement correspondingly, and leave only one faint warm light deeper inside. If the small door sign is legible, change only “营业中” to exactly “已打烊”. Keep the cafe name “雨停之前” physically present on its unlit sign. Preserve independent streetlamps and neighboring window lights, cool blue-gray ambient night light, visible surface textures and rain beads. Do not turn the entire painting black: only the cafe's operating lights are extinguished. Maintain a readable, gentle quiet ending. No new objects, no figures, no captions, no extra rain, no changes to buildings or layout. Full-bleed 16:9.
+```

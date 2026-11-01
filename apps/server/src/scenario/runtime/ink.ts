@@ -65,7 +65,7 @@ export class InkScenario {
         checkpoint.version !== this.content.version ||
         checkpoint.artifactHash !== this.content.hash
       )
-        throw new AppError('SESSION_EXPIRED', 410, '故事版本已更新，请重新开始这一晚。', true);
+        throw new AppError('SESSION_EXPIRED', 410, '故事版本已更新，请重新开始会话。', true);
       story.state.LoadJson(checkpoint.state);
     }
     return story;
@@ -199,7 +199,13 @@ export class InkScenario {
       .flatMap((id) => {
         const draft = this.content.playerReplies?.[id];
         if (!draft || !frame.story.actions.some((action) => action.id === id)) return [];
-        return [{ label: draft.length > 20 ? draft.slice(0, 19) + '…' : draft, draft }];
+        return [
+          {
+            label: draft.length > 20 ? draft.slice(0, 19) + '…' : draft,
+            draft,
+            interaction: { kind: 'action' as const, actionId: id, revision: checkpoint.revision },
+          },
+        ];
       })
       .slice(0, this.content.recommendations?.maxGuiding ?? 1);
     const chat = (note?.chatReplies ?? []).map((draft) => ({

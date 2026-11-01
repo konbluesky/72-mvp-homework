@@ -7,7 +7,12 @@ describe('scenario context and soft suggestions', () => {
     const actions = cafeScenario.frame(cafeScenario.initial()).story.actions;
     const suggestions = [
       { label: '聊聊', draft: '雨夜的咖啡馆是什么样的？', kind: 'chat', relatedActionId: null },
-      { label: '进店', draft: '我想进店坐会儿。', kind: 'explore', relatedActionId: 'move-lobby' },
+      {
+        label: '窗边',
+        draft: '我们去窗边坐坐吧。',
+        kind: 'explore',
+        relatedActionId: 'move-window-seat',
+      },
       { label: '再引导', draft: '去门口吧。', kind: 'explore', relatedActionId: 'move-cafe-front' },
       {
         label: '结局',
@@ -21,7 +26,7 @@ describe('scenario context and soft suggestions', () => {
         decisionPhases: ['decision', 'epilogue'],
         maxGuiding: 1,
       }).map((item) => item.label),
-    ).toEqual(['聊聊', '进店']);
+    ).toEqual(['聊聊', '窗边']);
   });
   it('does not give the model unrevealed prop text or require every conversation to progress', () => {
     const state = cafeScenario.initial();
@@ -47,4 +52,38 @@ describe('scenario context and soft suggestions', () => {
       }),
     ).toThrow();
   });
+});
+
+it('binds only scenario-authored requests to interactions, preserving the checkpoint revision', () => {
+  const checkpoint = cafeScenario.initial('story');
+  const authored = cafeScenario.suggestions!(checkpoint);
+  const guide = authored.find((item) => item.interaction?.kind === 'action')!;
+  if (guide.interaction?.kind !== 'action') throw new Error('Expected authored action');
+  const frame = cafeScenario.frame(checkpoint);
+  const filtered = filterSuggestions(
+    [
+      {
+        label: '改写',
+        draft: '如果这样做会怎样？',
+        kind: 'explore',
+        relatedActionId: guide.interaction.actionId,
+      },
+      { label: '聊天', draft: '我也喜欢雨声。', kind: 'chat', relatedActionId: null },
+    ],
+    frame.story.actions,
+    frame.story.phase,
+    frame.recommendationPolicy,
+    authored,
+  );
+  expect(filtered[0]).toEqual(guide);
+  expect(filtered[1]).not.toHaveProperty('interaction');
+  expect(
+    filterSuggestions(
+      [{ label: '不可用', draft: '读信吧。', kind: 'explore', relatedActionId: 'inspect-letter' }],
+      frame.story.actions,
+      frame.story.phase,
+      frame.recommendationPolicy,
+      authored,
+    ),
+  ).toEqual([]);
 });

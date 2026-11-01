@@ -1,33 +1,32 @@
 === enter_window_seat ===
 ~ location = "window-seat"
 # cue:location:window-seat
-{letter_read:她把目光从空椅移回你。今晚，似乎还有别的可能。|窗边留着一张空椅，桌上放着海岸照片的封套。}
+{boundary_set && not boundary_repaired:窗边还是原来的位置。她给安静和距离都留出空间。|{chemistry:玻璃上映着两人的轮廓。她望过来，没有急着把目光移走。|桌上的咖啡冒着一点热气。窗上有倒影，也有足够容纳两个人的沉默。}}
 -> menu
 
 === hear_waiting ===
 ~ waiting_heard = true
-# cue:beat:waiting
+# cue:beat:off-duty-arrival
 # voice:waiting
-她望向雨窗，又转回来，愿意说说那位很久没见的朋友。
+她望了一眼原本空着的座位，再看回来，像是临时决定把今晚的安排改一改。
 -> menu
 
 === offer_companionship ===
 ~ companionship = true
-~ phase = 2
 # cue:beat:companionship
 # voice:comfort
-她接受了你的陪伴。可以再聊一会儿，也可以慢慢想今晚接下来怎么过。
+她给你留出位置。窗上倒影多了一个，沉默也没有刚才那么空。
 -> menu
 
 === view_photo ===
 ~ photo_seen = true
 # cue:photo:travel_photo_01
 # voice:photo
-她拿出那张无人海岸的风景照片。可以聊旅行，也可以换一个话题。
+海岸照片在你眼前展开。明亮的海面与窗外的雨夜刚好相反，她等着你的第一句话。
 { view_mode == "conversation" && not rain_softened:
     ~ rain_softened = true
     # cue:environment:rain-soft
     # voice:rain
-    雨窗上的水痕变得稀疏。她望向窗外，又轻轻看回你。
+    雨窗上的水痕稀疏下来。她看了看外面，又把注意力留回这张桌子。
 }
 -> menu

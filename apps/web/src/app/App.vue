@@ -16,9 +16,11 @@ import type { ReplySuggestion } from '@mira/protocol';
 const props = defineProps<{ content: LegacySceneModule }>();
 const scene = useSceneStore();
 const text = ref('');
+const selectedSuggestion = ref<ReplySuggestion>();
 const input = ref<HTMLTextAreaElement>();
 const info = ref<HTMLDialogElement>();
 const history = ref<HTMLDialogElement>();
+const menu = ref<HTMLDialogElement>();
 const animationKey = ref(0);
 const hold = ref<HTMLButtonElement>();
 const inputMode = ref<'text' | 'voice'>('text');
@@ -202,10 +204,21 @@ function send() {
     input.value.style.height = '';
     input.value.blur();
   }
-  controller.send(value);
+  const selected = selectedSuggestion.value;
+  selectedSuggestion.value = undefined;
+  if (selected?.draft === value && selected.interaction?.kind === 'action') {
+    const interaction = selected.interaction;
+    if (
+      interaction.revision === scene.story.revision &&
+      scene.story.actions.some((action) => action.id === interaction.actionId)
+    )
+      controller.interact(interaction);
+    else scene.failure = '这里的选择已更新，请重新选择。';
+  } else controller.send(value);
 }
 async function chooseSuggestion(suggestion: ReplySuggestion) {
-  if (!showSuggestions.value) return;
+  if (!showSuggestions.value || !scene.suggestions.includes(suggestion)) return;
+  selectedSuggestion.value = suggestion;
   const epoch = ++editEpoch;
   inputMode.value = 'text';
   text.value = suggestion.draft;
@@ -252,9 +265,11 @@ function restart() {
   editEpoch += 1;
   cancel();
   conversation.reset();
+  selectedSuggestion.value = undefined;
   followConversation.value = true;
   text.value = '';
   info.value?.close();
+  menu.value?.close();
   history.value?.close();
   void controller.connect(true);
 }
@@ -390,39 +405,11 @@ onBeforeUnmount(() => {
         />
       </div>
       <nav class="header-actions" aria-label="对话选项">
-        <a
-          class="quiet-button"
-          href="/webgal.html"
-          target="_blank"
-          rel="noopener"
-          aria-label="切换到 WebGAL 故事页面"
-          >WebGAL 故事</a
-        >
-        <span
-          v-if="scene.connected"
-          class="mode-label"
-          :title="
-            scene.mode === 'live'
-              ? 'Deepgram 语音识别和播报，GPT 对话'
-              : '离线演示语音，不使用 Deepgram'
-          "
-          >{{ scene.mode === 'live' ? 'Live' : 'Mock' }}</span
-        >
-        <button
-          class="quiet-button history-button"
-          aria-label="回看本次对话"
-          @click="history?.showModal()"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 5.5h16v11H8l-4 3z" />
-            <path d="M8 9h8M8 12.5h5" /></svg
-          ><span>回看</span>
-        </button>
-        <button
-          class="icon-button"
-          aria-label="更多：场景、使用说明与素材来源"
-          @click="info?.showModal()"
-        >
+        <nav class="experience-switch" aria-label="页面版本切换">
+          <span aria-current="page">原版对话</span>
+          <a href="/webgal.html">WebGAL 故事</a>
+        </nav>
+        <button class="icon-button" aria-label="更多操作" @click="menu?.showModal()">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="5" cy="12" r="1" />
             <circle cx="12" cy="12" r="1" />
@@ -431,12 +418,6 @@ onBeforeUnmount(() => {
         </button>
       </nav>
     </header>
-    <nav class="experience-switch" aria-label="页面版本切换">
-      <span aria-current="page">原版对话</span>
-      <a href="/webgal.html" target="_blank" rel="noopener" title="新标签页打开，保留当前对话"
-        >WebGAL 故事 ↗</a
-      >
-    </nav>
     <section class="portrait" :aria-label="`${content.title} · ${content.speaker}`">
       <CharacterStage
         :key="animationKey"
@@ -689,6 +670,7 @@ onBeforeUnmount(() => {
               !scene.connected || !scene.voiceInput || scene.voicePreview === 'transcribing'
             "
             aria-label="按住录音，松开预览，上滑取消"
+            @contextmenu.prevent.stop
             @pointerdown="down"
             @pointerup="up"
             @pointercancel="cancel"
@@ -737,6 +719,34 @@ onBeforeUnmount(() => {
       </div>
     </section>
   </main>
+  <dialog ref="menu" class="about action-menu" aria-labelledby="menu-title">
+    <header class="sheet-header">
+      <h2 id="menu-title">更多操作</h2>
+      <button class="dialog-close" aria-label="关闭菜单" @click="menu?.close()">×</button>
+    </header>
+    <div class="menu-actions">
+      <button
+        @click="
+          menu?.close();
+          history?.showModal();
+        "
+      >
+        对话回看 <span>查看本次聊天</span>
+      </button>
+      <button :disabled="scene.connecting" @click="restart">
+        重新开始 <span>清空本次对话，从头开始</span>
+      </button>
+      <button
+        @click="
+          menu?.close();
+          info?.showModal();
+        "
+      >
+        场景与素材 <span>使用说明、角色来源</span>
+      </button>
+    </div>
+    <p v-if="scene.mode === 'mock'" class="sheet-description">演示模式 · 本地回复与示例语音</p>
+  </dialog>
   <dialog ref="history" class="history-sheet" aria-labelledby="history-title">
     <header class="sheet-header">
       <div>

@@ -87,7 +87,7 @@ export class GptPlanner implements ReplyPlanner {
           ? `${prompt}\n严格按照下方 JSON Schema 输出一个完整的 ReplyPlan JSON 对象。必须包含所有必填字段，只使用声明的字段和枚举值，不得添加额外字段。不要输出 Markdown 代码块、解释或 JSON 之外的文字。\nReplyPlan JSON Schema:\n${JSON.stringify(schema)}`
           : prompt;
       const structured = model.withStructuredOutput(schema, {
-        name: 'mira_reply',
+        name: 'character_reply',
         includeRaw: true,
         method: method[this.config.GPT_STRUCTURED_OUTPUT],
         ...(this.config.GPT_STRUCTURED_OUTPUT === 'json_mode' ? {} : { strict: true }),

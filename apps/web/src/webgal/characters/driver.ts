@@ -4,7 +4,7 @@ import type { Live2DModel, Cubism4InternalModel } from 'pixi-live2d-display-webg
 import type PixiStage from '../../engine/webgal/Core/controller/stage/pixi/PixiController';
 import type { CharacterFrame } from '../../scene/character.js';
 
-import { characterProfile, type CharacterId } from './profiles/index.js';
+import { characterProfile, expressiveCharacterPose, type CharacterId } from './profiles/index.js';
 export type { CharacterId } from './profiles/index.js';
 let coreLoad: Promise<void> | undefined;
 function coreReady(): Promise<void> {
@@ -78,6 +78,7 @@ export class CharacterDriver {
   private frame = emptyFrame;
   private gestureParameters: readonly string[] = [];
   private actionAt = performance.now();
+  private interactionAt = this.actionAt;
   private ranges = new Map<string, ParameterRange>();
   private target = { x: 0, y: 0, height: 1, visible: false, lookDirection: 0 };
   private selected?: CharacterId;
@@ -108,6 +109,7 @@ export class CharacterDriver {
   }
   update(frame: CharacterFrame) {
     if (frame.action !== this.frame.action) this.actionAt = performance.now();
+    if (frame.interaction !== this.frame.interaction) this.interactionAt = performance.now();
     if (frame.interaction !== 'idle' || frame.action !== 'none') this.stopPreview();
     this.frame = { ...frame };
   }
@@ -202,7 +204,12 @@ export class CharacterDriver {
       : center + (value >= 0 ? r.max - center : center - r.min) * value;
     // Cubism reloads saved motion parameters every update. Keep blend state outside that reset.
     const previous = this.values.get(id) ?? r.defaultValue;
-    const weight = unit && id.startsWith('ParamEye') ? 0.68 : 0.24;
+    const weight =
+      unit && id.startsWith('ParamEye')
+        ? 0.68
+        : id.startsWith('ParamBrow') || id.startsWith('ParamEyeBall') || id === 'ParamMouthForm'
+          ? 0.42
+          : 0.24;
     const next = Math.max(r.min, Math.min(r.max, previous + (x - previous) * weight));
     this.values.set(id, next);
     core.setParameterValueByIndex(r.index, next);
@@ -258,37 +265,27 @@ export class CharacterDriver {
       f.action === 'lookWindow'
         ? Math.sin(Math.min(1, t / 2.8) * Math.PI) * this.target.lookDirection
         : 0;
-    const thinking = f.interaction === 'thinking';
-    this.set(core, 'ParamAngleX', thinking ? 0.45 : 0.7 * window);
-    this.set(
-      core,
-      'ParamAngleY',
-      f.action === 'offerPhoto' || f.action === 'focusProp'
-        ? -0.26
-        : thinking
-          ? 0.35
-          : f.interaction === 'listening'
-            ? -0.22
-            : 0,
+    const profileId = this.selected;
+    if (!profileId) return;
+    const pose = expressiveCharacterPose(
+      profileId,
+      f,
+      performance.now() / 1000,
+      reduced,
+      this.target.lookDirection,
+      Math.abs(window),
+      (performance.now() - this.interactionAt) / 1000,
     );
-    this.set(
-      core,
-      'ParamAngleZ',
-      thinking ? 0.45 : f.interaction === 'listening' ? -0.4 : 0.13 * window,
-    );
-    this.set(core, 'ParamBodyAngleX', thinking ? 0.13 : 0.22 * window);
-    this.set(core, 'ParamBodyAngleZ', f.interaction === 'listening' ? -0.2 : 0);
-    this.set(
-      core,
-      'ParamBreath',
-      0.5 + (reduced ? 0 : Math.sin(performance.now() / 1400) * 0.14),
-      true,
-    );
+    this.set(core, 'ParamAngleX', pose.angleX);
+    this.set(core, 'ParamAngleY', pose.angleY);
+    this.set(core, 'ParamAngleZ', pose.angleZ);
+    this.set(core, 'ParamBodyAngleX', pose.bodyX);
+    this.set(core, 'ParamBodyAngleY', pose.bodyY);
+    this.set(core, 'ParamBodyAngleZ', pose.bodyZ);
+    this.set(core, 'ParamBreath', pose.breath, true);
     const profile = this.selected ? characterProfile(this.selected) : undefined;
     for (const id of this.gestureParameters)
       this.set(core, id, (profile?.gestures[f.action]?.[id] ?? 0) * wave);
-    if (!reduced && f.interaction === 'idle')
-      this.set(core, 'ParamAngleZ', Math.sin(performance.now() / 2400) * 0.04);
   }
   private finalize(core: Cubism4InternalModel['coreModel'], id: CharacterId) {
     const f = this.frame,
@@ -297,40 +294,60 @@ export class CharacterDriver {
       f.action === 'lookWindow'
         ? Math.sin(Math.min(1, t / 2.8) * Math.PI) * this.target.lookDirection
         : 0;
-    this.set(core, 'ParamEyeBallX', f.interaction === 'thinking' ? 0.5 : 0.9 * window);
-    this.set(
-      core,
-      'ParamEyeBallY',
-      f.action === 'offerPhoto' || f.action === 'focusProp'
-        ? -0.3
-        : f.interaction === 'thinking'
-          ? 0.4
-          : 0,
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const pose = expressiveCharacterPose(
+      id,
+      f,
+      performance.now() / 1000,
+      reduced,
+      this.target.lookDirection,
+      Math.abs(window),
+      (performance.now() - this.interactionAt) / 1000,
     );
-    this.set(
-      core,
-      'ParamBrowLY',
-      f.emotion === 'curious' ? 0.65 : f.emotion === 'relieved' ? 0.18 : 0,
-    );
-    this.set(
-      core,
-      'ParamBrowRY',
-      f.emotion === 'curious' ? 0.35 : f.emotion === 'relieved' ? 0.18 : 0,
-    );
-    this.set(
-      core,
-      'ParamMouthForm',
-      f.emotion === 'relieved' ? 0.65 : f.emotion === 'curious' ? 0.3 : 0,
-    );
-    const phase = (performance.now() / 1000) % 5.4,
-      blink = phase < 0.16 ? Math.abs(phase / 0.08 - 1) : 1;
-    for (const eye of ['ParamEyeLOpen', 'ParamEyeROpen']) {
+    // Feed the authored pose into physics first, then retain these channels for the draw.
+    // Cubism's built-in breathing/focus must not soften the interaction silhouette.
+    if (!this.rawUntil) {
+      for (const parameter of [
+        'ParamAngleX',
+        'ParamAngleY',
+        'ParamAngleZ',
+        'ParamBodyAngleX',
+        'ParamBodyAngleY',
+        'ParamBodyAngleZ',
+        'ParamBreath',
+      ]) {
+        const range = this.ranges.get(parameter);
+        const value = this.values.get(parameter);
+        if (range && value !== undefined) core.setParameterValueByIndex(range.index, value);
+      }
+    }
+    this.set(core, 'ParamEyeBallX', pose.gazeX);
+    this.set(core, 'ParamEyeBallY', pose.gazeY);
+    this.set(core, 'ParamBrowLY', pose.browLeft);
+    this.set(core, 'ParamBrowRY', pose.browRight);
+    this.set(core, 'ParamBrowLAngle', pose.browAngleLeft);
+    this.set(core, 'ParamBrowRAngle', pose.browAngleRight);
+    this.set(core, 'ParamBrowLForm', pose.browFormLeft);
+    this.set(core, 'ParamBrowRForm', pose.browFormRight);
+    this.set(core, 'ParamMouthForm', pose.mouthForm);
+    this.set(core, 'ParamEyeLSmile', pose.eyeSmileLeft, true);
+    this.set(core, 'ParamEyeRSmile', pose.eyeSmileRight, true);
+    const phase = (performance.now() / 1000) % 5.4;
+    const blink = !reduced && phase < 0.16 ? Math.abs(phase / 0.08 - 1) : 1;
+    for (const [eye, openness] of [
+      ['ParamEyeLOpen', pose.eyeOpenLeft],
+      ['ParamEyeROpen', pose.eyeOpenRight],
+    ] as const) {
       const r = this.ranges.get(eye)!;
-      this.set(core, eye, (blink * (r.defaultValue - r.min)) / (r.max - r.min), true);
+      this.set(
+        core,
+        eye,
+        Math.min(1, (blink * openness * (r.defaultValue - r.min)) / (r.max - r.min)),
+        true,
+      );
     }
     const r = this.ranges.get('ParamMouthOpenY')!;
-    const mouth = f.interaction === 'speaking' ? Math.max(0, Math.min(1, f.mouthOpen)) : 0;
-    core.setParameterValueByIndex(r.index, r.min + (r.max - r.min) * mouth);
+    core.setParameterValueByIndex(r.index, r.min + (r.max - r.min) * pose.mouthOpen);
     for (const part of this.presentation.hiddenParts?.[id] ?? []) {
       const index = core.getPartIndex(part);
       if (Number.isInteger(index) && index >= 0 && index < core.getPartCount())

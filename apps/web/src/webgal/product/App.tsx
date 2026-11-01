@@ -167,13 +167,19 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     return entries.slice(-6);
   }, [log]);
 
-  function perform(action: StoryAction) {
+  function perform(action: StoryAction, draft?: string) {
     const current = host.getSnapshot();
     const accepted = currentStoryAction(current, action.id, state.story.revision);
     if (!accepted || host.isDisposed) return;
     setPanel(null);
     setExploring(false);
     userTurnSeen.current = true;
+    if (draft) {
+      followLog.current = true;
+      setLog((entries) =>
+        [...entries, { id: ++logId.current, kind: 'user' as const, text: draft }].slice(-60),
+      );
+    }
     host.controller.interact({
       kind: 'action',
       actionId: accepted.id,
@@ -204,7 +210,13 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       candidate,
       !userTurnSeen.current,
     );
-    if (text) send(text);
+    if (!text) return;
+    const interaction = candidate.interaction;
+    if (interaction?.kind === 'action') {
+      const current = host.getSnapshot();
+      const action = currentStoryAction(current, interaction.actionId, interaction.revision);
+      if (action) perform(action, text);
+    } else send(text);
   }
   function stop() {
     pointer.current = undefined;
@@ -251,7 +263,10 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
           <span>{PLATFORM_NAME}</span>
         </div>
         <div className="story-header-actions">
-          {state.connected && state.mode === 'mock' && <span className="demo-indicator">演示</span>}
+          <nav className="experience-switch" aria-label="页面版本切换">
+            <a href="/">原版对话</a>
+            <span aria-current="page">WebGAL 故事</span>
+          </nav>
           <button
             className="story-icon-button"
             aria-label="故事菜单"
@@ -437,15 +452,6 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
           </button>
         )}
         <section className="story-conversation" aria-label={`与${scene.speaker}对话`}>
-          <button
-            type="button"
-            className="conversation-history story-text-button"
-            onClick={() => setPanel('history')}
-            aria-label="查看对话历史"
-          >
-            <StoryIcon name="book" />
-            回看
-          </button>
           <div
             ref={chatLog}
             className="conversation-log"
@@ -581,6 +587,11 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
                   className="record-button"
                   aria-label="按住录音，松开后预览识别文字"
                   disabled={!canChat || !state.voiceInput || state.voicePreview !== 'idle'}
+                  onContextMenu={(event) => {
+                    // A recording hold must not open native menus or reach WebGAL's right-click hotkey.
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
                   onPointerDown={(event) => {
                     if (event.button !== 0 || pointer.current !== undefined) return;
                     event.preventDefault();

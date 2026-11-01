@@ -158,7 +158,7 @@ button svg {
   height: 100%;
   visibility: hidden;
   pointer-events: none;
-  filter: brightness(0.91) saturate(0.74);
+  filter: brightness(0.98) saturate(0.96);
 }
 .live2d-poster {
   visibility: visible;
@@ -522,8 +522,13 @@ button svg {
   background: none;
   border: none;
   font-size: 13px;
-  user-select: none;
   touch-action: none;
+}
+.hold-talk,
+.hold-talk * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .hold-talk small {
   position: absolute;
@@ -993,7 +998,7 @@ dialog::backdrop {
   }
   .live2d-canvas,
   .live2d-poster {
-    filter: brightness(0.87) saturate(0.74);
+    filter: brightness(0.96) saturate(0.96);
   }
   .character-identity {
     top: 82px;
@@ -1211,44 +1216,79 @@ dialog::backdrop {
   font-size: 11px;
 }
 
-/* Keep the original presentation and the WebGAL story as peer entry points. */
+/* The same version switch occupies the header in both presentations. */
 .experience-switch {
-  position: absolute;
-  z-index: 6;
-  top: 76px;
-  left: 48px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 3px;
   border: 1px solid #a9bdab38;
-  border-radius: 18px;
-  background: #18302dc9;
+  border-radius: 22px;
+  background: #18302de8;
   font-size: 11px;
+  letter-spacing: 0;
   color: #cbd4c1;
 }
 .experience-switch span,
 .experience-switch a {
-  padding: 6px 10px;
-  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 18px;
+  white-space: nowrap;
 }
-.experience-switch span {
+.experience-switch [aria-current='page'] {
   background: #51655a;
   color: #f0edda;
 }
-.experience-switch a:focus-visible {
-  outline: 2px solid #d7c497;
-  outline-offset: 2px;
+.action-menu {
+  padding: 18px 22px;
+}
+.action-menu .sheet-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.menu-actions {
+  display: grid;
+  margin-top: 12px;
+}
+.menu-actions button {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  min-height: 66px;
+  padding: 14px 0;
+  border: 0;
+  border-bottom: 1px solid #d7dacd;
+  background: transparent;
+  font-size: 15px;
+}
+.menu-actions button span {
+  color: #718069;
+  font-size: 12px;
 }
 @media (max-width: 760px) {
+  .scene-header {
+    gap: 8px;
+    padding-inline: 16px;
+  }
+  .header-actions {
+    gap: 8px;
+  }
+  .brand {
+    gap: 5px;
+    font-size: 12px;
+    letter-spacing: 0;
+  }
   .experience-switch {
-    top: 76px;
-    left: 20px;
     font-size: 10px;
   }
   .experience-switch span,
   .experience-switch a {
-    padding: 6px 8px;
+    padding-inline: 8px;
   }
 }
 

@@ -1,14 +1,12 @@
 === enter_lobby ===
 ~ location = "lobby"
-~ lobby_seen = true
-{ not met:
+{not met:
     ~ met = true
-    ~ phase = 1
     # cue:location:lobby
     # voice:hello
-    旧店最后营业夜。米拉从打包纸箱旁抬起头，给你留出一个位置。
+    打包纸箱靠在吧台边。刚结束执勤的米拉抬起头，用一句带点玩笑的招呼邀请你坐下。
 - else:
     # cue:location:lobby
-    {lobby_seen:回到大堂，刚才的话题还没有说完。|吧台与走廊都还亮着灯，你们可以慢慢看看。}
+    桌椅已经收起一些，窗边和走廊仍亮着灯。你们的话题跟着回来，没有重新变成陌生人。
 }
 -> menu

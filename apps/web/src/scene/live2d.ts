@@ -68,6 +68,7 @@ export function createLive2DRenderer(
     let write: ReturnType<typeof bindHaruParameters> | undefined;
     let beforeUpdate: (() => void) | undefined;
     let frameTime = performance.now();
+    let interactionAt = frameTime;
     const smoothed = new Map<HaruParameter, number>();
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const ownedTextures = { children: true, texture: false, baseTexture: false };
@@ -171,17 +172,26 @@ export function createLive2DRenderer(
         beforeUpdate = () => {
           if (!active || !write) return;
           const now = performance.now();
-          const blend = reduced.matches
-            ? 1
-            : 1 - Math.exp(-Math.min(0.1, (now - frameTime) / 1000) * 7);
+          const delta = Math.max(0, Math.min(0.1, (now - frameTime) / 1000));
+          const blend = reduced.matches ? 1 : 1 - Math.exp(-delta * 7);
+          const faceBlend = reduced.matches ? 1 : 1 - Math.exp(-delta * 18);
           frameTime = now;
-          const values = poseParameters(projection, now / 1000, reduced.matches);
+          const values = poseParameters(
+            projection,
+            now / 1000,
+            reduced.matches,
+            (now - interactionAt) / 1000,
+          );
           for (const id of HARU_MANIFEST.parameters) {
             const target = values[id];
+            const weight =
+              id.startsWith('ParamBrow') || id.startsWith('ParamEye') || id === 'ParamMouthForm'
+                ? faceBlend
+                : blend;
             const value =
               id === 'ParamMouthOpenY' || id === 'ParamEyeLOpen' || id === 'ParamEyeROpen'
                 ? target
-                : (smoothed.get(id) ?? target) + (target - (smoothed.get(id) ?? target)) * blend;
+                : (smoothed.get(id) ?? target) + (target - (smoothed.get(id) ?? target)) * weight;
             smoothed.set(id, value);
             write(id, value);
           }
@@ -210,6 +220,7 @@ export function createLive2DRenderer(
         const renderer: CharacterRenderer = {
           update(frame) {
             if (!active || ownerSignal.aborted) return;
+            if (frame.interaction !== projection.interaction) interactionAt = performance.now();
             projection = {
               ...frame,
               mouthOpen: Number.isFinite(frame.mouthOpen) ? frame.mouthOpen : 0,
@@ -218,6 +229,7 @@ export function createLive2DRenderer(
           },
           cancel() {
             if (!active) return;
+            interactionAt = performance.now();
             projection = {
               ...projection,
               interaction: 'idle',

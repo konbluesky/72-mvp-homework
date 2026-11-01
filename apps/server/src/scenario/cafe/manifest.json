@@ -1,119 +1,220 @@
 {
   "id": "last-lamp",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "inkVersion": "2.4.0",
   "entry": "menu",
   "voices": {
     "hello": {
-      "text": "雨还在下。你也想在这里躲一会儿吗？",
+      "text": "窗边还有个位置。不过先说好，我已经下班了，今晚不负责叫醒睡着的客人。",
       "file": "hello.wav",
       "emotion": "curious",
       "action": "acknowledge"
     },
     "helloNext": {
-      "text": "我叫米拉。窗边的位置，留给你。",
+      "text": "米拉，二十六岁，空乘。职业介绍结束。接下来，你想认识哪一部分的我？",
       "file": "helloNext.wav",
       "emotion": "curious",
       "action": "none"
     },
     "waiting": {
-      "text": "我在等一个很久没见的人。也许，她今天不会来了。",
+      "text": "今天没等谁。我本来想一个人坐到打烊，现在倒有点想改计划。",
       "file": "waiting.wav",
       "emotion": "guarded",
       "action": "lookWindow"
     },
     "travel": {
-      "text": "你也喜欢旅行吗？我一直记得海边的那阵风。",
+      "text": "工作里总有人告诉我下一站在哪。休息的时候，我反而喜欢没有目的地地走走。你呢？",
       "file": "travel.wav",
       "emotion": "curious",
       "action": "none"
     },
     "comfort": {
-      "text": "谢谢你。有人愿意陪我坐一会儿，已经很好了。",
+      "text": "那就坐吧。你不用急着找话题，我也暂时不把你当成路过。",
       "file": "comfort.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "photo": {
-      "text": "可以。这是我们在海边留下的照片，你看，天空很亮。",
+      "text": "可以。这是休息时去过的一片海。画面里没有人，那天倒是很自在。",
       "file": "photo.wav",
       "emotion": "relieved",
       "action": "offerPhoto"
     },
     "rain": {
-      "text": "雨好像小了一点。今晚，也没有刚才那么冷了。",
+      "text": "雨小了。奇怪，刚才还盼着它停，现在反而觉得太快。",
       "file": "rain.wav",
       "emotion": "curious",
       "action": "none"
     },
     "refuse": {
-      "text": "好，我们不看照片。就听一会儿雨声吧。",
+      "text": "好，收起来。我们又不是来完成什么参观任务的，聊你想聊的。",
       "file": "refuse.wav",
       "emotion": "curious",
       "action": "none"
     },
     "after": {
-      "text": "刚才那张照片，让我想起了很多温暖的事。",
+      "text": "你看那片海的时候挺认真。比起夸风景，我更想知道你刚才在想什么。",
       "file": "after.wav",
       "emotion": "curious",
       "action": "none"
     },
     "storyDepart": {
-      "text": "好。这次，我想自己选下一站。",
+      "text": "好，走一小段。到了路口，你再告诉我，是顺路，还是舍不得。",
       "file": "storyDepart.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "storyLetter": {
-      "text": "有些话，可以慢慢说。我想先给她留下回信。",
+      "text": "那今晚先到这里。我喜欢能好好说再见的人，不需要把每次相遇都变成承诺。",
       "file": "storyLetter.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "storyStay": {
-      "text": "好。今晚，我们不急着回答所有问题。",
+      "text": "再坐一会儿。刚才那些漂亮话先放一边，这次，说件真的。",
       "file": "storyStay.wav",
       "emotion": "relieved",
       "action": "none"
     },
     "letterKnown": {
-      "text": "原来，阿岚下午来过。她给我的照片留了一面墙，我想重新和她联系。",
+      "text": "阿岚这个人，总爱替别人多想一步。不过今晚要不要留下，是我自己愿意。",
       "file": "letterKnown.wav",
       "emotion": "relieved",
       "action": "focusProp"
     },
     "letterUnknown": {
-      "text": "我在等阿岚。但她今天来没来过，我还不确定。",
+      "text": "信封是老同事阿岚留给我的，内容还没看。别急着替我猜，先聊聊眼前的人吧。",
       "file": "letterUnknown.wav",
       "emotion": "curious",
       "action": "none"
     },
     "gallery": {
-      "text": "那是我们一起办过的摄影展。后来，各自去了不同的地方。",
+      "text": "阿岚是老同事，墙上留的是我们休息时的一段回忆。你刚才那个表情，是在偷偷猜别的关系？",
       "file": "gallery.wav",
       "emotion": "curious",
       "action": "none"
     },
     "washroomPause": {
-      "text": "我带来了照片，却一直没有想好，重新联系她的第一句话。",
+      "text": "镜子里看人，好像比直接看容易一点。不过你要是有话，可以直接对我说。",
       "file": "washroomPause.wav",
       "emotion": "curious",
       "action": "none"
     },
     "lastNight": {
-      "text": "今晚是旧店最后一晚营业。明天，这些桌椅就要搬走了。",
+      "text": "今晚是旧店最后一晚。明天搬走的是桌椅，不必连我们刚聊上的话也一起收走。",
       "file": "lastNight.wav",
       "emotion": "curious",
       "action": "none"
     },
     "storyReadLetter": {
-      "text": "这封信，写着我的名字。你陪我一起看看吧。",
+      "text": "这封信是给我的。既然我愿意，我们就一起看看，别替纸上的字紧张。",
       "file": "storyReadLetter.wav",
       "emotion": "relieved",
       "action": "focusProp"
+    },
+    "offDuty": {
+      "text": "我不缺人搭话。只是很多人问完我飞哪儿，就觉得已经认识我了。你刚才愿意坐下来，我才想多说一点。",
+      "file": "offDuty.wav",
+      "emotion": "relieved",
+      "action": "none"
+    },
+    "spark": {
+      "text": "你倒挺直接。可以，我也想认识你。不过别把我这点心动，提前写成你已经赢了。",
+      "file": "spark.wav",
+      "emotion": "relieved",
+      "action": "acknowledge"
+    },
+    "boundary": {
+      "text": "好，先停在这里。你不用为了留住这个晚上，勉强接我的玩笑。我们可以好好聊天。",
+      "file": "boundary.wav",
+      "emotion": "guarded",
+      "action": "none"
+    },
+    "reopen": {
+      "text": "那就重新认识一下。不是退回刚才那一步，是按我们现在都舒服的速度来。",
+      "file": "reopen.wav",
+      "emotion": "relieved",
+      "action": "none"
+    },
+    "appointment": {
+      "text": "好，下次再见。不是哪趟航班顺便，也不是等天气安排。我会专门留一点时间给你。",
+      "file": "appointment.wav",
+      "emotion": "relieved",
+      "action": "none"
+    },
+    "leaveSpark": {
+      "text": "到了路口就各走各的。你要是舍不得，可以直说，我今晚听得懂。",
+      "file": "leaveSpark.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "leaveQuiet": {
+      "text": "谢谢你没把沉默当成冷场。有些夜晚，能安静地走一小段，已经很好。",
+      "file": "leaveQuiet.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "reunionSpark": {
+      "text": "这次没有多出来的座位，也没有躲雨的借口。你还是来了。看来上次那点心动，不只是咖啡太浓。",
+      "file": "reunionSpark.wav",
+      "emotion": "relieved",
+      "action": "none"
+    },
+    "reunionQuiet": {
+      "text": "你来了。上次说慢一点，我记得。这次我们就从一段散步开始，不用赶上什么进度。",
+      "file": "reunionQuiet.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "dateMemory": {
+      "text": "上次你说想认真认识我。那今晚别光顾着表现，也让我看看你不那么游刃有余的时候。",
+      "file": "dateMemory.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "dateMemoryPhoto": {
+      "text": "上次那张海，你看得很认真。今晚没有照片了。你要是还想多看一会儿，可以看我。",
+      "file": "dateMemoryPhoto.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "dateMemoryQuiet": {
+      "text": "上次你说先慢一点，我没有忘。今天你愿意再来，已经是另一个很好的回答。",
+      "file": "dateMemoryQuiet.wav",
+      "emotion": "curious",
+      "action": "none"
+    },
+    "dateHonest": {
+      "text": "其实出门前，我也想过你会不会只是随口一约。所以今晚，我想听一句不靠玩笑撑着的真话。",
+      "file": "dateHonest.wav",
+      "emotion": "relieved",
+      "action": "none"
+    },
+    "hand": {
+      "text": "可以。手给你了，不过路要慢慢走。我还没听够你说话。",
+      "file": "hand.wav",
+      "emotion": "relieved",
+      "action": "acknowledge"
+    },
+    "dateClose": {
+      "text": "我喜欢今晚的你。不是每句话都漂亮的那个，是愿意把话说清楚，也愿意听我说的那个。",
+      "file": "dateClose.wav",
+      "emotion": "relieved",
+      "action": "none"
+    },
+    "dateFriends": {
+      "text": "那就做朋友。认真认识过的人，不必非得用一种关系留下。今晚我们都不用假装。",
+      "file": "dateFriends.wav",
+      "emotion": "curious",
+      "action": "none"
     }
   },
-  "phases": ["arrival", "exploration", "decision", "epilogue"],
+  "phases": [
+    "arrival",
+    "exploration",
+    "decision",
+    "epilogue"
+  ],
   "locations": {
     "street-wide": "街角远景",
     "cafe-front": "门头雨棚",
@@ -135,13 +236,24 @@
       "exhibition_read",
       "reply_left",
       "photo_seen",
-      "rain_softened"
+      "rain_softened",
+      "trust",
+      "chemistry",
+      "boundary_set",
+      "boundary_repaired",
+      "appointment",
+      "second_date",
+      "date_reflected",
+      "date_honest",
+      "handheld",
+      "date_finished"
     ],
     "revealed": {
       "notice": "notice_read",
       "exhibition": "exhibition_read",
       "letter": "letter_read",
-      "reply": "reply_left"
+      "reply": "reply_left",
+      "appointment": "appointment"
     },
     "facts": {
       "photo_revealed": "photo_seen",
@@ -150,59 +262,188 @@
   },
   "directorNotes": [
     {
-      "requires": ["letter_reflected"],
-      "text": "她已经读过信，也谈过自己的感受。可自然问用户今晚接下来想怎么过，推荐一句明确的共同决定和一句继续陪伴。用户仍可转移话题，不强推结局。",
-      "replyActions": ["choose-depart", "choose-stay"],
-      "chatReplies": ["我想再听听你的想法，不急着决定。"]
+      "requires": [
+        "date_finished"
+      ],
+      "text": "这次见面已经收束。按当前 ending 承接：closer 是双方愿意继续了解，friends 是明确做朋友。可以闲聊，不重复邀约、不假装已经恋爱，不自动重开章节。",
+      "chatReplies": [
+        "今晚这段路，我会记得。",
+        "我们再聊一会儿，不急着说再见。"
+      ]
     },
     {
-      "requires": ["letter_read"],
-      "text": "信件已实际公开，可以顺着用户谈她的感受。若用户不知道怎么接话，轻轻问一句是否愿意听她说；不重复读信，也不催促结局。",
-      "replyActions": ["talk-letter-reflection", "talk-companionship"],
-      "chatReplies": ["慢慢说，我陪着你。"]
+      "requires": [
+        "second_date",
+        "boundary_set"
+      ],
+      "text": "第二次见面已开始，曾明确要求慢下来。boundary_repaired 只有用户主动重新愿意约会后才成立；没有它时保持朋友距离，不主动推荐牵手。回顾实际共同经历，仍可真诚谈话或体面做朋友。",
+      "replyActions": [
+        "talk-date-memory",
+        "talk-date-honest",
+        "choose-date-friends"
+      ],
+      "chatReplies": [
+        "今天不用急，走走聊聊就好。"
+      ]
     },
     {
-      "locations": ["counter"],
-      "text": "这里只能知道署名和信封外观，纸张正文尚未公开。不编造内容；可自然提到这封信写着自己的名字，询问用户是否愿意陪自己看看。用户明确同意后才能打开。",
-      "replyActions": ["inspect-letter", "move-window-seat"],
-      "chatReplies": ["先不打开，我们聊点别的吧。"]
+      "requires": [
+        "second_date",
+        "handheld"
+      ],
+      "text": "双方已经明确同意并呈现过牵手。可以克制地回撩、谈真实感受，不把牵手延伸成其他接触；如用户要放慢就尊重，愿意继续约会时可收束。",
+      "replyActions": [
+        "choose-date-close",
+        "talk-boundary"
+      ],
+      "chatReplies": [
+        "这次我不找借口，就想和你多走一会儿。"
+      ]
     },
     {
-      "requires": ["companionship"],
-      "text": "她已经接受陪伴。自然邀请继续坐坐或去吧台，不要求用户学习地点菜单；明确的决定可以来自会话。",
-      "replyActions": ["move-counter"],
-      "chatReplies": ["说说你最难忘的一次旅行吧。"]
+      "requires": [
+        "second_date",
+        "date_honest"
+      ],
+      "text": "双方已回顾第一次相遇并说过这次赴约的真心话。她可以主动表达吸引，也保留一点紧张。只有用户明确愿意且当前 action 许可才牵手；不牵手也能继续约会。",
+      "replyActions": [
+        "choose-date-close",
+        "choose-hand",
+        "choose-date-friends"
+      ],
+      "chatReplies": [
+        "你不用每句话都接得漂亮，我喜欢听真的。"
+      ]
     },
     {
-      "locations": ["photo-corridor"],
-      "text": "顺着对话提到墙上可见的海报，邀请一起看看；正文公开前不要提前讲出其中内容。",
-      "replyActions": ["inspect-exhibition", "move-counter"],
-      "chatReplies": ["先不看海报，陪你聊一会儿。"]
+      "requires": [
+        "second_date",
+        "date_reflected"
+      ],
+      "text": "第二次见面已聊过第一次的具体经历。顺着玩家表达谈期待和紧张，可邀请一次真心交流，不强推身体接触或关系名分。",
+      "replyActions": [
+        "talk-date-honest",
+        "choose-date-friends"
+      ],
+      "chatReplies": [
+        "其实来之前，我也有一点紧张。"
+      ]
     },
     {
-      "requires": ["photo_seen"],
-      "locations": ["window-seat", "lobby", "washroom"],
-      "text": "照片已经展示过。可以问用户这片海让他想到什么，或者接受陪伴、邀请换个地方聊；不反复要求看同一张照片。",
-      "replyActions": ["talk-companionship", "move-counter"],
-      "chatReplies": ["这片海让你想起了什么？"]
+      "requires": [
+        "second_date"
+      ],
+      "text": "这是双方约好的第二次见面，旧店已搬走，只在门前、街角和街道活动。回收上次真实发生的心动、照片或边界，不再自我介绍，不进入已关闭店内。",
+      "replyActions": [
+        "talk-date-memory"
+      ],
+      "chatReplies": [
+        "这次我来，是因为想见你。"
+      ]
     },
     {
-      "requires": ["waiting_heard"],
-      "locations": ["window-seat", "lobby", "washroom"],
-      "text": "用户已经听过她在等谁。顺着感受交流，可邀请看照片或继续陪伴，不再次要求用户询问等谁。",
-      "replyActions": ["view-photo", "talk-companionship"],
-      "chatReplies": ["如果不想细说，我们就聊点轻松的吧。"]
+      "requires": [
+        "appointment"
+      ],
+      "text": "已经明确约过下次见面。第一晚 ending 非空后才能进入第二章；不要在离开前自动跳时间。仍可以散步、多坐片刻或好好告别；拒绝和放慢都有效。",
+      "replyActions": [
+        "choose-reunion",
+        "choose-depart",
+        "choose-stay"
+      ],
+      "chatReplies": [
+        "今晚已经很好，接下来也不用赶。"
+      ]
     },
     {
-      "locations": ["window-seat"],
-      "text": "以摄影、等候和陪伴自然交流。若用户不知怎么接话，可以问是否想看照片，或者愿不愿再坐一会儿；不把全部动作清单念给用户。",
-      "replyActions": ["view-photo", "talk-companionship"],
-      "chatReplies": ["先不看照片，你最近过得怎么样？"]
+      "requires": [
+        "boundary_set"
+      ],
+      "text": "她已接受用户放慢或停止暧昧。没有 boundary_repaired 时不再撩拨、不推荐邀约；普通道歉不解除边界。用户主动重新愿意约会且合法时才 talk-reopen。可以继续真诚交流，也能温柔结束今晚。",
+      "replyActions": [
+        "talk-off-duty",
+        "choose-letter"
+      ],
+      "chatReplies": [
+        "这样慢慢认识，也挺好。"
+      ]
     },
     {
-      "text": "这是一次与角色持续交流的相遇。开场留一个容易回答的问题，顺着用户自然接话，用身边的事物邀请下一句，不要求用户先选模式或找热点。用户拒绝、想停留或转移话题时尊重，不编造未公开信息。",
-      "replyActions": ["talk-waiting"],
-      "chatReplies": ["你最难忘的一次旅行去了哪里？"]
+      "requires": [
+        "trust",
+        "chemistry"
+      ],
+      "text": "已有一次真诚交流和明确的双向心动。她可以回撩、反问和主动说想再见；约下次、同行和继续坐着仍由用户明确选择。不要把读信当必要任务。",
+      "replyActions": [
+        "choose-appointment",
+        "choose-depart",
+        "choose-stay"
+      ],
+      "chatReplies": [
+        "刚才那句话，我是认真的。"
+      ]
+    },
+    {
+      "requires": [
+        "trust"
+      ],
+      "text": "她已愿意谈工作以外的自己。可以保持普通朋友，也可以在用户明确表达私人心动后回应。别把一句陪伴当亲密许可。",
+      "replyActions": [
+        "choose-depart",
+        "choose-letter",
+        "choose-stay"
+      ],
+      "chatReplies": [
+        "我挺喜欢和你这样说话的。"
+      ]
+    },
+    {
+      "requires": [
+        "companionship"
+      ],
+      "text": "已经坐下接受陪伴，仍在初识。她可以用窗上倒影打趣，问一个有来有回的问题，也可谈下班后的自己。先了解用户，不反复自我介绍或追问信件。",
+      "replyActions": [
+        "talk-off-duty"
+      ],
+      "chatReplies": [
+        "你刚才的玩笑，我接住了。"
+      ]
+    },
+    {
+      "locations": [
+        "counter"
+      ],
+      "text": "吧台有写着米拉名字的信封，只能知道外观。阿岚是老同事，信是可选小插曲，不是主线钥匙；读过才可引用正文。可以聊告别和再见，不提前说约好了下次。",
+      "replyActions": [
+        "inspect-letter",
+        "move-window-seat"
+      ],
+      "chatReplies": [
+        "信可以慢慢看，我比较想听你说。"
+      ]
+    },
+    {
+      "locations": [
+        "washroom"
+      ],
+      "text": "公共洗手区的镜子与门外走廊让玩笑放缓。她可以说镜子里看人容易一点，让用户有机会直说，也可留独处空间；不把洗手区写成私密隔间或强行亲密。",
+      "replyActions": [
+        "talk-companionship",
+        "move-window-seat"
+      ],
+      "chatReplies": [
+        "在这里安静一会儿也好。"
+      ]
+    },
+    {
+      "text": "成年人下班后的偶遇。她有幽默和主见，会主动招呼，也会接住合适的调情；先让双方认识，不设失约旧友谜题，不把所有回复变成安慰。用户不接暧昧就自然换话题。",
+      "replyActions": [
+        "talk-companionship",
+        "move-window-seat"
+      ],
+      "chatReplies": [
+        "你这句开场白，倒让我不急着走了。"
+      ]
     }
   ],
   "entries": {
@@ -211,22 +452,33 @@
   },
   "actionDescriptions": {
     "view-photo": "实际拿出并展示那张海岸照片。用户直接请求看照片（包括“能看看照片吗”这样的礼貌问句）就可执行；仅询问照片的故事或拒绝查看时不执行。无需再问一遍是否想看。",
-    "talk-waiting": "用户明确想听她在等谁时，说出等候旧友的简短回应。普通关于朋友的闲聊不必触发。",
-    "talk-companionship": "用户明确愿意陪她坐会儿时，接受陪伴；不读信也可以慢慢讨论今晚的选择。"
+    "talk-waiting": "用户询问她是否等人时，说明今晚独自下班来休息；不制造等旧友或失约的悬念。",
+    "talk-companionship": "用户愿意坐下陪伴时接受；这是初识，不会因此解锁约会、亲密接触或全部结局。",
+    "talk-off-duty": "用户主动想了解工作之外的她，且已经接受陪伴后，她分享自己不喜欢只被职业定义的感受；实际听到后建立一次真诚交流。",
+    "talk-spark": "用户清楚表达对她的私人心动或愿意相互调情；她回应自己的兴趣。普通外貌赞美、问职业或泛泛示好不直接写入双向心动。",
+    "talk-boundary": "用户要求停止调情、慢下来或先做普通聊天时，接受这一边界。拒绝原来的暧昧就是对停止动作的明确请求；不反过来执行心动、牵手或邀约。",
+    "talk-reopen": "此前放慢关系后，用户主动、明确重新表达愿意约会；普通道歉或礼貌回应不算重新开启。保留曾经约定的慢节奏。",
+    "choose-appointment": "双方已有真诚交流和明确心动后，用户请求另约一次见面，她回应并展示约定便笺。没有具体排班、电话号码或真实外部发送；不是立即跳到下一天。",
+    "choose-reunion": "第一晚已收束且曾明确约好再见后，由用户主动进入同一故事内的第二次见面章节。时间略过双方已确认能见面的间隔，不是现实提醒或外部联系。",
+    "talk-date-memory": "第二次见面时，回收第一次已实际呈现的照片、心动或边界。不能编造用户没说过的偏好或经历。",
+    "talk-date-honest": "双方已回顾第一次相遇，用户明确表示这次赴约是认真的，角色谈自己也曾担心对方只是客套；不自动牵手或结束约会。",
+    "choose-hand": "只在第二次见面、真心交流后且双方仍愿意发展关系时，用户明确请求牵手，角色同意。只呈现手部接触的文字与已有表情，不虚构新模型抓握动画；不是其他接触的许可。",
+    "choose-date-close": "第二次见面已谈过真实感受，用户明确愿意继续约会，她回应；牵手不是前置条件，也不宣布确定恋爱或永久承诺。",
+    "choose-date-friends": "用户明确希望止于朋友时，体面结束这次约会；不把友情写成失败，不劝用户换成亲密路线。"
   },
   "openingVoice": "hello",
   "playerReplies": {
-    "talk-waiting": "你是在等什么人吗？",
+    "talk-waiting": "你是在等谁，还是只是想一个人坐一会儿？",
     "view-photo": "可以给我看看那张照片吗？",
-    "talk-companionship": "我不赶时间，陪你坐一会儿吧。",
+    "talk-companionship": "那我先坐下来，陪你聊一会儿。",
     "talk-letter-reflection": "读完这封信，你现在是什么感受？",
     "inspect-letter": "我们一起把这封信打开吧。",
     "inspect-notice": "我想看看店里的营业告示。",
-    "inspect-exhibition": "给我看看那张联展海报吧。",
+    "inspect-exhibition": "给我看看那张旅行纪念海报吧。",
     "inspect-reply": "可以再给我看看留下的回信吗？",
     "choose-depart": "好，我们一起出去走走吧。",
-    "choose-letter": "我想留下回信，再和你告别。",
-    "choose-stay": "再陪你坐一杯吧。",
+    "choose-letter": "今晚先到这里，好好和你告别。",
+    "choose-stay": "我还想和你在窗边多坐一会儿，说点真心话。",
     "move-counter": "我们去吧台聊聊吧。",
     "move-window-seat": "去窗边坐坐吧。",
     "move-photo-corridor": "带我去看看照片墙吧。",
@@ -234,40 +486,67 @@
     "move-lobby": "我们进店里坐一会儿吧。",
     "move-cafe-front": "陪我去门口看看吧。",
     "move-street-wide": "我们回街角看看吧。",
-    "move-street-walk": "我们到店外的街道上走走吧。"
+    "move-street-walk": "我们到店外的街道上走走吧。",
+    "talk-off-duty": "今晚先不谈工作。我想听听，下班后的你是什么样。",
+    "talk-spark": "我对你有点心动，想认真认识你。",
+    "talk-boundary": "我们先别暧昧，慢一点，好好聊天就行。",
+    "talk-reopen": "我想清楚了，愿意和你试着约会，但我们慢慢来。",
+    "choose-appointment": "下次你有空时，我们在这家旧店门前再见，好吗？",
+    "choose-reunion": "我想进入我们约好的第二次见面。",
+    "talk-date-memory": "上次那个晚上，你记住了什么？我想听你说。",
+    "talk-date-honest": "我不是随口一约。我是认真想再见你，也想听你的真心话。",
+    "choose-hand": "我想牵你的手，可以吗？",
+    "choose-date-close": "今晚我很开心，也想继续认真和你约会。",
+    "choose-date-friends": "我想清楚了，我们还是做朋友更合适。"
   },
   "presentation": {
     "clientModule": "cafe",
     "character": "mira",
-    "title": "雨停之前",
-    "subtitle": "最后一盏灯",
+    "title": "咖啡馆",
+    "subtitle": "",
     "speaker": "米拉",
     "defaultCharacter": "haru",
     "phaseLabels": {
-      "arrival": "序章",
-      "exploration": "探索",
-      "decision": "抉择",
-      "epilogue": "尾声"
+      "arrival": "初见",
+      "exploration": "试探",
+      "decision": "心意",
+      "epilogue": "余韵"
     },
     "environment": {
       "default": "rain",
       "variants": [
         {
-          "requires": ["rain_softened"],
+          "requires": [
+            "rain_softened"
+          ],
           "value": "rain-soft"
         }
       ]
     },
     "assetRoot": "/assets/cafe-story/",
     "minimumBackgrounds": 8,
-    "speakerDescription": "旅行摄影师"
+    "speakerDescription": "空乘 · 刚结束执勤"
   },
   "recommendations": {
-    "decisionPhases": ["decision", "epilogue"],
+    "decisionPhases": [
+      "exploration",
+      "decision",
+      "epilogue"
+    ],
     "maxGuiding": 1
   },
-  "ambiences": ["open", "closed", "last-lamp"],
-  "endings": ["depart", "letter", "stay"],
+  "ambiences": [
+    "open",
+    "closed",
+    "last-lamp"
+  ],
+  "endings": [
+    "depart",
+    "letter",
+    "stay",
+    "closer",
+    "friends"
+  ],
   "resources": {
     "travel_photo_01": {
       "kind": "image",
@@ -279,5 +558,10 @@
     "audioRoot": "assets/mock-audio",
     "transcript": "能看看照片吗？"
   },
-  "performanceActions": ["none", "lookWindow", "acknowledge", "focusProp"]
+  "performanceActions": [
+    "none",
+    "lookWindow",
+    "acknowledge",
+    "focusProp"
+  ]
 }

@@ -119,8 +119,18 @@ export class CafePresentation implements PresentationPort {
   private furniture(story: StoryState) {
     this.scenery.clear();
     const location = cafeLocation(story.location);
-    if (location.foreground) location.foreground(this.scenery, story);
-    else drawCafeAmbience(this.scenery, story);
+    if (location.foreground) {
+      const asset =
+        story.ambience === 'closed' && location.closedBackground
+          ? location.closedBackground
+          : location.background;
+      const texture = this.lease.stage.assets.getReady<Texture>({
+        url: asset.url,
+        kind: 'texture',
+      });
+      if (!texture) throw new Error('CAFE_FOREGROUND_TEXTURE_NOT_READY');
+      location.foreground(this.scenery, story, texture);
+    } else drawCafeAmbience(this.scenery, story);
     this.actor.layout({
       ...location,
       lookDirection: location.lookDirection ?? 0,

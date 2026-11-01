@@ -1,0 +1,236 @@
+.character-cues {
+  --character-cue-width: 156px;
+  position: absolute;
+  left: clamp(16px, 63%, calc(100% - var(--character-cue-width) - 16px));
+  top: clamp(112px, 21%, calc(100% - 80px));
+  z-index: 2;
+  width: var(--character-cue-width);
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+  color: #35483e;
+  filter: drop-shadow(0 7px 12px #051a2466);
+  transform: translateY(-50%) rotate(4deg);
+  transform-origin: 8% 100%;
+  animation: character-cue-enter 360ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+.character-emote-bubble {
+  padding: 13px 12px;
+  border: 3px solid #fff7dc;
+  border-radius: 30px 29px 28px 8px;
+  background: #f4e8c4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 62px;
+  position: relative;
+}
+.character-emote-bubble::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  bottom: -8px;
+  width: 12px;
+  height: 13px;
+  background: #f4e8c4;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.character-cue-symbol {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  color: #8d6034;
+}
+.character-cue-label {
+  font:
+    600 12px/1.35 -apple-system,
+    BlinkMacSystemFont,
+    'PingFang SC',
+    sans-serif;
+  white-space: nowrap;
+}
+.character-cues[data-cue='thinking'] .character-emote-bubble {
+  border-radius: 50%;
+  min-height: 86px;
+  flex-direction: column;
+  gap: 6px;
+}
+.character-cues[data-cue='thinking'] .character-emote-bubble::after {
+  left: 8px;
+  bottom: -10px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  clip-path: none;
+  box-shadow: -9px 14px 0 -3px #f4e8c4;
+}
+.character-cues[data-cue='listening'] .character-emote-bubble {
+  background: #e7f1c9;
+  border-color: #f7ffe2;
+}
+.character-cues[data-cue='listening'] .character-emote-bubble::after {
+  background: #e7f1c9;
+}
+.character-cues[data-cue='speaking'] .character-emote-bubble {
+  background: #f4dcae;
+}
+.character-cues[data-cue='speaking'] .character-emote-bubble::after {
+  background: #f4dcae;
+}
+.character-cues[data-emotion='curious'][data-cue='idle'] {
+  transform: translateY(-50%) rotate(-8deg);
+}
+.character-cues[data-emotion='curious'][data-cue='idle'] .character-emote-bubble {
+  border-radius: 22px 32px 20px 7px;
+  background: #ffebae;
+}
+.character-cues[data-emotion='curious'][data-cue='idle'] .character-emote-bubble::after {
+  background: #ffebae;
+}
+.character-cues[data-emotion='curious'][data-cue='idle'] .character-cue-symbol {
+  font-size: 37px;
+  letter-spacing: -5px;
+}
+.character-cues[data-emotion='relieved'][data-cue='idle'] .character-emote-bubble {
+  background: #ffe4d2;
+}
+.character-cues[data-emotion='relieved'][data-cue='idle'] .character-emote-bubble::after {
+  background: #ffe4d2;
+}
+.character-cues[data-emotion='relieved'][data-cue='idle'] .character-cue-symbol {
+  color: #a77529;
+}
+.character-thought-dots,
+.character-cue-voice {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+}
+.character-thought-dots i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #60764e;
+  animation: character-dot-hop 1s ease-in-out infinite;
+}
+.character-thought-dots i:nth-child(2) {
+  animation-delay: 140ms;
+}
+.character-thought-dots i:nth-child(3) {
+  animation-delay: 280ms;
+}
+.character-cue-voice i {
+  width: 5px;
+  height: calc(5px + var(--cue-energy, 0) * 22px);
+  border-radius: 5px;
+  background: #805b3d;
+  transition: height 40ms linear;
+}
+.character-cue-voice i:nth-child(2),
+.character-cue-voice i:nth-child(4) {
+  height: calc(5px + var(--cue-energy, 0) * 12px);
+}
+.character-cue-voice i:nth-child(3) {
+  height: calc(6px + var(--cue-energy, 0) * 27px);
+}
+.character-listening-rays {
+  display: flex;
+  position: absolute;
+  left: -30px;
+  top: 48px;
+  width: 34px;
+  height: 50px;
+  transform: rotate(-20deg);
+}
+.character-listening-rays i {
+  position: absolute;
+  width: 11px;
+  height: 26px;
+  border-right: 3px solid #f9e7ad;
+  border-radius: 50%;
+  animation: character-listen 1.2s ease-in-out infinite;
+}
+.character-listening-rays i:nth-child(2) {
+  left: 9px;
+  height: 36px;
+  top: -5px;
+  animation-delay: 150ms;
+}
+.character-listening-rays i:nth-child(3) {
+  left: 18px;
+  height: 46px;
+  top: -10px;
+  animation-delay: 300ms;
+}
+@keyframes character-cue-enter {
+  0% {
+    opacity: 0;
+    translate: -5px 12px;
+    scale: 0.55;
+  }
+  65% {
+    opacity: 1;
+    translate: 0 -3px;
+    scale: 1.1;
+  }
+  100% {
+    opacity: 1;
+    translate: 0;
+    scale: 1;
+  }
+}
+@keyframes character-dot-hop {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes character-listen {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (max-width: 680px) {
+  .character-cues {
+    --character-cue-width: 136px;
+  }
+  .character-stage .character-cues {
+    left: clamp(16px, 62%, calc(100% - var(--character-cue-width) - 16px));
+    top: clamp(112px, 28%, calc(100% - 80px));
+  }
+  .character-emote-bubble {
+    min-height: 54px;
+    padding: 10px;
+    gap: 7px;
+  }
+  .character-cue-symbol {
+    font-size: 29px;
+  }
+  .character-cue-label {
+    font-size: 11px;
+  }
+  .character-cues[data-cue='thinking'] .character-emote-bubble {
+    min-height: 76px;
+  }
+  .character-cues[data-emotion='curious'][data-cue='idle'] .character-cue-symbol {
+    font-size: 32px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .character-cues,
+  .character-cues *,
+  .character-cues::before,
+  .character-cues::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

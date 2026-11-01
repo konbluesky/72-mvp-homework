@@ -10,39 +10,39 @@
   "entries": [
     {
       "id": "hello",
-      "text": "雨还在下。你也想在这里躲一会儿吗？",
+      "text": "刚下班就碰上这场雨。你也来这里躲雨吗？",
       "file": "hello.wav",
       "mimeType": "audio/wav",
-      "durationMs": 4841,
+      "durationMs": 4865,
       "sampleRate": 22050,
-      "sha256": "220f3bb5cb77be9dd1700f864d63461f452c8117263484559209d2c40b1e2336"
+      "sha256": "5c5cafcff4e3f68846d42cfb7d2fd847f23269feffb8ee678b00754af90fa98e"
     },
     {
       "id": "helloNext",
-      "text": "我叫米拉。窗边的位置，留给你。",
+      "text": "我叫米拉，是一名空乘。刚结束执勤，想在这里歇一会儿。",
       "file": "helloNext.wav",
       "mimeType": "audio/wav",
-      "durationMs": 3613,
+      "durationMs": 8590,
       "sampleRate": 22050,
-      "sha256": "56e9b87808ed0125e7377b8d41533f4e21798935d022e62618fcdbe9786a281f"
+      "sha256": "20e3d6870bf4eb1ba1ad16fdf9e3f44dc6cb8d8f30c5606b063c55544973b0a6"
     },
     {
       "id": "waiting",
-      "text": "我在等一个很久没见的人。也许，她今天不会来了。",
+      "text": "我在等一位很久没见的老同事。也许，她今天不会来了。",
       "file": "waiting.wav",
       "mimeType": "audio/wav",
-      "durationMs": 5539,
+      "durationMs": 6054,
       "sampleRate": 22050,
-      "sha256": "89c7292fb21cdecce67a94c0c712f3cc3bf9c6fa42a6ebce7d41e02c4ee4ab26"
+      "sha256": "15e284cfac845871240402d77e6cd92ecb3e6a58e77bb7c6405475c9f5773892"
     },
     {
       "id": "travel",
-      "text": "你也喜欢旅行吗？我一直记得海边的那阵风。",
+      "text": "平时工作常在飞，休息时反而想慢一点。我一直记得海边的那阵风。",
       "file": "travel.wav",
       "mimeType": "audio/wav",
-      "durationMs": 4837,
+      "durationMs": 7741,
       "sampleRate": 22050,
-      "sha256": "694bbb7a916a3d42f14d17d1696d7f47c991e257c5088e837872064b7db42da4"
+      "sha256": "4108cc27c1e6fca3f53a380426dc4c28d23a214ba8882a301733aff95f07f417"
     },
     {
       "id": "comfort",
@@ -55,12 +55,12 @@
     },
     {
       "id": "photo",
-      "text": "可以。这是我们在海边留下的照片，你看，天空很亮。",
+      "text": "可以。这是休息时留下的海岸照片，你看，天空很亮。",
       "file": "photo.wav",
       "mimeType": "audio/wav",
-      "durationMs": 6185,
+      "durationMs": 6181,
       "sampleRate": 22050,
-      "sha256": "78a778d06553f64a1a32bb7643c91c0527b931da92542fd9e225dc5c17676f51"
+      "sha256": "527e9abbd22f51f1dff53ff3d949927cd00a81f8ce963dc9ccd5e7713dce1afd"
     },
     {
       "id": "rain",
@@ -118,30 +118,30 @@
     },
     {
       "id": "letterKnown",
-      "text": "原来，阿岚下午来过。她给我的照片留了一面墙，我想重新和她联系。",
+      "text": "原来，阿岚下午来过。她想约我休息时再见一面，我想重新和她联系。",
       "file": "letterKnown.wav",
       "mimeType": "audio/wav",
-      "durationMs": 7557,
+      "durationMs": 7732,
       "sampleRate": 22050,
-      "sha256": "02feb13b30de9a3811eeab8a880a390b79cdb57e3d60fd9f394406f049110bfa"
+      "sha256": "40b347a7449ba3fed98d6b619394c385769eca8c74d7314421166d825d4cd6a4"
     },
     {
       "id": "letterUnknown",
-      "text": "我在等阿岚。但她今天来没来过，我还不确定。",
+      "text": "我在等老同事阿岚。但她今天来没来过，我还不确定。",
       "file": "letterUnknown.wav",
       "mimeType": "audio/wav",
-      "durationMs": 5143,
+      "durationMs": 5937,
       "sampleRate": 22050,
-      "sha256": "ab728da1dc5ebe4685cd75231430c65faa509b3aaecb1bb9899c1768df9c0c38"
+      "sha256": "f7bcf7fde65aa87be95ee1b39a544418f37a3617fed81aa55e9db9f5c1d7b34b"
     },
     {
       "id": "gallery",
-      "text": "那是我们一起办过的摄影展。后来，各自去了不同的地方。",
+      "text": "那是我们休息时去过的海边。这张海报，是留在店里的旅行纪念。",
       "file": "gallery.wav",
       "mimeType": "audio/wav",
-      "durationMs": 6140,
+      "durationMs": 6987,
       "sampleRate": 22050,
-      "sha256": "2c1fe42f9f8a7c571a70cac02148ddb79423f3929788f2ab9b719465d64346e6"
+      "sha256": "99718a674b80f634d2939a9adf35b617c8e2c57141918309c13d488e2d9b0426"
     },
     {
       "id": "washroomPause",
@@ -170,5 +170,6 @@
       "sampleRate": 22050,
       "sha256": "3705a3af92f1199a5d0a305be793e814567b7b2a6b90376caadee18cd936a453"
     }
-  ]
+  ],
+  "updatedAt": "2026-11-01"
 }

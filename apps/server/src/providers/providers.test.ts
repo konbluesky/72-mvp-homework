@@ -206,7 +206,7 @@ describe('provider contracts without paid network calls', () => {
                 {
                   id: 'call_1',
                   type: 'function',
-                  function: { name: 'mira_reply', arguments: JSON.stringify(plan) },
+                  function: { name: 'character_reply', arguments: JSON.stringify(plan) },
                 },
               ],
             }
@@ -260,7 +260,7 @@ describe('provider contracts without paid network calls', () => {
                 type: 'function_call',
                 id: 'fc_1',
                 call_id: 'call_1',
-                name: 'mira_reply',
+                name: 'character_reply',
                 arguments: JSON.stringify(plan),
                 status: 'completed',
               },

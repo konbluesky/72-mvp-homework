@@ -315,7 +315,9 @@ describe('real LangGraph orchestration', () => {
       actionId: 'move-counter',
       actionRequest: { quote: '去吧台吧', confirmed: true },
       segments: [],
-      suggestions: [],
+      suggestions: [
+        { label: '旧推荐', draft: '继续问那次旅行。', kind: 'chat', relatedActionId: null },
+      ],
     }));
     const ctx = setup(testProviders({ plan }));
     await runConversation(
@@ -327,6 +329,11 @@ describe('real LangGraph orchestration', () => {
     );
     expect(plan).toHaveBeenCalledOnce();
     expect(ctx.events.map((event) => event.type)).toEqual(['presentation.ready', 'reply.done']);
+    const target = cafeScenario.propose('move-counter', ctx.session.narrative).at(-1)!.checkpoint;
+    expect(ctx.events.at(-1)).toMatchObject({
+      type: 'reply.done',
+      payload: { suggestions: cafeScenario.suggestions!(target) },
+    });
     expect(ctx.session.story.location).toBe('lobby');
     await ctx.cleanup();
   });

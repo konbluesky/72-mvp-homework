@@ -114,7 +114,7 @@ export async function createApp(options: AppOptions = {}) {
   await app.register(swagger, {
     openapi: {
       openapi: '3.1.0',
-      info: { title: 'Mira interaction API', version: '1.0.0' },
+      info: { title: '角色互动平台 API', version: '1.0.0' },
       components: { securitySchemes: { sessionToken: { type: 'http', scheme: 'bearer' } } },
     },
     transform: jsonSchemaTransform,
@@ -336,7 +336,7 @@ export async function createApp(options: AppOptions = {}) {
       if (config.RATE_LIMIT_ENABLED && times.length >= config.MAX_SESSIONS_PER_MINUTE)
         throw new AppError('RATE_LIMITED', 429, '来访有些频繁，请稍后再试。', true);
       if (config.RATE_LIMIT_ENABLED && creationTimes.size >= 1000 && !creationTimes.has(request.ip))
-        throw new AppError('CAPACITY_EXCEEDED', 503, '店里暂时有些忙，请稍后再来。', true);
+        throw new AppError('CAPACITY_EXCEEDED', 503, '服务暂时繁忙，请稍后再试。', true);
       const created = sessions.create(request.body?.entry ?? 'story');
       if (config.RATE_LIMIT_ENABLED) creationTimes.set(request.ip, [...times, now]);
       return reply.status(201).send({

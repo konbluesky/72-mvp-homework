@@ -1,5 +1,5 @@
 import type { StoryState } from '@mira/protocol';
-import type { Graphics } from 'pixi.js';
+import type { Graphics, Texture } from 'pixi.js';
 import type { LocalStageAsset } from '../runtime/visual-port.js';
 export interface LocationDefinition {
   label: string;
@@ -15,7 +15,7 @@ export interface LocationDefinition {
   lookWindowCamera?: boolean;
   rain?: readonly [number, number, number, number];
   anchors: Readonly<Record<string, readonly [number, number]>>;
-  foreground?(graphics: Graphics, state: StoryState): void;
+  foreground?(graphics: Graphics, state: StoryState, background: Texture): void;
 }
 
 /** Fail early when authored IDs and local rendering bindings drift. */

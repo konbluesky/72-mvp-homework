@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ActionSchema, EmotionSchema, LocationSchema } from '@mira/protocol';
+import { ActionSchema, ContentIdSchema, EmotionSchema, LocationSchema } from '@mira/protocol';
 import artifact from './compiled.json' with { type: 'json' };
 import manifestData from './manifest.json' with { type: 'json' };
 import characterData from './character.json' with { type: 'json' };
@@ -8,6 +8,7 @@ import type { ScenarioDefinition } from '../ports.js';
 import { createMockProviders } from './mock.js';
 import { InkScenario } from '../runtime/ink.js';
 import { scenarioContext, validateReply } from '../runtime/context.js';
+import { ScenarioPresentationSchema, ScenarioResourceSchema } from '../runtime/content-schema.js';
 
 const flag = z
   .string()
@@ -27,30 +28,7 @@ const manifest = z
         transcript: z.string().min(1).max(1000),
       })
       .strict(),
-    presentation: z
-      .object({
-        clientModule: z.string().regex(/^[a-z0-9-]+$/),
-        character: z.string().min(1).max(80),
-        title: z.string().min(1).max(100),
-        subtitle: z.string().max(100),
-        speaker: z.string().min(1).max(80),
-        speakerDescription: z.string().max(200).optional(),
-        defaultCharacter: z.string().min(1).max(80),
-        phaseLabels: z.record(z.string(), z.string().max(80)),
-        environment: z
-          .object({
-            default: z.string().min(1).max(80),
-            variants: z
-              .array(
-                z.object({ requires: z.array(flag), value: z.string().min(1).max(80) }).strict(),
-              )
-              .max(20),
-          })
-          .strict(),
-        assetRoot: z.string().regex(/^\/assets\/[a-z0-9-]+\/$/),
-        minimumBackgrounds: z.number().int().positive().max(100),
-      })
-      .strict(),
+    presentation: ScenarioPresentationSchema,
     recommendations: z
       .object({
         decisionPhases: z.array(z.string().max(80)).max(20),
@@ -59,19 +37,7 @@ const manifest = z
       .strict(),
     ambiences: z.array(z.string().min(1).max(80)).min(1).max(32),
     endings: z.array(z.string().min(1).max(80)).max(32),
-    resources: z.record(
-      z.string(),
-      z
-        .object({
-          kind: z.literal('image'),
-          asset: z.string().min(1).max(80),
-          url: z
-            .string()
-            .regex(/^\/assets\/[a-zA-Z0-9_/.\-]+$/)
-            .refine((value) => !value.includes('..')),
-        })
-        .strict(),
-    ),
+    resources: z.record(ContentIdSchema, ScenarioResourceSchema),
     openingVoice: z.string().min(1).max(80),
     playerReplies: z.record(z.string().regex(/^[a-z0-9-]+$/), z.string().trim().min(1).max(120)),
     actionDescriptions: z.record(z.string(), z.string().max(300)),
@@ -118,7 +84,7 @@ const manifest = z
           })
           .strict(),
       )
-      .max(10),
+      .max(20),
   })
   .strict()
   .parse(manifestData);
@@ -155,6 +121,7 @@ if (
 const references = [
   ...lore.flatMap((entry) => entry.requires),
   ...manifest.directorNotes.flatMap((note) => note.requires ?? []),
+  ...manifest.presentation.environment.variants.flatMap((variant) => variant.requires),
   ...Object.values(manifest.projection.revealed),
   ...Object.values(manifest.projection.facts),
 ];

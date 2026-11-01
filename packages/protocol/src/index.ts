@@ -103,11 +103,12 @@ export const CreateSessionSchema = z
   .object({ entry: z.enum(['story', 'conversation']).default('story') })
   .strict();
 
-/** 可直接提交的玩家发言。WebGAL 点击即发送 draft；兼容宿主可先编辑。与手写/语音同样校验意图，候选不直接授权剧情。 */
+/** 玩家发言；服务端可绑定当前合法动作。点击才提交，候选生成不授权执行或提交事实。 */
 export const ReplySuggestionSchema = z
   .object({
     label: z.string().trim().min(1).max(20),
     draft: z.string().trim().min(1).max(120),
+    interaction: StoryInteractionSchema.optional(),
   })
   .strict();
 
@@ -199,10 +200,12 @@ export const PlannerOutputSchema = z
       .max(4),
     suggestions: z
       .array(
-        ReplySuggestionSchema.extend({
-          kind: z.enum(['chat', 'explore', 'decision']),
-          relatedActionId: z.string().max(80).nullable(),
-        }).strict(),
+        ReplySuggestionSchema.omit({ interaction: true })
+          .extend({
+            kind: z.enum(['chat', 'explore', 'decision']),
+            relatedActionId: z.string().max(80).nullable(),
+          })
+          .strict(),
       )
       .max(3),
     // Whole current input as evidence; confirmed intent is required before any story action.

@@ -8,7 +8,6 @@ import {
   type ServerEvent,
   type StoryInteraction,
   type PresentationEvent,
-  type ReplySuggestion,
 } from '@mira/protocol';
 import type { Config } from '../config/index.js';
 import type { ProviderSet } from '../providers/index.js';
@@ -54,7 +53,6 @@ const GraphState = Annotation.Root({
   actionId: Annotation<string | null>(),
   needsConfirmation: Annotation<boolean>(),
   conversationOnly: Annotation<boolean>(),
-  nextSuggestions: Annotation<ReplySuggestion[]>(),
 });
 
 /** A non-cooperative upstream can finish later, but cannot keep the graph alive or publish. */
@@ -98,7 +96,6 @@ export async function runConversation(
         actionId: null,
         needsConfirmation: false,
         conversationOnly: false,
-        nextSuggestions: [],
         valid: false,
         plan: null,
       };
@@ -184,9 +181,7 @@ export async function runConversation(
         type: 'reply.done',
         payload: {
           segmentCount: audioCount,
-          suggestions: state.nextSuggestions.length
-            ? state.nextSuggestions
-            : (scenario.suggestions?.(beats.at(-1)?.checkpoint ?? session.narrative) ?? []),
+          suggestions: scenario.suggestions?.(beats.at(-1)?.checkpoint ?? session.narrative) ?? [],
         },
       });
       sessions.generated(turn);
@@ -214,18 +209,11 @@ export async function runConversation(
           scenario.frame(origin).story.actions,
         );
         if (action) {
-          const target = scenario.propose(action.id, origin).at(-1)!.frame;
           return {
             actionId: action.id,
             needsConfirmation: action.explicit,
             plan: null,
             valid: true,
-            nextSuggestions: filterSuggestions(
-              decision.data.suggestions,
-              target.story.actions,
-              target.story.phase,
-              target.recommendationPolicy,
-            ),
           };
         }
       } else if (!decision.success || (!decision.data.actionId && !decision.data.actionRequest)) {
@@ -238,6 +226,7 @@ export async function runConversation(
                 frame.story.actions,
                 frame.story.phase,
                 frame.recommendationPolicy,
+                scenario.suggestions?.(session.narrative),
               ),
             }
           : state.raw;
@@ -252,7 +241,7 @@ export async function runConversation(
         }
       }
       if (state.repairCount >= config.MAX_SCHEMA_REPAIRS)
-        throw new AppError('INVALID_PLAN', 502, '她还没有整理好回应，请换个话题再试。', true);
+        throw new AppError('INVALID_PLAN', 502, '角色还没有准备好回复，请换个话题再试。', true);
       return { valid: false };
     })
     .addNode('confirm_action', async (state) => {
@@ -272,7 +261,6 @@ export async function runConversation(
         actionId: null,
         needsConfirmation: false,
         conversationOnly: true,
-        nextSuggestions: [],
         valid: false,
       };
     })
@@ -292,7 +280,7 @@ export async function runConversation(
       ),
     }))
     .addNode('synthesize_and_publish', async (state) => {
-      if (!state.plan) throw new AppError('INVALID_PLAN', 502, '她还没有整理好回应。', true);
+      if (!state.plan) throw new AppError('INVALID_PLAN', 502, '角色还没有准备好回复。', true);
       logger.info({
         ...turn.identity,
         stage: 'plan',
@@ -417,7 +405,6 @@ export async function runConversation(
       actionId: null,
       needsConfirmation: false,
       conversationOnly: false,
-      nextSuggestions: [],
     },
     { signal, recursionLimit: config.LANGGRAPH_RECURSION_LIMIT },
   );

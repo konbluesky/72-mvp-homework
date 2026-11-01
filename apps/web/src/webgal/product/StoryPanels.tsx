@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { StoryAction } from '@mira/protocol';
 import type { InteractiveState } from '../../interaction/state';
 import type { InteractiveHost } from './host';
-import { CHARACTERS, isCharacterId, characterProfile } from '../characters/profiles/index';
+import { CHARACTERS, isCharacterId } from '../characters/profiles/index';
 import { StoryIcon } from './StoryIcon';
 
 export type StoryPanel = 'locations' | 'menu' | 'history' | 'document' | 'restart' | null;
@@ -54,11 +54,6 @@ export function StoryPanels({
   function closePanel() {
     if (panel === 'document') host.presentation?.dismiss();
     onClose();
-  }
-  function preview(run: () => void) {
-    onClose();
-    host.controller.interrupt();
-    run();
   }
   return (
     <dialog
@@ -227,83 +222,6 @@ export function StoryPanels({
                 素材与许可来源 <StoryIcon name="arrow" />
               </a>
             </details>
-            <details className="menu-section integration-details">
-              <summary>开发预览</summary>
-              <p>以下预览不写入剧情事实；新输入或停止会退出预览。</p>
-              <div className="developer-grid">
-                <button
-                  onClick={() => preview(() => host.playback.previewScene(1.12, state.environment))}
-                >
-                  镜头拉近
-                </button>
-                {host.scene.environmentPreviews.map((preset) => (
-                  <button
-                    key={preset.value}
-                    onClick={() => preview(() => host.playback.previewScene(1, preset.value))}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-                <button onClick={() => preview(() => host.playback.preview('acknowledge'))}>
-                  抬手示意
-                </button>
-                <button onClick={() => preview(() => host.playback.preview('none', 'thinking'))}>
-                  偏头沉思
-                </button>
-                <button onClick={() => preview(() => host.playback.preview('lookWindow'))}>
-                  望窗回看
-                </button>
-                {characterProfile(host.characterId).motionGroups.map((group) => (
-                  <button
-                    key={group}
-                    onClick={() => preview(() => host.playback.preview('none', 'idle', group))}
-                  >
-                    原始 {group}
-                  </button>
-                ))}
-              </div>
-              <button
-                className="story-secondary"
-                onClick={() => {
-                  onClose();
-                  void host.rebuildStage();
-                }}
-              >
-                重建舞台
-              </button>
-              <details>
-                <summary>模型参数与状态</summary>
-                <pre>
-                  {JSON.stringify(
-                    {
-                      parameters: host.characterParameters,
-                      location: state.story.location,
-                      revealed: state.story.revealed,
-                      ending: state.story.ending,
-                      weather: state.environment,
-                    },
-                    null,
-                    2,
-                  )}
-                </pre>
-              </details>
-              <a
-                className="menu-text-link"
-                href="/webgal.html?preview=1"
-                target="_blank"
-                rel="noreferrer"
-              >
-                原引擎预览 <StoryIcon name="arrow" />
-              </a>
-            </details>
-            <a
-              className="menu-text-link legacy-page-link"
-              href="/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              打开原版对话 <StoryIcon name="arrow" />
-            </a>
           </>
         )}
       </div>
