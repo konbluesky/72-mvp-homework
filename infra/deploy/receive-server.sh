@@ -142,6 +142,10 @@ config({ path: './apps/server/.env', quiet: true });
 process.stdout.write(loadConfig().APP_MODE);
 JS
 )
+[[ "$(readlink -f "$root/current")" == "$previous" ]] || {
+  echo 'The current release changed during preparation; activation was cancelled.' >&2
+  exit 1
+}
 ln -s "$release" "$link"
 switched=1
 mv -Tf "$link" "$root/current"
