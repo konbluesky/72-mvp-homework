@@ -149,3 +149,6 @@ process.stdout.write(
 
 // Scene packages own their own catalogs and minimum background requirements.
 await (await import('./verify-scene-assets.js')).verifySceneAssets();
+const projectAssets = await import('./verify-project-assets.js');
+await projectAssets.verifyPublicAssets();
+await projectAssets.verifyOfflineAudio();

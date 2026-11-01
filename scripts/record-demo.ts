@@ -47,7 +47,7 @@ try {
     timeout: 20000,
   });
   await note(
-    '雨停之前 · 自动化演示\nMock 后端 / 本地合成语音 / Live2D / Haru 官方技术替身\n录像不含系统声音，麦克风使用测试设备。',
+    '角色互动平台 · 自动化演示\nMock 后端 / 本地合成语音 / Live2D / Haru 官方技术替身\n录像不含系统声音，麦克风使用测试设备。',
   );
   await at(8);
   await page.getByRole('button', { name: '更多：场景、使用说明与素材来源' }).click();
@@ -108,13 +108,13 @@ try {
   await note('07 照片失败恢复（测试注入）\n图片无法加载仍可继续对话。\n失败事件不伪装成成功呈现。');
   await page.route('**/assets/travel-photo.svg', (route) => route.abort());
   await send('能看看照片吗？');
-  await expect(page.getByRole('alert')).toContainText('照片暂时打不开');
+  await expect(page.getByRole('alert')).toContainText('场景呈现未完成');
   await idle();
   await at(164);
   await page.unroute('**/assets/travel-photo.svg');
-  await page.getByRole('button', { name: '继续对话', exact: true }).click();
+  await page.getByRole('button', { name: '关闭提示', exact: true }).click();
   await note(
-    '08 恢复并继续\n新一轮仍然可用，旧轮不会复活。\nLive 凭证、原创 Mira 模型 与真机听感待验证。',
+    '08 恢复并继续\n新一轮仍然可用，旧轮不会复活。\nLive 凭证、专属角色模型与真机听感待验证。',
   );
   await send('谢谢你');
   await idle();

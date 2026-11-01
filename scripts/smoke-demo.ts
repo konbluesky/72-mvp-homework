@@ -4,10 +4,18 @@ import {
   ServerEventSchema,
   type Receipt,
 } from '@mira/protocol';
+// Explicit diagnostic fixture selection; authored content remains in its scenario package.
+import manifest from '../apps/server/src/scenario/cafe/manifest.json' with { type: 'json' };
 const base = process.env.DEMO_URL || 'http://localhost:8080';
 const create = async () =>
   SessionCreatedSchema.parse(
-    await (await fetch(`${base}/api/sessions`, { method: 'POST' })).json(),
+    await (
+      await fetch(`${base}/api/sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entry: 'conversation' }),
+      })
+    ).json(),
   );
 const session = await create();
 if (session.mode !== 'mock') throw new Error('Smoke test is restricted to Mock mode');
@@ -36,7 +44,7 @@ await post(`/api/sessions/${session.sessionId}/turns`, {
 const stream = await post(`/api/sessions/${session.sessionId}/turns/${turnId}/input`, {
   generation: 1,
   inputId: crypto.randomUUID(),
-  text: '能看看照片吗？',
+  text: manifest.mock.transcript,
 });
 if (!stream.headers.get('content-type')?.includes('text/event-stream') || !stream.body)
   throw new Error('Missing SSE');
@@ -98,6 +106,16 @@ for (;;) {
       await post(`/api/sessions/${session.sessionId}/receipts`, { receipts });
     }
     if (event.type === 'reply.done') done = true;
+    if (event.type === 'presentation.ready') {
+      const receipts: Receipt[] = event.payload.events.map((cue) => ({
+        ...identity,
+        receiptId: crypto.randomUUID(),
+        targetId: cue.eventId,
+        kind: cue.type,
+        status: 'presented',
+      }));
+      await post(`/api/sessions/${session.sessionId}/receipts`, { receipts });
+    }
   }
 }
 const state = SessionSnapshotSchema.parse(
@@ -106,9 +124,8 @@ const state = SessionSnapshotSchema.parse(
 if (
   !done ||
   !sawBeforeEof ||
-  audioFiles !== 2 ||
-  !state.scene.facts.photo_revealed ||
-  !state.scene.facts.rain_softened
+  !audioFiles ||
+  Object.keys(manifest.projection.facts).some((id) => !state.scene.facts[id])
 )
   throw new Error('Incomplete proxy round trip');
 process.stdout.write(

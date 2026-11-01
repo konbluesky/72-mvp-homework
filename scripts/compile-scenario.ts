@@ -3,57 +3,28 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { Compiler, CompilerOptions, JsonFileHandler } from 'inkjs/full';
 import { z } from 'zod';
+import {
+  ScenarioContentIdSchema as id,
+  ScenarioPresentationSchema,
+  ScenarioResourceSchema,
+  ScenarioThoughtsSchema,
+  publicPresentation,
+} from '../apps/server/src/scenario/runtime/content-schema.js';
 
 const scenarios = new URL('../apps/server/src/scenario/', import.meta.url);
-const id = z
-  .string()
-  .min(1)
-  .max(80)
-  .regex(/^[a-zA-Z0-9_-]+$/);
-const presentationSchema = z
-  .object({
-    clientModule: z.string().regex(/^[a-z0-9-]+$/),
-    character: id,
-    title: z.string().min(1).max(100),
-    subtitle: z.string().max(100),
-    speaker: z.string().min(1).max(80),
-    speakerDescription: z.string().max(200).optional(),
-    defaultCharacter: id,
-    phaseLabels: z.record(id, z.string().max(80)),
-    environment: z
-      .object({
-        default: id,
-        variants: z.array(z.object({ requires: z.array(id), value: id }).strict()).max(20),
-      })
-      .strict(),
-    assetRoot: z.string().regex(/^\/assets\/[a-z0-9-]+\/$/),
-    minimumBackgrounds: z.number().int().positive().max(100),
-  })
-  .strict();
 const schema = z.object({
   id,
   version: z.string().min(1),
   inkVersion: z.string().min(1),
   entry: z.string().min(1),
-  presentation: presentationSchema,
+  presentation: ScenarioPresentationSchema,
   locations: z.record(id, z.string().min(1)),
   ambiences: z.array(id),
   endings: z.array(id),
-  resources: z.record(
-    id,
-    z
-      .object({
-        kind: z.literal('image'),
-        asset: id,
-        url: z
-          .string()
-          .regex(/^\/assets\/[a-zA-Z0-9_/.\-]+$/)
-          .refine((value) => !value.includes('..')),
-      })
-      .strict(),
-  ),
+  resources: z.record(id, ScenarioResourceSchema),
   openingVoice: z.string().optional(),
   voices: z.record(id, z.unknown()),
+  thoughts: ScenarioThoughtsSchema,
   playerReplies: z.record(id, z.string()).optional(),
   directorNotes: z.array(z.object({ replyActions: z.array(id).optional() })).optional(),
 });
@@ -117,7 +88,7 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
     for (const tag of source.matchAll(/#\s*([^\]#\r\n]+)/g)) {
       const value = tag[1]!.trim();
       if (
-        !/^(action:[a-z0-9-]+|explicit|cue:(location|prop|ambience|ending|environment|photo|beat):[a-z0-9_-]+|voice:[a-zA-Z0-9_-]+)$/.test(
+        !/^(action:[a-z0-9-]+|explicit|cue:(location|prop|ambience|ending|environment|photo|beat):[a-z0-9_-]+|voice:[a-zA-Z0-9_-]+|thought:[a-zA-Z0-9_-]+)$/.test(
           value,
         )
       )
@@ -127,6 +98,8 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
         throw new Error(`Undeclared ${type} cue in ${file}: ${target}`);
       if (kind === 'voice' && type && !Object.hasOwn(manifest.voices, type))
         throw new Error(`Undeclared voice: ${type}`);
+      if (kind === 'thought' && type && !Object.hasOwn(manifest.thoughts, type))
+        throw new Error(`Undeclared thought: ${type}`);
     }
   }
   if (!sources['main.ink']) throw new Error(`Missing main.ink in ${entry.name}`);
@@ -182,7 +155,7 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
   const publicBody =
     JSON.stringify(
       {
-        ...manifest.presentation,
+        ...publicPresentation(manifest.presentation),
         id: manifest.id,
         version: manifest.version,
         locations: manifest.locations,
