@@ -10,6 +10,7 @@ import {
 } from '@mira/protocol';
 import type { PlaybackMode } from '../playback/scheduler.js';
 import type { RecordingPhase } from './recorder.js';
+import type { OutgoingMessage } from './messages.js';
 
 /** Shared headless projection, used by both Vue compatibility and the WebGAL host. */
 export function initialInteractiveState() {
@@ -44,6 +45,9 @@ export function initialInteractiveState() {
     transcribed: '',
     simulated: false,
     failure: '',
+    outgoing: [] as OutgoingMessage[],
+    activeMessageId: '',
+    retryingMessageId: '',
     animation: 'loading' as 'loading' | 'live2d' | 'failed' | 'suspended',
   };
 }

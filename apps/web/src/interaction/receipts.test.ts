@@ -35,4 +35,12 @@ describe('receipt outbox', () => {
     expect(book.record({ ...item, receiptId: 'different' })).toBe(false);
     expect(book.outbox()).toHaveLength(1);
   });
+  it('restores acknowledged receipts for cancellation without putting them back into the outbox', () => {
+    const book = new ReceiptBook();
+    const presented = receipt('one', 1);
+    book.restore([], [{ turnId: 'one', generation: 1, receipts: [presented] }]);
+    expect(book.outbox()).toEqual([]);
+    expect(book.freeze(presented)).toEqual([presented]);
+    expect(book.record(receipt('one', 1, 'late'))).toBe(false);
+  });
 });

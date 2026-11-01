@@ -13,24 +13,32 @@ import {
 } from './interaction-layout';
 import { StoryIcon } from './StoryIcon';
 import { StoryPanels, type StoryLogEntry, type StoryPanel } from './StoryPanels';
+import { DraftSchema, ReadingHistorySchema } from '../../persistence/browser.js';
+import { MessageStatus } from './MessageStatus';
+import '../../interaction/messages.css';
 
 export function StoryApp({ scene }: { scene: import('../scenes/module.js').SceneModule }) {
   const [host, setHost] = useState(() => new InteractiveHost(scene));
   const state = useSyncExternalStore(host.subscribe, host.getSnapshot);
-  const [draft, setDraft] = useState('');
-  const draftText = useRef('');
+  const [draft, setDraft] = useState(() => host.api.persistence?.read('draft', DraftSchema) ?? '');
+  const draftText = useRef(draft);
   const [panel, setPanel] = useState<StoryPanel>(null);
   const [exploring, setExploring] = useState(false);
-  const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
-  const [log, setLog] = useState<StoryLogEntry[]>([]);
+  const [inputMode, setInputMode] = useState<'text' | 'voice'>(
+    () => host.api.persistence?.preferences().inputMode ?? 'text',
+  );
+  const [log, setLog] = useState<StoryLogEntry[]>(
+    () => host.api.persistence?.read('history', ReadingHistorySchema) ?? [],
+  );
+  const currentLog = useRef(log);
   const [, resize] = useState(0);
   const input = useRef<HTMLTextAreaElement>(null);
   const stageElement = useRef<HTMLElement>(null);
   const chatLog = useRef<HTMLDivElement>(null);
   const followLog = useRef(true);
-  const logId = useRef(0);
+  const logId = useRef(Math.max(0, ...log.map((line) => line.id)));
   const openingSeen = useRef<unknown>();
-  const userTurnSeen = useRef(false);
+  const userTurnSeen = useRef(log.some((line) => line.kind === 'user'));
   const focusText = useRef(false);
   const seenText = useRef({ subtitle: '', narration: '' });
   const pointer = useRef<number>();
@@ -41,12 +49,30 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       setHost(new InteractiveHost(scene));
       return;
     }
-    userTurnSeen.current = false;
     openingSeen.current = undefined;
     seenText.current = { subtitle: '', narration: '' };
-    setLog([]);
     void host.start();
     return () => host.dispose();
+  }, [host]);
+  useEffect(() => {
+    currentLog.current = log;
+    host.api.persistence?.write('history', log);
+  }, [host, log]);
+  useEffect(() => {
+    if (state.connected) host.api.persistence?.updatePreferences({ inputMode });
+  }, [host, inputMode, state.connected]);
+  useEffect(() => {
+    const pagehide = () => {
+      const subtitle = seenText.current.subtitle;
+      const entries = currentLog.current.map((line) =>
+        subtitle && line.kind === 'speech' && line.text === subtitle
+          ? { ...line, paused: true }
+          : line,
+      );
+      host.api.persistence?.write('history', entries);
+    };
+    window.addEventListener('pagehide', pagehide);
+    return () => window.removeEventListener('pagehide', pagehide);
   }, [host]);
   useEffect(() => {
     const element = stageElement.current;
@@ -60,13 +86,23 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     const previous = seenText.current;
     const additions: StoryLogEntry[] = [];
     if (state.subtitle && state.subtitle !== previous.subtitle) {
-      additions.push({ id: ++logId.current, kind: 'speech', text: state.subtitle });
+      additions.push({
+        id: ++logId.current,
+        kind: 'speech',
+        text: state.subtitle,
+        messageId: state.activeMessageId || undefined,
+      });
     } else if (!state.subtitle && state.narration && state.narration !== previous.narration) {
-      additions.push({ id: ++logId.current, kind: 'narration', text: state.narration });
+      additions.push({
+        id: ++logId.current,
+        kind: 'narration',
+        text: state.narration,
+        messageId: state.activeMessageId || undefined,
+      });
     }
     seenText.current = { subtitle: state.subtitle, narration: state.narration };
     if (additions.length) setLog((entries) => [...entries, ...additions].slice(-60));
-  }, [host, state.subtitle, state.narration, state.story.location]);
+  }, [host, state.subtitle, state.narration, state.story.location, state.activeMessageId]);
   useEffect(() => {
     if (host.isDisposed || !state.opening || openingSeen.current === state.opening) return;
     openingSeen.current = state.opening;
@@ -81,8 +117,8 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     setInputMode('text');
   }, [host, state.voicePreview, state.voiceDraft]);
   useEffect(() => {
-    if (!state.voiceInput) setInputMode('text');
-  }, [state.voiceInput]);
+    if (state.connected && !state.voiceInput) setInputMode('text');
+  }, [state.connected, state.voiceInput]);
   useEffect(() => {
     if (host.isDisposed) return;
     if (inputMode === 'text' && (state.voicePreview === 'ready' || focusText.current)) {
@@ -127,7 +163,8 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     state.interaction === 'speaking' ||
     state.playback === 'buffering';
   const canAct = canUseStoryActions(state);
-  const canChat = canSubmitConversation(state);
+  const privateView = !!state.story.shot && state.story.shot.mode !== 'shared';
+  const canChat = canSubmitConversation(state) && !privateView;
   const voicePending = state.recording !== 'idle' || state.voicePreview === 'transcribing';
   const suggestions = conversationSuggestions(state, !userTurnSeen.current);
   const openingText = state.opening?.text ?? host.location.description;
@@ -161,7 +198,12 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     const entries: StoryLogEntry[] = [];
     for (const line of log) {
       const previous = entries.at(-1);
-      if (line.kind === 'speech' && previous?.kind === 'speech') previous.text += '\n' + line.text;
+      if (
+        line.kind === 'speech' &&
+        previous?.kind === 'speech' &&
+        line.messageId === previous.messageId
+      )
+        previous.text += '\n' + line.text;
       else entries.push({ ...line });
     }
     return entries.slice(-6);
@@ -174,33 +216,46 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     setPanel(null);
     setExploring(false);
     userTurnSeen.current = true;
+    const messageId = host.controller.interact(
+      {
+        kind: 'action',
+        actionId: accepted.id,
+        revision: current.story.revision,
+      },
+      !!draft,
+    );
     if (draft) {
       followLog.current = true;
       setLog((entries) =>
-        [...entries, { id: ++logId.current, kind: 'user' as const, text: draft }].slice(-60),
+        [...entries, { id: ++logId.current, kind: 'user' as const, text: draft, messageId }].slice(
+          -60,
+        ),
       );
     }
-    host.controller.interact({
-      kind: 'action',
-      actionId: accepted.id,
-      revision: current.story.revision,
-    });
   }
   function editDraft(value: string) {
     draftText.current = value;
+    host.api.persistence?.write('draft', value);
     setDraft(value);
   }
   function send(value = draftText.current) {
     const current = host.getSnapshot();
     const text = value.trim();
-    if (!text || host.isDisposed || !canSubmitConversation(current)) return;
+    if (
+      !text ||
+      host.isDisposed ||
+      !canSubmitConversation(current) ||
+      (current.story.shot && current.story.shot.mode !== 'shared')
+    )
+      return;
+    const messageId = host.controller.send(text);
+    if (!messageId) return;
     userTurnSeen.current = true;
     followLog.current = true;
     setLog((entries) =>
-      [...entries, { id: ++logId.current, kind: 'user' as const, text }].slice(-60),
+      [...entries, { id: ++logId.current, kind: 'user' as const, text, messageId }].slice(-60),
     );
     editDraft('');
-    host.controller.send(text);
   }
   function sendSuggestion(candidate: ReplySuggestion) {
     if (host.isDisposed || draftText.current.trim()) return;
@@ -226,6 +281,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     pointer.current = undefined;
     setPanel(null);
     setExploring(false);
+    host.api.persistence?.clearReading();
     editDraft('');
     setLog([]);
     userTurnSeen.current = false;
@@ -408,15 +464,16 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
         )}
       </section>
       <section className="story-content" aria-label="持续对话">
-        {state.failure && state.playback !== 'audio-error' && state.animation === 'live2d' && (
+        {(state.sessionExpired ||
+          (state.failure && state.playback !== 'audio-error' && state.animation === 'live2d')) && (
           <div className="story-error" role="alert">
-            <p>{state.failure}</p>
+            <p>{state.failure || '会话已结束，请重新开始。'}</p>
             <button
-              className="story-text-button"
+              className={state.sessionExpired ? 'story-primary' : 'story-text-button'}
               disabled={state.connecting}
               onClick={() => (state.sessionExpired ? newStory() : host.reconnect())}
             >
-              {state.sessionExpired ? '重新进入故事' : '重新连接'}
+              {state.sessionExpired ? '重新开始' : '重新连接'}
             </button>
           </div>
         )}
@@ -452,6 +509,13 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
           </button>
         )}
         <section className="story-conversation" aria-label={`与${scene.speaker}对话`}>
+          {privateView && (
+            <p className="chat-narration" role="status">
+              {state.story.shot?.mode === 'character'
+                ? `${scene.speaker}的独处片段 · 你仍在原处等候`
+                : '这一段留白 · 可选择继续或结束'}
+            </p>
+          )}
           <div
             ref={chatLog}
             className="conversation-log"
@@ -467,9 +531,24 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
           >
             {chatEntries.length ? (
               chatEntries.map((entry) => (
-                <p key={entry.id} className={`chat-line chat-${entry.kind}`}>
-                  {entry.text}
-                </p>
+                <div key={entry.id} className={`chat-line chat-${entry.kind}`}>
+                  <span>{entry.text}</span>
+                  {entry.kind === 'user' && entry.messageId && (
+                    <MessageStatus
+                      message={state.outgoing.find(
+                        (message) => message.messageId === entry.messageId,
+                      )}
+                      retrying={state.retryingMessageId === entry.messageId}
+                      canRetry={
+                        !state.retryingMessageId && host.controller.canRetry(entry.messageId)
+                      }
+                      onRetry={() => {
+                        followLog.current = true;
+                        void host.controller.retry(entry.messageId!);
+                      }}
+                    />
+                  )}
+                </div>
               ))
             ) : (
               <p className="chat-context">{openingText}</p>

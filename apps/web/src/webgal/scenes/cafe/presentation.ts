@@ -118,7 +118,12 @@ export class CafePresentation implements PresentationPort {
   }
   private furniture(story: StoryState) {
     this.scenery.clear();
-    const location = cafeLocation(story.location);
+    const location = cafeLocation(story.shot?.location ?? story.location);
+    if (story.shot?.mode === 'blackout') {
+      this.scenery.beginFill(0x070c10).drawRect(0, 0, 2560, 1440).endFill();
+      this.actor.layout({ ...location, visible: false });
+      return;
+    }
     if (location.foreground) {
       const asset =
         story.ambience === 'closed' && location.closedBackground
@@ -145,7 +150,8 @@ export class CafePresentation implements PresentationPort {
       this.story.location === story.location &&
       this.story.ambience === story.ambience &&
       this.story.ending === story.ending &&
-      this.story.revealed.join(',') === story.revealed.join(',')
+      this.story.revealed.join(',') === story.revealed.join(',') &&
+      JSON.stringify(this.story.shot) === JSON.stringify(story.shot)
     ) {
       this.story = story;
       return;
@@ -203,6 +209,10 @@ export class CafePresentation implements PresentationPort {
       this.store.documentText = content.text;
       this.furniture(this.story);
     } else if (event.type === 'beat') {
+      if (event.shot) {
+        await this.transition(projectStory(this.story, event), this.weather, signal);
+        return;
+      }
       const { scope, signal: local } = this.begin(signal);
       await this.painted(scope, local);
     } else await this.transition(projectStory(this.story, event), this.weather, signal);

@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import type { PlaybackView } from '../playback/scheduler.js';
+import { ReadingHistorySchema, type BrowserPersistence } from '../persistence/browser.js';
 
 export interface DisplayLine {
   id: number;
@@ -7,10 +8,11 @@ export interface DisplayLine {
   text: string;
   source: 'opening' | 'text' | 'voice' | 'sample' | 'playback';
   paused: boolean;
+  messageId?: string;
 }
 
-/** A bounded, page-local reading view. Never sends receipts or writes session facts. */
-export function useConversationDisplay(opening: string) {
+/** A bounded reading view. Never sends receipts or writes session facts. */
+export function useConversationDisplay(opening: string, persistence?: BrowserPersistence) {
   let sequence = 0;
   let activeCaption: number | undefined;
   const messages = ref<DisplayLine[]>([]);
@@ -19,17 +21,42 @@ export function useConversationDisplay(opening: string) {
   const lastUserIsSample = ref(false);
   const replyPaused = ref(false);
 
+  function save() {
+    persistence?.write(
+      'history',
+      messages.value.map((line) => ({
+        id: line.id,
+        kind: line.source === 'opening' ? 'opening' : line.role === 'user' ? 'user' : 'speech',
+        text: line.text,
+        source: line.source,
+        paused: line.paused,
+        ...(line.messageId ? { messageId: line.messageId } : {}),
+      })),
+    );
+  }
+
   function append(line: Omit<DisplayLine, 'id'>) {
     const id = ++sequence;
     messages.value = [...messages.value.slice(-39), { ...line, id }];
+    save();
     return id;
   }
-  function addUser(value: string, source: 'text' | 'voice' | 'sample' = 'text') {
+  function addUser(
+    value: string,
+    source: 'text' | 'voice' | 'sample' = 'text',
+    messageId?: string,
+  ) {
     lastUser.value = value;
     lastUserIsSample.value = source === 'sample';
-    append({ role: 'user', text: value, source, paused: false });
+    append({
+      role: 'user',
+      text: value,
+      source,
+      paused: false,
+      ...(messageId ? { messageId } : {}),
+    });
   }
-  function observePlayback(value: Partial<PlaybackView>) {
+  function observePlayback(value: Partial<PlaybackView>, messageId?: string) {
     // Only text already issued by the qualified playback scheduler enters this view.
     if (value.subtitle === undefined) return;
     if (!value.subtitle) {
@@ -43,6 +70,7 @@ export function useConversationDisplay(opening: string) {
         text: value.subtitle,
         source: 'playback',
         paused: false,
+        ...(messageId ? { messageId } : {}),
       });
     }
     lastReply.value = value.subtitle;
@@ -53,6 +81,7 @@ export function useConversationDisplay(opening: string) {
     const line = messages.value.find((entry) => entry.id === activeCaption);
     if (line) line.paused = true;
     replyPaused.value = true;
+    save();
   }
   function reset() {
     activeCaption = undefined;
@@ -63,7 +92,29 @@ export function useConversationDisplay(opening: string) {
     replyPaused.value = false;
     append({ role: 'character', text: opening, source: 'opening', paused: false });
   }
-  reset();
+  const saved = persistence?.read('history', ReadingHistorySchema);
+  if (saved?.length) {
+    messages.value = saved
+      .filter((line) => line.kind !== 'narration')
+      .slice(-40)
+      .map((line) => ({
+        id: line.id,
+        role: line.kind === 'user' ? 'user' : 'character',
+        text: line.text,
+        source:
+          line.source ??
+          (line.kind === 'opening' ? 'opening' : line.kind === 'user' ? 'text' : 'playback'),
+        paused: line.paused,
+        ...(line.messageId ? { messageId: line.messageId } : {}),
+      }));
+    sequence = Math.max(0, ...messages.value.map((line) => line.id));
+    const character = messages.value.filter((line) => line.role === 'character').at(-1);
+    const user = messages.value.filter((line) => line.role === 'user').at(-1);
+    lastReply.value = character?.text ?? opening;
+    replyPaused.value = character?.paused ?? false;
+    lastUser.value = user?.text ?? '';
+    lastUserIsSample.value = user?.source === 'sample';
+  } else reset();
   return {
     messages,
     lastReply,

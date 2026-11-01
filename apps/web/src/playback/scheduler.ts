@@ -52,6 +52,8 @@ interface SchedulerOptions {
   failure(message: string): void;
   expired?(turn: TurnIdentity): void;
   cancelled?(turn: TurnIdentity): void;
+  started?(turn: TurnIdentity): void;
+  presented?(turn: TurnIdentity, success: boolean): void;
   now?: () => number;
   timing?(name: string, durationMs: number): void;
   loadTimeoutMs?: number;
@@ -68,6 +70,7 @@ export class PlaybackScheduler {
   private draining = 0;
   private sequence = 0;
   private completed = false;
+  private completionNotified = false;
   private suggestions: ReplySuggestion[] = [];
   private presentationFailed = false;
   private confirmedNarration = '';
@@ -95,6 +98,7 @@ export class PlaybackScheduler {
     this.turn = turn;
     this.cancellation = new AbortController();
     this.completed = false;
+    this.completionNotified = false;
     this.presentationFailed = false;
     this.confirmedNarration = '';
     this.options.view({ interaction: 'thinking', playback: 'buffering', narration: '' });
@@ -152,6 +156,7 @@ export class PlaybackScheduler {
     if (!segment || !turn) return;
     this.blocked = undefined;
     this.text = segment;
+    this.options.started?.(turn);
     this.options.view({
       interaction: 'idle',
       subtitle: segment.text,
@@ -295,6 +300,7 @@ export class PlaybackScheduler {
     const owner = ++this.sequence;
     this.draining = owner;
     if ('presentationId' in segment) {
+      this.options.started?.(turn);
       this.options.view({
         interaction: 'thinking',
         playback: 'buffering',
@@ -360,6 +366,7 @@ export class PlaybackScheduler {
         action: segment.action,
         playback: 'audio',
       });
+      this.options.started?.(turn);
       visual = this.present(segment.events, turn, signal);
       await ended;
       if (!this.current(turn) || this.draining !== owner) return;
@@ -440,6 +447,7 @@ export class PlaybackScheduler {
     return success;
   }
   private finishIfEmpty(): void {
+    const turn = this.turn;
     if (this.completed && !this.queue.length && !this.draining && !this.blocked && !this.text) {
       clearTimeout(this.lifetime);
       this.options.view({
@@ -451,6 +459,10 @@ export class PlaybackScheduler {
         // Generated choices belong to the complete reply; never expose an unheard future branch.
         suggestions: this.presentationFailed ? [] : this.suggestions,
       });
+      if (turn && this.current(turn) && !this.completionNotified) {
+        this.completionNotified = true;
+        this.options.presented?.(turn, !this.presentationFailed);
+      }
     }
   }
 }

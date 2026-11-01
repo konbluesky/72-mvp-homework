@@ -4,12 +4,15 @@ import type { InteractiveState } from '../../interaction/state';
 import type { InteractiveHost } from './host';
 import { CHARACTERS, isCharacterId } from '../characters/profiles/index';
 import { StoryIcon } from './StoryIcon';
+import { messageStatusText } from '../../interaction/messages.js';
 
 export type StoryPanel = 'locations' | 'menu' | 'history' | 'document' | 'restart' | null;
 export interface StoryLogEntry {
   id: number;
   kind: 'speech' | 'narration' | 'user' | 'opening';
   text: string;
+  paused?: boolean;
+  messageId?: string;
 }
 interface Props {
   panel: StoryPanel;
@@ -102,7 +105,9 @@ export function StoryPanels({
         )}
         {panel === 'history' && (
           <>
-            <p className="panel-note">本页已显示的文字。语音可能在句中被打断。</p>
+            <p className="panel-note">
+              最近 60 条已显示的文字，保存在当前浏览器。语音可能在句中被打断。
+            </p>
             <div className="story-backlog">
               {log.length ? (
                 log.map((entry) => (
@@ -117,6 +122,14 @@ export function StoryPanels({
                             : '场景'}
                     </small>
                     <p>{entry.text}</p>
+                    {entry.paused && <small>已打断</small>}
+                    {entry.kind === 'user' && (
+                      <small className="message-status">
+                        {messageStatusText(
+                          state.outgoing.find((message) => message.messageId === entry.messageId),
+                        )}
+                      </small>
+                    )}
                   </article>
                 ))
               ) : (
@@ -134,7 +147,7 @@ export function StoryPanels({
         {panel === 'restart' && (
           <div className="restart-confirm">
             <p>重新开始这段故事？</p>
-            <span>当前相遇将结束，从头开始这次会话。</span>
+            <span>清空本次对话和草稿，从头开始这次会话。</span>
             <button className="story-primary" onClick={onRestart}>
               重新开始 <StoryIcon name="refresh" />
             </button>
@@ -205,8 +218,12 @@ export function StoryPanels({
                     : '连接已断开'}
               </p>
               {!state.connected && (
-                <button className="story-secondary" onClick={() => host.reconnect()}>
-                  重新连接
+                <button
+                  className="story-secondary"
+                  disabled={state.connecting}
+                  onClick={() => (state.sessionExpired ? onRestart() : host.reconnect())}
+                >
+                  {state.sessionExpired ? '重新开始' : '重新连接'}
                 </button>
               )}
               <p>

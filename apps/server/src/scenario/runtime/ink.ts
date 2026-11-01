@@ -153,10 +153,12 @@ export class InkScenario {
         ? { beat: this.read(story, this.content.projection.beat) }
         : {}),
       ...(this.content.projection.shot
-        ? { shot: {
-            location: this.read(story, this.content.projection.shot.location),
-            mode: this.read(story, this.content.projection.shot.mode),
-          } }
+        ? {
+            shot: {
+              location: this.read(story, this.content.projection.shot.location),
+              mode: this.read(story, this.content.projection.shot.mode),
+            },
+          }
         : {}),
     });
     for (const [value, allowed] of [
@@ -292,10 +294,12 @@ export class InkScenario {
       else if (type === 'shot') {
         if (!shotLocation || !this.content.locations.includes(shotLocation))
           throw new AppError('INVALID_PLAN', 500, '未声明的叙事视点。');
-        event = { type: 'beat', beatId: `shot-${value}-${shotLocation}`,
-          shot: { location: shotLocation, mode: value } };
-      }
-      else if (type === 'prop') {
+        event = {
+          type: 'beat',
+          beatId: `shot-${value}-${shotLocation}`,
+          shot: { location: shotLocation, mode: value },
+        };
+      } else if (type === 'prop') {
         const document = this.content.documents.find((item) => item.id === value);
         if (!document?.title) throw new AppError('INVALID_PLAN', 500, '资料没有准备好。');
         event = { type, prop: value, document: { title: document.title, text: document.text } };

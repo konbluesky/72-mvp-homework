@@ -31,6 +31,7 @@ function harness() {
   const photo = vi.fn(async (): Promise<void> => undefined);
   const environment = vi.fn(async (): Promise<void> => undefined);
   const failure = vi.fn();
+  const presented = vi.fn();
   const view: Partial<PlaybackView> = {};
   const prepare = vi.fn((path: string) => {
     const request = deferred<PreparedAudio>();
@@ -43,6 +44,7 @@ function harness() {
     view: (next) => Object.assign(view, next),
     receipt,
     failure,
+    presented,
   });
   const ready = (id: string, throws = false) => {
     waiting.get(`/api/media/${id}`)?.resolve({
@@ -66,6 +68,7 @@ function harness() {
     photo,
     environment,
     failure,
+    presented,
     view,
     prepare,
     ready,
@@ -126,9 +129,13 @@ describe('single playback scheduler', () => {
     h.ended.get('one')?.();
     await tick();
     expect(h.view.suggestions).toEqual([]);
+    expect(h.presented).not.toHaveBeenCalled();
     visual.resolve();
     await tick();
     expect(h.view.suggestions).toEqual(choices);
+    expect(h.presented).toHaveBeenCalledExactlyOnceWith(turn(1), true);
+    h.scheduler.generationDone(turn(1), choices);
+    expect(h.presented).toHaveBeenCalledTimes(1);
     h.scheduler.cancel();
     expect(h.view.suggestions).toEqual([]);
   });
@@ -145,6 +152,7 @@ describe('single playback scheduler', () => {
     h.scheduler.generationDone(turn(1), choices);
     await tick();
     expect(h.view.suggestions).toEqual([]);
+    expect(h.presented).not.toHaveBeenCalled();
     h.scheduler.cancel();
   });
   it('withholds recommendations after a visual event fails even when its sentence finishes', async () => {

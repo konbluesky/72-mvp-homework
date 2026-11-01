@@ -1,4 +1,5 @@
 import { abortable } from '../playback/abortable.js';
+import { BrowserPersistence, type SessionCredentials } from '../persistence/browser.js';
 import {
   BeginTurnResponseSchema,
   ConnectionProbeSchema,
@@ -30,8 +31,9 @@ interface Schema<T> {
 }
 
 export class ApiClient {
-  private session?: SessionCreated;
+  private session?: SessionCredentials;
   readonly base: string;
+  readonly persistence?: BrowserPersistence;
   constructor(
     base = import.meta.env.VITE_API_BASE_URL || window.location.origin,
     private readonly fetcher: typeof fetch = fetch.bind(globalThis),
@@ -47,6 +49,8 @@ export class ApiClient {
     )
       throw new Error('API 地址必须为 HTTP(S) origin');
     this.base = url.origin;
+    if (expectedScenario)
+      this.persistence = new BrowserPersistence(this.base, sessionEntry, expectedScenario);
   }
   async createSession(signal?: AbortSignal): Promise<SessionCreated> {
     const session = await this.json('/api/sessions', SessionCreatedSchema, {
@@ -72,10 +76,21 @@ export class ApiClient {
   clear(): void {
     this.session = undefined;
   }
+  resume(session: SessionCredentials): void {
+    this.session = session;
+  }
+  credentials(): SessionCredentials | undefined {
+    if (!this.session) return undefined;
+    const { sessionId, sessionToken, expiresAt, mode } = this.session;
+    return { sessionId, sessionToken, expiresAt, mode };
+  }
   snapshot(signal?: AbortSignal) {
-    return this.json(`/api/sessions/${this.requireSession().sessionId}`, SessionSnapshotSchema, {
+    const sessionId = this.requireSession().sessionId;
+    return this.json(`/api/sessions/${sessionId}`, SessionSnapshotSchema, {
       signal,
     }).then((snapshot) => {
+      if (snapshot.sessionId !== sessionId)
+        throw new ApiError('INVALID_RESPONSE', '会话快照与当前连接不匹配，请重新连接。');
       this.validateScenario(snapshot.scene);
       return snapshot;
     });
@@ -91,25 +106,34 @@ export class ApiClient {
         '场景版本与服务端不一致，请刷新页面后重试。',
       );
   }
-  begin(turn: TurnIdentity, receipts: Receipt[], frozenTurns: FrozenTurn[], signal: AbortSignal) {
+  begin(
+    turn: TurnIdentity,
+    receipts: Receipt[],
+    frozenTurns: FrozenTurn[],
+    signal: AbortSignal,
+    messageId?: string,
+  ) {
     return this.json(`/api/sessions/${turn.sessionId}/turns`, BeginTurnResponseSchema, {
       method: 'POST',
       signal,
       body: JSON.stringify({
         generation: turn.generation,
         turnId: turn.turnId,
+        ...(messageId ? { messageId } : {}),
         receipts,
         frozenTurns,
       }),
     });
   }
-  async cancel(turn: TurnIdentity, receipts: Receipt[]): Promise<void> {
+  async cancel(turn: TurnIdentity, receipts: Receipt[], signal?: AbortSignal): Promise<void> {
     const response = await this.request(
       `/api/sessions/${turn.sessionId}/turns/${turn.turnId}/cancel`,
       {
         method: 'POST',
         body: JSON.stringify({ generation: turn.generation, receipts, frozen: true }),
-        signal: AbortSignal.timeout(10_000),
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(10_000)])
+          : AbortSignal.timeout(10_000),
       },
     );
     await response.arrayBuffer();
@@ -208,7 +232,7 @@ export class ApiClient {
     }
     return buffer.buffer;
   }
-  private requireSession(): SessionCreated {
+  private requireSession(): SessionCredentials {
     if (!this.session) throw new ApiError('SESSION_EXPIRED', '故事连接已结束，请重新开始。');
     return this.session;
   }

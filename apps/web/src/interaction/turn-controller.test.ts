@@ -80,6 +80,8 @@ function setup(
     view: (value) => store.$patch(value),
     receipt: (value, turn) => controller.receipt(value, turn),
     expired: (turn) => controller.expire(turn),
+    started: (turn) => controller.replyStarted(turn),
+    presented: (turn, success) => controller.replyCompleted(turn, success),
     failure: (message) => {
       store.failure = message;
     },
@@ -108,6 +110,165 @@ function mockMicrophone() {
     },
   });
 }
+describe('message retry ownership', () => {
+  it('keeps failures of actions without a user bubble visible in the page recovery area', async () => {
+    const h = setup((path) =>
+      path.endsWith('/input')
+        ? new Response(
+            JSON.stringify({
+              error: { code: 'PROVIDER_FAILED', message: '场景操作失败', retryable: true },
+              requestId: 'r',
+            }),
+            { status: 502 },
+          )
+        : undefined,
+    );
+    await h.controller.connect();
+    h.controller.interact({ kind: 'action', actionId: 'sample-action', revision: 0 });
+    await tick();
+    expect(h.store.failure).toBe('场景操作失败');
+    await h.controller.dispose();
+  });
+
+  it('retries the original message once with a new attempt and waits for actual presentation', async () => {
+    let submissions = 0;
+    let first: TurnIdentity | undefined;
+    const h = setup((path, body) => {
+      if (path === '/api/sessions/session')
+        return json({
+          sessionId: 'session',
+          generation: 1,
+          capabilities: session.capabilities,
+          scene: session.scene,
+          history: [],
+          messageAttempts: [
+            {
+              ...first!,
+              messageId: h.store.outgoing[0]!.messageId,
+              status: 'failed',
+              presented: false,
+              retryable: true,
+              error: '服务失败',
+            },
+          ],
+        });
+      if (!path.endsWith('/input')) return;
+      const input = TextInputSchema.parse(body);
+      const turn = {
+        sessionId: 'session',
+        generation: input.generation,
+        turnId: path.split('/')[5]!,
+      };
+      const ready = event(turn, 1);
+      submissions++;
+      if (submissions === 1) first = turn;
+      const frames: ServerEvent[] =
+        submissions === 1
+          ? [
+              ready,
+              {
+                ...ready,
+                seq: 2,
+                eventId: 'failed',
+                type: 'error',
+                payload: { code: 'PROVIDER_FAILED', message: '服务失败', retryable: true },
+              },
+            ]
+          : [
+              ready,
+              {
+                ...ready,
+                seq: 2,
+                eventId: 'audio',
+                type: 'audio.ready',
+                payload: {
+                  segmentId: 'answer',
+                  text: '回应',
+                  audioUrl: '/api/media/answer',
+                  emotion: 'curious',
+                  action: 'none',
+                  events: [],
+                },
+              },
+              {
+                ...ready,
+                seq: 3,
+                eventId: 'done',
+                type: 'reply.done',
+                payload: { segmentCount: 1 },
+              },
+            ];
+      return new Response(frames.map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join(''), {
+        headers: { 'content-type': 'text/event-stream' },
+      });
+    }, true);
+    await h.controller.connect();
+    const messageId = h.controller.send('哈哈')!;
+    await tick();
+    expect(h.store.outgoing[0]).toMatchObject({ messageId, status: 'failed', retryable: true });
+    expect(h.store.failure).toBe('');
+    await Promise.all([h.controller.retry(messageId), h.controller.retry(messageId)]);
+    await tick();
+    expect(submissions).toBe(2);
+    expect(h.store.outgoing).toHaveLength(1);
+    expect(h.store.outgoing[0]).toMatchObject({
+      messageId,
+      turn: { generation: 2 },
+      status: 'waiting',
+    });
+    const inputs = h.requests
+      .filter((request) => request.path.endsWith('/input'))
+      .map((request) => TextInputSchema.parse(request.body));
+    expect(inputs[0]?.inputId).not.toBe(inputs[1]?.inputId);
+    expect(inputs.map((input) => input.text)).toEqual(['哈哈', '哈哈']);
+    await h.playback.useText();
+    await h.playback.continueText();
+    await tick();
+    expect(h.store.outgoing[0]?.status).toBe('completed');
+    expect(h.controller.canRetry(messageId)).toBe(false);
+    await h.controller.dispose();
+  });
+
+  it('does not let an old response or scheduler callback overwrite a newer failed message', async () => {
+    let release!: (value: Response) => void;
+    let submissions = 0;
+    const h = setup((path) => {
+      if (!path.endsWith('/input')) return;
+      if (++submissions === 1)
+        return new Promise<Response>((resolve) => {
+          release = resolve;
+        });
+      return new Response(
+        JSON.stringify({
+          error: { code: 'PROVIDER_FAILED', message: '新请求失败', retryable: true },
+          requestId: 'r',
+        }),
+        { status: 502 },
+      );
+    });
+    await h.controller.connect();
+    const older = h.controller.send('之前的消息')!;
+    await tick();
+    const oldTurn = h.store.outgoing[0]!.turn;
+    const newer = h.controller.send('新消息')!;
+    await tick();
+    release(new Response('invalid', { headers: { 'content-type': 'text/event-stream' } }));
+    h.controller.replyStarted(oldTurn);
+    h.controller.replyCompleted(oldTurn, true);
+    await tick();
+    expect(h.store.outgoing[0]?.status).toBe('interrupted');
+    expect(h.store.outgoing[1]).toMatchObject({
+      messageId: newer,
+      status: 'failed',
+      error: '新请求失败',
+    });
+    expect(h.controller.canRetry(older)).toBe(false);
+    await h.controller.retry(older);
+    expect(submissions).toBe(2);
+    await h.controller.dispose();
+  });
+});
+
 describe('turn controller network ownership', () => {
   it('keeps recognized words as a draft until confirmation sends only the edited text', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
@@ -344,7 +505,8 @@ describe('turn controller network ownership', () => {
     await h.controller.connect();
     h.controller.send('你好');
     await tick();
-    expect(h.store.failure).toContain('连接暂时断开');
+    expect(h.store.outgoing.at(-1)).toMatchObject({ status: 'failed', retryable: true });
+    expect(h.store.failure).toBe('');
     expect(cancel).toHaveBeenCalled();
     expect(h.store.interaction).toBe('idle');
     await h.controller.dispose();

@@ -12,10 +12,18 @@ import CharacterStage from '../scene/CharacterStage.vue';
 import { useSceneStore } from '../stores/scene.js';
 import { useConversationDisplay, type DisplayLine } from './conversation-display.js';
 import type { ReplySuggestion } from '@mira/protocol';
+import { DraftSchema } from '../persistence/browser.js';
+import { messageStatusText } from '../interaction/messages.js';
+import '../interaction/messages.css';
 
 const props = defineProps<{ content: LegacySceneModule }>();
+const api = new ApiClient(undefined, undefined, 'conversation', {
+  id: props.content.id,
+  version: props.content.version,
+});
+const savedPreferences = api.persistence?.preferences();
 const scene = useSceneStore();
-const text = ref('');
+const text = ref(api.persistence?.read('draft', DraftSchema) ?? '');
 const selectedSuggestion = ref<ReplySuggestion>();
 const input = ref<HTMLTextAreaElement>();
 const info = ref<HTMLDialogElement>();
@@ -23,10 +31,10 @@ const history = ref<HTMLDialogElement>();
 const menu = ref<HTMLDialogElement>();
 const animationKey = ref(0);
 const hold = ref<HTMLButtonElement>();
-const inputMode = ref<'text' | 'voice'>('text');
+const inputMode = ref<'text' | 'voice'>(savedPreferences?.inputMode ?? 'text');
 const inputFocused = ref(false);
-const suggestionsExpanded = ref(true);
-const conversation = useConversationDisplay(props.content.opening);
+const suggestionsExpanded = ref(savedPreferences?.suggestionsExpanded ?? true);
+const conversation = useConversationDisplay(props.content.opening, api.persistence);
 const { messages } = conversation;
 const conversationViewport = ref<HTMLDivElement>();
 const followConversation = ref(true);
@@ -36,7 +44,11 @@ const visibleMessages = computed(() => {
   const grouped: DisplayLine[] = [];
   for (const line of messages.value) {
     const previous = grouped.at(-1);
-    if (line.role === 'character' && previous?.role === 'character') {
+    if (
+      line.role === 'character' &&
+      previous?.role === 'character' &&
+      line.messageId === previous.messageId
+    ) {
       previous.text += '\n' + line.text;
       previous.paused ||= line.paused;
     } else grouped.push({ ...line });
@@ -60,10 +72,6 @@ function onConversationScroll() {
   const pane = conversationViewport.value;
   if (pane) followConversation.value = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 32;
 }
-const api = new ApiClient(undefined, undefined, 'conversation', {
-  id: props.content.id,
-  version: props.content.version,
-});
 let controller: TurnController;
 function timing(name: string, durationMs: number) {
   const measure = `character-interaction:${name}`;
@@ -78,17 +86,35 @@ const playback = new PlaybackScheduler({
   timing,
   presentation: props.content.createPresentation(scene),
   view: (value) => {
-    conversation.observePlayback(value);
+    conversation.observePlayback(value, scene.activeMessageId || undefined);
     scene.$patch(value);
+    controller?.checkpointBrowser();
   },
   receipt: (value, turn) => controller.receipt(value, turn),
   expired: (turn) => controller.expire(turn),
   cancelled: (turn) => controller.expire(turn),
+  started: (turn) => controller.replyStarted(turn),
+  presented: (turn, success) => controller.replyCompleted(turn, success),
   failure: (message) => {
     scene.failure = message;
   },
 });
 controller = new TurnController(api, playback, scene);
+watch(text, (value) => api.persistence?.write('draft', value), { flush: 'sync' });
+watch(inputMode, (value) => api.persistence?.updatePreferences({ inputMode: value }), {
+  flush: 'sync',
+});
+watch(
+  suggestionsExpanded,
+  (value) => api.persistence?.updatePreferences({ suggestionsExpanded: value }),
+  { flush: 'sync' },
+);
+watch(
+  () => scene.connected,
+  (connected) => {
+    if (connected && !scene.voiceInput) inputMode.value = 'text';
+  },
+);
 const connectionMonitor = new ConnectionMonitor(api, {
   view: (value) => scene.$patch({ connection: value }),
   reachable: () => {
@@ -197,24 +223,33 @@ function send() {
   editEpoch += 1;
   conversation.pauseCaption();
   followConversation.value = true;
-  conversation.addUser(value, source);
-  text.value = '';
-  inputFocused.value = false;
-  if (input.value) {
-    input.value.style.height = '';
-    input.value.blur();
-  }
   const selected = selectedSuggestion.value;
   selectedSuggestion.value = undefined;
+  let messageId: string | undefined;
   if (selected?.draft === value && selected.interaction?.kind === 'action') {
     const interaction = selected.interaction;
     if (
       interaction.revision === scene.story.revision &&
       scene.story.actions.some((action) => action.id === interaction.actionId)
     )
-      controller.interact(interaction);
+      messageId = controller.interact(interaction, true);
     else scene.failure = '这里的选择已更新，请重新选择。';
-  } else controller.send(value);
+  } else messageId = controller.send(value);
+  if (!messageId) return;
+  conversation.addUser(value, source, messageId);
+  text.value = '';
+  inputFocused.value = false;
+  if (input.value) {
+    input.value.style.height = '';
+    input.value.blur();
+  }
+}
+function delivery(messageId?: string) {
+  return scene.outgoing.find((message) => message.messageId === messageId);
+}
+function retryMessage(messageId: string) {
+  followConversation.value = true;
+  void controller.retry(messageId);
 }
 async function chooseSuggestion(suggestion: ReplySuggestion) {
   if (!showSuggestions.value || !scene.suggestions.includes(suggestion)) return;
@@ -264,6 +299,7 @@ function interrupt() {
 function restart() {
   editEpoch += 1;
   cancel();
+  api.persistence?.clearReading();
   conversation.reset();
   selectedSuggestion.value = undefined;
   followConversation.value = true;
@@ -339,7 +375,8 @@ function visibility() {
   if (document.hidden) {
     editEpoch += 1;
     conversation.pauseCaption();
-    cancel();
+    pointer = undefined;
+    controller.interrupt('connection');
     void playback.dispose();
     connectionMonitor.suspend();
     controller.pauseRecovery();
@@ -357,6 +394,10 @@ function offline() {
 function online() {
   if (!document.hidden) retryConnection();
 }
+function pagehide() {
+  conversation.pauseCaption();
+  controller.interrupt('connection');
+}
 
 onMounted(() => {
   if (navigator.onLine) {
@@ -368,6 +409,7 @@ onMounted(() => {
   window.addEventListener('blur', blur);
   window.addEventListener('offline', offline);
   window.addEventListener('online', online);
+  window.addEventListener('pagehide', pagehide);
 });
 onBeforeUnmount(() => {
   disposed = true;
@@ -377,6 +419,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('blur', blur);
   window.removeEventListener('offline', offline);
   window.removeEventListener('online', online);
+  window.removeEventListener('pagehide', pagehide);
+  conversation.pauseCaption();
   connectionMonitor.dispose();
   void controller.dispose();
 });
@@ -476,6 +520,19 @@ onBeforeUnmount(() => {
           :class="line.role === 'user' ? 'recent-user' : 'character-message'"
           :aria-label="line.role === 'user' ? '你发送的消息' : `${content.speaker} 的回复`"
         >
+          <button
+            v-if="line.role === 'user' && delivery(line.messageId)?.status === 'failed'"
+            class="message-retry"
+            type="button"
+            :disabled="
+              !line.messageId || !controller.canRetry(line.messageId) || !!scene.retryingMessageId
+            "
+            :aria-label="`重试这条消息：${line.text}`"
+            :title="delivery(line.messageId)?.error"
+            @click="line.messageId && retryMessage(line.messageId)"
+          >
+            <span aria-hidden="true">!</span>
+          </button>
           <span v-if="line.source === 'sample'" class="sample-label">语音示例</span>
           <p
             :class="{
@@ -485,6 +542,20 @@ onBeforeUnmount(() => {
           >
             {{ line.text }}
           </p>
+          <small
+            v-if="line.role === 'user' && messageStatusText(delivery(line.messageId))"
+            class="message-status"
+            :class="{ 'message-status-failed': delivery(line.messageId)?.status === 'failed' }"
+            role="status"
+            :title="delivery(line.messageId)?.error"
+            >{{
+              scene.retryingMessageId === line.messageId
+                ? '正在重试…'
+                : line.messageId && controller.canRetry(line.messageId)
+                  ? '回复失败，点击重试'
+                  : messageStatusText(delivery(line.messageId))
+            }}</small
+          >
         </article>
         <div
           v-if="busy && scene.interaction !== 'speaking'"
@@ -498,10 +569,13 @@ onBeforeUnmount(() => {
         </button>
       </div>
       <div class="interaction-area">
-        <div v-if="scene.failure" class="recovery" role="alert">
-          <p>{{ scene.failure }}</p>
+        <div v-if="scene.failure || scene.sessionExpired" class="recovery" role="alert">
+          <p>{{ scene.failure || '会话已结束，请重新开始。' }}</p>
           <div class="recovery-actions">
-            <template v-if="scene.playback === 'audio-error'"
+            <template v-if="scene.sessionExpired">
+              <button type="button" :disabled="scene.connecting" @click="restart">重新开始</button>
+            </template>
+            <template v-else-if="scene.playback === 'audio-error'"
               ><button
                 @click="
                   scene.failure = '';
@@ -706,14 +780,12 @@ onBeforeUnmount(() => {
           </button>
         </form>
         <p v-if="composerHint" class="interaction-hint">{{ composerHint }}</p>
-        <p v-if="scene.connecting || !scene.connected" class="connection-note" role="status">
-          {{
-            scene.sessionExpired
-              ? '会话已结束，请重新开始。'
-              : scene.connecting
-                ? '正在恢复会话…'
-                : '连接恢复后可继续发送消息。'
-          }}
+        <p
+          v-if="!scene.sessionExpired && (scene.connecting || !scene.connected)"
+          class="connection-note"
+          role="status"
+        >
+          {{ scene.connecting ? '正在恢复会话…' : '连接恢复后可继续发送消息。' }}
         </p>
         <span class="sr-only" role="status" aria-live="polite">{{ activity }}</span>
       </div>
@@ -755,7 +827,7 @@ onBeforeUnmount(() => {
       </div>
       <button class="dialog-close" aria-label="关闭对话回看" @click="history?.close()">×</button>
     </header>
-    <p class="sheet-description">最近 40 条页面文字，仅保留在当前页面。</p>
+    <p class="sheet-description">最近 40 条已显示的文字，保存在当前浏览器。</p>
     <div class="history-lines">
       <article
         v-for="line in messages"
@@ -770,6 +842,9 @@ onBeforeUnmount(() => {
           ><small v-if="line.paused">已暂停</small>
         </div>
         <p>{{ line.text }}</p>
+        <small v-if="line.role === 'user'" class="message-status">{{
+          messageStatusText(delivery(line.messageId))
+        }}</small>
       </article>
     </div>
     <p class="history-note">这里记录已显示的文字；语音可能在句中被打断。</p>

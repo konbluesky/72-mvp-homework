@@ -194,7 +194,12 @@ export async function runConversation(
     .addNode('plan_reply', async (state) => {
       const shot = scenario.frame(session.narrative).story.shot;
       if (shot && shot.mode !== 'shared')
-        throw new AppError('INVALID_REQUEST', 400, '这是独处或留白片段，请选择等候、继续或结束。', true);
+        throw new AppError(
+          'INVALID_REQUEST',
+          400,
+          '这是独处或留白片段，请选择等候、继续或结束。',
+          true,
+        );
       logger.info({ ...turn.identity, stage: 'llm_provider', ...providers.planner.info });
       return {
         raw: await stage('llm', async () =>

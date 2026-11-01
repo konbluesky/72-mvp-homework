@@ -1,0 +1,49 @@
+.dialogue .recent-user,
+.story-app .chat-user {
+  position: relative;
+  max-width: min(85%, calc(100% - 44px));
+}
+.message-retry {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 4px);
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ff9b95;
+  cursor: pointer;
+}
+.message-retry span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #b93632;
+  color: #fff;
+  font: 700 15px/1 system-ui;
+}
+.message-retry:disabled {
+  cursor: default;
+}
+.message-retry:focus-visible {
+  outline: 2px solid #ffb5af;
+  outline-offset: 1px;
+  border-radius: 8px;
+}
+.message-status {
+  display: block;
+  margin-top: 5px;
+  color: #bac7b4;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: normal;
+}
+.message-status-failed {
+  color: #ffb1aa;
+}

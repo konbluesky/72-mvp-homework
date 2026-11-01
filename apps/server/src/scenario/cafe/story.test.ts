@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cafeScenario } from './index.js';
-import { advance, firstNight } from './story-helpers.test-support.js';
+import { advance, firstNight } from './story.test.helpers.js';
 
 describe('authored long-form cafe story', () => {
   it('starts at the first encounter with a valid exit, not unlocked relationship endings', () => {

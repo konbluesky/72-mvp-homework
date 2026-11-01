@@ -8,6 +8,7 @@ import { ConnectionMonitor } from '../../connection/monitor.js';
 import { createInteractiveEngine } from '../runtime/bootstrap';
 import { CharacterDriver, type CharacterId } from '../characters/driver';
 import type { SceneModule, ScenePresentation } from '../scenes/module.js';
+import { isCharacterId } from '../characters/profiles/index';
 
 /** Composition root: React owns no audio, session facts or autonomous story clocks. */
 export class InteractiveHost {
@@ -37,7 +38,11 @@ export class InteractiveHost {
       version: scene.version,
     });
     this.engine = createInteractiveEngine(scene.assets);
-    this.characterId = scene.defaultCharacter;
+    const savedCharacter = this.api.persistence?.preferences().characterId;
+    this.characterId =
+      savedCharacter && isCharacterId(savedCharacter) && scene.characters.includes(savedCharacter)
+        ? savedCharacter
+        : scene.defaultCharacter;
     const initial = initialInteractiveState();
     initial.story = scene.initialView.story;
     initial.environment = scene.initialView.environment;
@@ -56,6 +61,7 @@ export class InteractiveHost {
         this.snapshot = { ...target };
         for (const listener of this.listeners) listener();
         if (key === 'story' || key === 'environment') this.restoreProjection();
+        if (key === 'suggestions') this.controller?.checkpointBrowser();
         return true;
       },
     });
@@ -90,6 +96,8 @@ export class InteractiveHost {
       },
       expired: (turn) => this.controller.expire(turn),
       cancelled: (turn) => this.controller.expire(turn),
+      started: (turn) => this.controller.replyStarted(turn),
+      presented: (turn, success) => this.controller.replyCompleted(turn, success),
     });
     this.controller = new TurnController(this.api, this.playback, this.state);
     this.monitor = new ConnectionMonitor(this.api, {
@@ -143,7 +151,7 @@ export class InteractiveHost {
       'visibilitychange',
       () => {
         if (document.hidden) {
-          this.controller.interrupt();
+          this.controller.interrupt('connection');
           this.controller.pauseRecovery();
           this.monitor.suspend();
         } else {
@@ -162,6 +170,9 @@ export class InteractiveHost {
       { signal: this.lifetime.signal },
     );
     window.addEventListener('online', () => this.reconnect(), { signal: this.lifetime.signal });
+    window.addEventListener('pagehide', () => this.controller.interrupt('connection'), {
+      signal: this.lifetime.signal,
+    });
   }
   private async mountStage(connect: boolean) {
     const attempt = ++this.stageAttempt,
@@ -179,7 +190,7 @@ export class InteractiveHost {
         await this.controller.connect();
       if (!valid()) return;
       await presentation.restore(this.state.story, this.state.environment, signal);
-      await this.selectCharacter(this.characterId);
+      await this.selectCharacter(this.characterId, false);
       if (!valid()) return;
       lease.stage.currentApp?.view.addEventListener(
         'webglcontextlost',
@@ -223,11 +234,11 @@ export class InteractiveHost {
     this.state.failure = '';
     await this.mountStage(false);
   }
-  async selectCharacter(id: CharacterId) {
+  async selectCharacter(id: CharacterId, interrupt = true) {
     if (!this.scene.characters.includes(id)) throw new Error('SCENE_CHARACTER_NOT_ALLOWED');
     const actor = this.actor;
     if (!actor || this.disposed) return;
-    this.controller.interrupt();
+    if (interrupt) this.controller.interrupt();
     this.characterLoad.abort();
     this.characterLoad = new AbortController();
     const attempt = this.characterLoad;
@@ -237,6 +248,7 @@ export class InteractiveHost {
       await actor.select(id, attempt.signal);
       if (attempt !== this.characterLoad || this.disposed) return;
       this.characterId = id;
+      this.api.persistence?.updatePreferences({ characterId: id });
       this.state.animation = 'live2d';
     } catch (error) {
       if (attempt !== this.characterLoad || attempt.signal.aborted || this.disposed) return;

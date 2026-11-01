@@ -40,6 +40,29 @@ export class ReceiptBook {
   snapshots(): FrozenTurn[] {
     return [...this.frozen.values()];
   }
+  snapshot(turn: TurnIdentity): FrozenTurn {
+    return {
+      turnId: turn.turnId,
+      generation: turn.generation,
+      receipts: [...(this.turns.get(turn.turnId) ?? [])].filter((receipt) =>
+        sameTurn(receipt, turn),
+      ),
+    };
+  }
+  /** Input has already passed the browser recovery schema and ownership checks. */
+  restore(pending: Receipt[], snapshots: FrozenTurn[]): void {
+    this.clear();
+    for (const receipt of pending) {
+      this.pending.set(receipt.receiptId, receipt);
+      const items = this.turns.get(receipt.turnId) ?? [];
+      items.push(receipt);
+      this.turns.set(receipt.turnId, items);
+    }
+    for (const snapshot of snapshots) {
+      this.turns.set(snapshot.turnId, [...snapshot.receipts]);
+      this.frozen.set(snapshot.turnId, snapshot);
+    }
+  }
   clear(): void {
     this.pending.clear();
     this.turns.clear();

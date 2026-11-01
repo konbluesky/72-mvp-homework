@@ -35,7 +35,7 @@ export const CAFE_ASSETS: readonly LocalStageAsset[] = [
   ...Object.values(CAFE_RESOURCES),
 ];
 export function stageScene(story: StoryState, environment: string): StageScene {
-  const location = cafeLocation(story.location);
+  const location = cafeLocation(story.shot?.location ?? story.location);
   const background =
     story.ambience === 'closed' && location.closedBackground
       ? location.closedBackground
