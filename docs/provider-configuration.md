@@ -4,7 +4,7 @@
 
 ## 最短配置步骤
 
-默认 Mock + Local 不需要密钥。前端 `apps/web/.env.local` 保持 `VITE_API_BASE_URL=""`，开发时通过 Vite 代理访问后端。
+交付默认使用 Live，先将根 `.env.example` 复制到 `apps/server/.env` 并填写 GPT / Deepgram 配置。无密钥演示可显式设置 `APP_MODE=mock` 并清空服务密钥。前端 `apps/web/.env.local` 保持 `VITE_API_BASE_URL=""`，开发时通过 Vite 代理访问后端。
 
 真实「文字输入 + 角色语音回复」只编辑 `apps/server/.env`。已有文件保留原值，填写下列五项并设置 `APP_MODE=live`，再重启后端：
 
@@ -33,7 +33,9 @@ Live页面语音输入经过真实MediaRecorder → 有界上传/FFmpeg规范化
 
 后端入口只加载 `apps/server/.env`，进程环境变量优先。前端只配置公开的 `VITE_API_BASE_URL`。`.env.example`、`.env.frontend.example`、`.env.advanced.example` 是模板，`.env.before-setup` 是备份，均不会被应用自动加载。高级参数有代码默认值，按需选择性加入实际后端文件，不整体覆盖现有凭证。
 
-Compose 演示当前固定 `APP_MODE=mock`，未注入后端 env；本地文件不会自动传入容器。Docker 启用 Live 需显式配置 `env_file` 并修改 `environment.APP_MODE`，后者优先级更高。
+Compose 通过 `env_file` 默认读取 `apps/server/.env`，运行 `docker compose up --build -d` 即使用该文件中的模式与服务配置；可用 `SERVER_ENV_FILE=./path/to/server.env` 指定其他文件。Compose 不覆盖 `APP_MODE` 或强制 Local 存储，只覆盖容器所需的 `NODE_ENV`、`HOST`、`PORT`、`CORS_ALLOWED_ORIGINS`、`MEDIA_LOCAL_DIR` 和 `FFMPEG_PATH`。这些 `environment` 项优先于 env_file。
+
+后端真实配置只在容器运行时注入；`.dockerignore` 排除 `.env`，前端构建仍只接收公开的 API 地址。无密钥 Docker 演示需提供明确设置 `APP_MODE=mock` 且服务密钥为空的文件。CI 的 `compose config --quiet` 使用公开 `.env.example` 做静态校验，不启动容器或请求 Provider。
 
 默认 Local 私有媒体无需存储凭证；若选 R2，Mock 也必须提供完整 R2 配置。会话、媒体、上传与任务限额以及取消保护继续有效，由各Provider共用。
 

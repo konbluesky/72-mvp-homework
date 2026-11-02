@@ -9,7 +9,7 @@ node scripts/project.mjs ci
 npm run dev
 ```
 
-浏览器打开 http://localhost:5173；API http://localhost:3000。默认 Mock+Local 无需复制 env。Vite 对 /api 转发到独立 API。切换远端API时复制 `.env.frontend.example` 到 `apps/web/.env.local` 并填写 VITE_API_BASE_URL（origin）。后端配置复制 `.env.example` 到 `apps/server/.env`，入口显式加载；进程环境变量优先。
+首次启动前，将 `.env.example` 复制到 `apps/server/.env` 并填写 Live 的 GPT / Deepgram 配置；已有配置直接编辑。无密钥演示显式设置 `APP_MODE=mock` 并清空服务密钥。浏览器打开 http://localhost:5173；API http://localhost:3000。Vite 对 /api 转发到独立 API。切换远端API时复制 `.env.frontend.example` 到 `apps/web/.env.local` 并填写 VITE_API_BASE_URL（origin）。后端入口显式加载 `apps/server/.env`，进程环境变量优先。
 
 `npm run dev` 和 VS Code 任务会自动选用 `.nvmrc` 对应的 nvm 运行时，不要求 GUI 的 PATH 已切换。其他 npm 命令应在正确运行时下执行，或使用 `node scripts/project.mjs check`、`node scripts/project.mjs build`。最小模板只保留业务字段，高级覆盖见 `.env.advanced.example`；Live通过Deepgram识别和合成；Mock保留同一录音与调度路径并标注模拟转录。
 

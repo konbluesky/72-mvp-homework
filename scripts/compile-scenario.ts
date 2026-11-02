@@ -91,6 +91,20 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
   for (const file of files) {
     const source = await readFile(new URL(file, root), 'utf8');
     sources[file] = source;
+    // A tag before a multiline conditional can attach to its leading empty output;
+    // Continue() then returns the branch's text separately, without that event tag.
+    let pendingPresentationTag = false;
+    for (const [index, raw] of source.split('\n').entries()) {
+      const line = raw.trim();
+      if (!line || line.startsWith('//')) continue;
+      if (/^#\s*(?:cue|voice|thought):/.test(line)) {
+        pendingPresentationTag = true;
+        continue;
+      }
+      if (pendingPresentationTag && /^\{[^\n]*:\s*$/.test(line))
+        throw new Error(`Presentation tags must be inside each text branch: ${file}:${index + 1}`);
+      pendingPresentationTag = false;
+    }
     if (/^\s*EXTERNAL\s/m.test(source))
       throw new Error(`External bindings are not allowed: ${file}`);
     for (const tag of source.matchAll(/#\s*([^\]#\r\n]+)/g)) {

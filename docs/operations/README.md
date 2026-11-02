@@ -1,16 +1,26 @@
 # 部署与运维
 
-## 无密钥 Docker 演示
+## Docker：读取后端配置启动
+
+将根 `.env.example` 复制到 `apps/server/.env`，填写 GPT / Deepgram 的 Live 配置；已有文件保留并直接编辑。容器已包含 Node.js 和 FFmpeg。
 
 ```sh
-docker compose --profile demo up --build -d
+docker compose up --build -d
 ```
 
-访问 http://localhost:8080。前端 nginx 与 API 是独立容器，浏览器只看到 localhost:8080；nginx 转发 /api，浏览器不会访问 Docker 内部主机名。默认 Mock+Local，API不向宿主机暴露端口。容器以非root用户运行；server镜像安装FFmpeg供受限录音解码，动态媒体在私有volume。
+访问 http://localhost:8080。前端 nginx 与 API 是独立容器，nginx 转发 /api。Compose 通过 `env_file` 读取 `apps/server/.env`；模式、GPT、Deepgram、ComfyUI 和 Local/R2 选择来自该文件。容器仅覆盖监听地址、内部端口、CORS、本地媒体目录、FFmpeg 路径和 `NODE_ENV`；API 不向宿主机暴露端口，动态媒体使用独立 volume。
+
+使用其他后端配置文件：
 
 ```sh
-docker compose --profile demo logs --tail=80 api
-docker compose --profile demo down
+SERVER_ENV_FILE=./path/to/server.env docker compose up --build -d
+```
+
+密钥只在运行时注入 API，`.dockerignore` 排除真实 `.env`，不把它复制进镜像或前端。无密钥演示使用 `APP_MODE=mock` 且服务密钥为空的配置文件；无需改 Compose。配置改变后重新执行 `up -d` 创建使用新配置的容器。
+
+```sh
+docker compose logs --tail=80 api
+docker compose down
 ```
 
 正常关闭保留volume；不默认删除数据卷。若重建API，会话失效，需要重新进入。

@@ -33,15 +33,17 @@
 ~ shot_location = "washroom"
 ~ shot_mode = "character"
 ~ beat = "first-mirror"
-# cue:shot:character:washroom
 {boundary_set && not boundary_repaired:
+# cue:shot:character:washroom
 # thought:mirror-space
 她在镜前整理妆容，把刚才的谈话暂时放下。玩家仍在原处。
 - else:
 {chemistry:
+# cue:shot:character:washroom
 # thought:mirror-interest
 她看了一眼镜中的表情，取出补妆用品。玩家仍在原处。
 - else:
+# cue:shot:character:washroom
 # thought:mirror-ordinary
 她检查唇色，把纸巾折好。玩家仍在原处。
 }
@@ -50,11 +52,12 @@
 
 === finish_makeup ===
 ~ beat = "first-mirror-ready"
-# cue:beat:makeup-ready
 {chemistry && (not boundary_set || boundary_repaired):
+# cue:beat:makeup-ready
 # thought:mirror-ready-interest
 她放下补妆用品，重新看了看镜中的自己。
 - else:
+# cue:beat:makeup-ready
 # thought:mirror-ready
 她收好东西，准备回到外面的座位。
 }

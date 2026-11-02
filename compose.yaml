@@ -1,22 +1,23 @@
 services:
   api:
-    profiles: [demo]
     build:
       context: .
       dockerfile: infra/docker/server.Dockerfile
+    env_file:
+      - ${SERVER_ENV_FILE:-./apps/server/.env}
     environment:
-      APP_MODE: mock
+      NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 3000
       CORS_ALLOWED_ORIGINS: http://localhost:8080
-      MEDIA_STORE: local
+      MEDIA_LOCAL_DIR: /app/apps/server/data/media
+      FFMPEG_PATH: ffmpeg
     volumes:
       - mira-media:/app/apps/server/data/media
     init: true
     restart: unless-stopped
     stop_grace_period: 15s
   web:
-    profiles: [demo]
     build:
       context: .
       dockerfile: infra/docker/web.Dockerfile

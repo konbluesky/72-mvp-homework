@@ -25,7 +25,7 @@ FROM node:26.13.0-bookworm-slim AS runtime
 RUN apt-get -o Acquire::Retries=3 update \
     && apt-get -o Acquire::Retries=3 install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
-ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 APP_MODE=mock
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 APP_MODE=live
 WORKDIR /app
 COPY --from=production-deps /app/node_modules node_modules
 COPY --from=production-deps /app/package.json package.json

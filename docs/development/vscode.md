@@ -19,9 +19,9 @@ node scripts/project.mjs ci
 
 ## 业务配置
 
-- 只编辑后端 `apps/server/.env`，参考 [最小模板](../../.env.example)。真实密钥不进入前端或 launch.json。
+- 默认使用 Live：先安装依赖，将 [最小模板](../../.env.example) 复制到后端 `apps/server/.env`，填写 GPT 与 Deepgram 配置。真实密钥不进入前端或 launch.json。
 - 前端 `apps/web/.env.local` 中 VITE_API_BASE_URL 留空即使用本地代理。
-- APP_MODE=mock 无需凭证；APP_MODE=live 使用已配置的 GPT 和 Deepgram，不自动降级 Mock。
+- F5 不固定业务模式：由后端 `.env` 的 `APP_MODE` 决定；Live 使用已配置的 GPT 和 Deepgram，不自动降级。无密钥体验显式设置 `APP_MODE=mock` 并清空服务密钥。
 - Live文字/录音均可使用，同一Deepgram key负责识别和合成；Mock明确模拟转录。
 - 部署、R2、限额和超时由代码提供默认值，只有需要覆盖时才使用 [高级模板](../../.env.advanced.example)。
 
@@ -31,7 +31,7 @@ node scripts/project.mjs ci
 
 ## 启动与调试链路
 
-`F5 / npm run dev → 选择项目运行时 → 构建 protocol → concurrently 启动 API tsx watch + Vite → 等待就绪 → 打开 Chrome`。
+`F5 → 运行时与端口预检 → 构建 protocol / parser 并编译 Ink → concurrently 启动 API tsx watch + Vite → 等待就绪 → 打开 Chrome`。终端 `npm run dev` 复用服务启动链路，浏览器由用户打开。
 
 后端断点位于 `apps/server/src`，前端断点位于 `apps/web/src`。Node 子进程自动附加已启用，前端支持 HMR；共享协议修改后需重启/重新构建，并按仓库规则更新 OpenAPI。
 

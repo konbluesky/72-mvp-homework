@@ -311,7 +311,8 @@ export class InkScenario {
       const caption = thought ? `旁白｜${narration}\n\n心声｜${thought}` : narration;
       if (caption.length > 240) throw new AppError('INVALID_PLAN', 500, '故事片段过长。');
       const cues = tags.filter((tag) => tag.startsWith('cue:'));
-      if (cues.length !== 1) throw new AppError('INVALID_PLAN', 500, '故事片段缺少呈现锚点。');
+      if (cues.length !== 1)
+        throw new AppError('INVALID_PLAN', 500, '这一段剧情暂时无法显示，请稍后重试。');
       const [, type, value, shotLocation] = cues[0]!.split(':');
       const id = tags.find((tag: string) => tag.startsWith('voice:'))?.slice(6);
       const next = this.checkpoint(story, checkpoint.revision + beats.length + 1);

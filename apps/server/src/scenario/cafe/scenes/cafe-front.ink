@@ -15,10 +15,11 @@
 
 === inspect_notice ===
 ~ notice_read = true
-# cue:prop:notice
 {met:
+# cue:prop:notice
 告示写着旧店的最后营业日。米拉念完，往仍亮着灯的窗边看了一眼。
 - else:
+# cue:prop:notice
 告示写着：今晚是旧店的最后营业日，之后将搬迁。玻璃门还没关，你仍可以选择进店或离开。
 }
 -> menu

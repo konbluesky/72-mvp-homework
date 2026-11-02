@@ -15,28 +15,100 @@
 - Node.js **26.13.0**、npm **11.20.0**；nvm 用户先执行 `nvm install && nvm use`。
 - FFmpeg，用于录音和图片处理；macOS 可执行 `brew install ffmpeg`，其他系统见[环境安装说明](docs/development/README.md)。
 
-### 本地开发
+### 首次准备
 
 在项目根目录执行：
 
 ```sh
 npm ci
+cp -n .env.example apps/server/.env
+```
+
+**默认使用 Live 配置。** 编辑 `apps/server/.env`，将 `APP_MODE` 设为 `live`，并按下方 [Live 配置](#live-文字与语音默认)填写 GPT 与 Deepgram 的服务信息、模型和密钥；已有文件直接编辑。
+
+### VS Code 按 F5 一键启动（推荐）
+
+完成首次准备后，用 VS Code 打开项目根目录，在“运行和调试”中选择 **角色互动平台: 一键启动前后端**，按 **F5**。
+
+自动完成：**运行时与端口预检 → 编译共享包和 Ink → 启动 API / Vite → 等待就绪 → 打开 Chrome**。业务配置读取 `apps/server/.env`，前后端均可打断点。
+
+`Shift+F5` 停止本次调试。端口在 [`.vscode/settings.json`](.vscode/settings.json) 的 `mira.apiPort` / `mira.webPort` 修改；已有服务占用端口时复用现有页面或调整端口。详情见 [VS Code 启动与调试](docs/development/vscode.md)。
+
+### 终端启动
+
+```sh
 npm run dev
 ```
 
 打开 [http://localhost:5173](http://localhost:5173)。默认故事页为 `/`，原版对话页为 `/legacy.html`，API 端口为 `3000`。
 
-> **默认无需 API 密钥。** Mock 使用字幕、模拟识别和图片；真实语音及模型服务按 [Provider 配置](docs/provider-configuration.md)启用。
+### 配置
 
-### Docker
+| 配置位置                     | 用途                                                          | 模板                                             |
+| ---------------------------- | ------------------------------------------------------------- | ------------------------------------------------ |
+| **`apps/server/.env`**       | 后端运行模式、GPT、Deepgram、生图与存储配置；进程环境变量优先 | [`.env.example`](.env.example)                   |
+| `apps/web/.env.local`        | 仅配置公开的 API 地址；本地默认走 Vite 代理，无需创建         | [`.env.frontend.example`](.env.frontend.example) |
+| 按需加入后端 `.env` 的高级项 | R2、端口、CORS、代理、超时和资源限额；高级模板不会自动加载    | [`.env.advanced.example`](.env.advanced.example) |
 
-仅需安装 Docker 与 Compose，无需另装 Node.js 或 FFmpeg：
+#### Live 文字与语音（默认）
 
-```sh
-docker compose --profile demo up --build -d
+编辑 **`apps/server/.env`**：
+
+```dotenv
+APP_MODE=live
+GPT_BASE_URL=https://your-provider.example/v1
+GPT_API_KEY=your-gpt-api-key
+GPT_MODEL=your-model-id
+DEEPGRAM_API_KEY=your-deepgram-api-key
+DEEPGRAM_MODEL=flux-lijuan-zh
 ```
 
-打开 [http://localhost:8080](http://localhost:8080)。停止服务：`docker compose --profile demo down`。更多部署说明见[部署文档](docs/operations/README.md)。
+将地址、密钥和模型替换为实际值；`GPT_BASE_URL` 填 API 根地址。`DEEPGRAM_MODEL` 是 TTS 音色，上例需账户支持；STT 默认使用 `nova-3` / `zh-CN`，共用同一 Deepgram key。只需要文字输入时，可增加 `STT_PROVIDER=disabled`。
+
+#### 可选：Live 生图
+
+在上述 Live 配置上增加：
+
+```dotenv
+IMAGE_PROVIDER=comfyui
+COMFYUI_BASE_URL=https://your-comfyui.example
+COMFYUI_OUTPUT=view
+COMFYUI_CHECKPOINT=oneObsession_v24.safetensors
+```
+
+填写可访问的 ComfyUI 节点地址及节点实际安装的 checkpoint；工作流所需节点和输出方式见[生图配置](docs/provider-configuration.md#主动图片分享)。未启用时不调用真实生图服务，Mock 使用标记为“模拟”的样图。
+
+#### 可选：无密钥 Mock 演示
+
+需要无密钥体验时，将后端 `APP_MODE` 改为 `mock`，服务密钥留空；使用字幕、示例转录和模拟图片。
+
+#### 前后端分开部署
+
+前端设置 `VITE_API_BASE_URL=https://your-api.example`，后端将前端完整 origin 加入 `CORS_ALLOWED_ORIGINS`。本地默认 `VITE_API_BASE_URL=""`，API 代理目标为 `http://127.0.0.1:3000`；默认私有本地存储无需配置，R2 按[高级配置](.env.advanced.example)启用。
+
+**密钥只放后端配置。** 修改后重启对应服务；生产前端修改 `VITE_API_BASE_URL` 后需重新构建发布。真实 `.env` 不提交仓库，`VITE_*` 只放公开信息。
+
+[完整 Provider 配置](docs/provider-configuration.md) · [部署说明](docs/operations/README.md)
+
+### Docker（使用同一份 Live 配置）
+
+安装 Docker 与 Compose，准备好 `apps/server/.env` 并填写上述 Live 配置后执行；本机无需另装 Node.js 或 FFmpeg：
+
+```sh
+docker compose up --build -d
+```
+
+打开 [http://localhost:8080](http://localhost:8080)。停止服务：`docker compose down`。
+
+Compose 通过 `env_file` 读取同一份后端配置，`APP_MODE`、GPT、Deepgram、ComfyUI 和存储选择均来自该文件。也可指定其他配置文件：
+
+```sh
+SERVER_ENV_FILE=./path/to/server.env docker compose up --build -d
+```
+
+容器会覆盖监听地址、内部端口、CORS、本地媒体目录、FFmpeg 路径和 `NODE_ENV`，以适配 nginx 与持久卷。`.env` 仅在运行时注入 API 容器；不打入镜像或前端。无密钥演示时，使用明确设置 `APP_MODE=mock` 且服务密钥为空的配置文件。
+
+[配置位置与模式](docs/provider-configuration.md#配置位置与模式) · [部署文档](docs/operations/README.md)
 
 安装与启动的实际验证范围及未通过项见[启动验收记录](docs/development/README.md#2026-11-02-安装与启动验收)。
 

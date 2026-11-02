@@ -42,4 +42,4 @@ jobs:
       - run: npm run contracts:check
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-      - run: docker compose --profile demo config --quiet
+      - run: SERVER_ENV_FILE=.env.example docker compose config --quiet
