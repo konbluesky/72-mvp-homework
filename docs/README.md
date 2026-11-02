@@ -19,7 +19,7 @@
 
 - [主动图片分享](architecture/image-sharing.md)：独立后台 ComfyUI、占位/图片回执、两入口卡片、空闲展示与 Mock 配置；本轮未执行真实出图或功能验收。
 
-- [剧情导演与LLM会话分离（初步设计，待审阅）](architecture/llm-directed-story-design.md)：固定脚本与动态推荐的职责、补妆前后流程、涉及文件、调用成本与迁移边界；尚未实施。
+- [剧情导演与LLM会话分离](architecture/llm-directed-story-design.md)：4.0.0 的 16 个开放交流段落、事件后接话、角色意愿复核、双轨推进与验证边界。
 
 - [当前程序组件与交互时序](architecture/program-interactions.md)：两个前端入口、WebGAL/Live2D、Ink、LangGraph、协议、LLM/Deepgram 的职责边界，以及聊天、动作、语音预览和打断时序；附标准 PlantUML 源文件。
 
@@ -35,7 +35,7 @@
 - [需求与代码对照 TODO 清单](acceptance/todo-list.md)：按需求 PDF 的原章节、原顺序、原条目列出，逐条勾选并附当前实现说明。
 - [素材来源](../assets/README.md)、[Live2D 来源与条款](../apps/web/public/assets/live2d/NOTICE.md)：必要运行资产及其来源、许可与哈希。
 - [Miara 资源说明](../apps/web/public/assets/live2d/miara/README.md)、[Miara + WebGAL 实施 prompt](prompts/miara-webgal-implementation.md)：模型、聊天、自定义参数动作与八场景已接入；Haru 保留并可显式切换。
-- [Miara + WebGAL 八场景叙事方案](miara-webgal-scenario-design.md)：《今晚没有返程》两次见面的32–38分钟长篇扩写稿：复用八张背景，加入补妆独处、成人暧昧、自愿共度一夜的留白分支，以及第二次对不同期待的回应。长篇已接入3.0.0运行包，Mock语音实现已移除；实现与验证范围见[实施记录](acceptance/miara-webgal-story.md)。
+- [Miara + WebGAL 八场景叙事方案](miara-webgal-scenario-design.md)：《今晚没有返程》两次见面的32–38分钟长篇扩写稿：复用八张背景，加入补妆独处、成人暧昧、自愿共度一夜的留白分支，以及第二次对不同期待的回应。当前 4.0.0 改为事件约束下的自由交流；实现与验证范围见[实施记录](acceptance/miara-webgal-story.md)。
 - [实施状态](acceptance/implementation-plan.md)、[Live2D 迁移验收](acceptance/live2d-migration.md)、[角色四态调整](acceptance/character-expressiveness.md)、[Deepgram 集成记录](acceptance/deepgram-integration.md)。
 - [演示步骤](acceptance/demo.md)、[AI 协作记录](../AI_USAGE.md)。
 

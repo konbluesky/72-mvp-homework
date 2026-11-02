@@ -22,7 +22,9 @@ COPY apps/web/package.json apps/web/package.json
 RUN npm ci --omit=dev --workspace=@mira/server --workspace=@mira/protocol --ignore-scripts && npm cache clean --force
 
 FROM node:26.13.0-bookworm-slim AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get -o Acquire::Retries=3 update \
+    && apt-get -o Acquire::Retries=3 install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 APP_MODE=mock
 WORKDIR /app
 COPY --from=production-deps /app/node_modules node_modules

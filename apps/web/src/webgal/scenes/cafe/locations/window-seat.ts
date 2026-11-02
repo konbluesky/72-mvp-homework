@@ -14,5 +14,5 @@ export const windowSeat: LocationDefinition = {
   lookWindowCamera: true,
   foreground: drawWindowSeat,
   outdoor: false,
-  anchors: { 'view-photo': [1000, 1250] },
+  anchors: { 'view-photo': [1000, 1250], 'inspect-coffee': [1210, 1160] },
 };

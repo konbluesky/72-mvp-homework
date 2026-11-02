@@ -1,4 +1,4 @@
-import type { Action, StoryState, PresentationEvent } from '@mira/protocol';
+import type { Action, StoryState, StoryAction, PresentationEvent } from '@mira/protocol';
 import type { InteractiveState } from '../../interaction/state.js';
 import type { PresentationPort } from '../../playback/scheduler.js';
 import type { CharacterDriver, CharacterId } from '../characters/driver.js';
@@ -31,7 +31,9 @@ export interface SceneModule {
   characterPresentation?: { hiddenParts?: Readonly<Record<string, readonly string[]>> };
   assets: readonly LocalStageAsset[];
   initialView: { story: StoryState; environment: string };
-  location(id: string): LocationDefinition;
+  location(id: string, story?: StoryState): LocationDefinition;
+  conversationAvailable?(story: StoryState): boolean;
+  advanceAction?(story: StoryState): StoryAction | undefined;
   createPresentation(
     lease: VisualEngineLease,
     actor: CharacterDriver,

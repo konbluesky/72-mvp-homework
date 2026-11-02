@@ -26,14 +26,6 @@ export function drawWindowSeat(g: Graphics, story: StoryState, texture: Texture)
 export function drawCounter(g: Graphics, story: StoryState, texture: Texture) {
   furnitureTexture(g, texture, [0, 976, 2560, 976, 2560, 1440, 0, 1440]);
   drawCafeAmbience(g, story);
-  if (story.revealed.includes('reply')) {
-    g.beginFill(0xf1dfb2).drawRoundedRect(1740, 1060, 300, 150, 8).endFill();
-    g.lineStyle(4, 0x8e7661)
-      .moveTo(1780, 1100)
-      .lineTo(2000, 1100)
-      .moveTo(1780, 1140)
-      .lineTo(1940, 1140);
-  }
 }
 export function drawWashroom(g: Graphics, story: StoryState, texture: Texture) {
   furnitureTexture(g, texture, [150, 960, 330, 885, 1870, 885, 2020, 960, 2020, 1440, 150, 1440]);

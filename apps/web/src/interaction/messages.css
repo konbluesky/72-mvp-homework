@@ -47,3 +47,9 @@
 .message-status-failed {
   color: #ffb1aa;
 }
+.browser-storage-note {
+  margin: 0 0 10px;
+  color: #d4bb91;
+  font-size: 12px;
+  line-height: 1.8;
+}

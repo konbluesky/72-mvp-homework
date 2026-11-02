@@ -59,6 +59,7 @@ export const initialStory = (
   ...view,
 });
 export const StoryInteractionSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('image'), revision: z.number().int().nonnegative() }).strict(),
   z.object({ kind: z.literal('move'), location: LocationSchema }).strict(),
   z.object({ kind: z.literal('inspect'), prop: StoryPropSchema }).strict(),
   z.object({ kind: z.literal('choose'), ending: EndingSchema }).strict(),

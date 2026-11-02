@@ -8,6 +8,8 @@
 
 `SOURCES.json` 保存来源、原生/运行尺寸、处理方式、每文件 SHA-256 和字节数。本地 PNG 成品位于 `outputs/cafe-art-refresh/final/`，不作为构建依赖。使用 Pillow 运行 `python scripts/prepare-cafe-art.py outputs/cafe-art-refresh/final` 可重新打包 WebP 和哈希；该脚本不访问 API、不读取密钥。
 
-信封保持闭合，不包含信件正文；照片无人。精确的信件/海报阅读文本仍由场景注册表与舞台文字层提供。雨只通过引擎在室外或窗外呈现，图片保留湿地面和玻璃水珠。
+2026-11-02 物件清理：走廊画面移除旧海报标题及人物署名，保留无人海岸画；吧台原信封正面改为公开饮品卡。两处使用 `scripts/retouch-cafe-props.py` 做本地栅格修补，没有再次调用图像服务。原图哈希、修补脚本和最终文件哈希记录在 `SOURCES.json`；原始生成稿仍保留为来源记录。原图备份与 PNG/WebP 成品位于 `outputs/cafe-props-refresh/`，不作为构建依赖。
+
+当前物件为营业提示、无署名风景画、公开饮品单及桌上咖啡；具体阅读文本由服务端场景包提供。照片无人。雨只通过引擎在室外或窗外呈现，图片保留湿地面和玻璃水珠。
 
 资源变化后运行 `npm run assets:check`。Haru/Miara 的许可与归属继续见上级 live2d/NOTICE.md，不适用本目录原创背景说明。

@@ -22,9 +22,22 @@ export const LOCATIONS = defineLocations(metadata.locations, {
   counter,
   'street-walk': streetWalk,
 });
-export function cafeLocation(id: string): LocationDefinition {
+export function cafeConversationAvailable(story: StoryState): boolean {
+  return (
+    story.milestones.includes('met') &&
+    (story.milestones.includes('companionship') || story.location === 'lobby')
+  );
+}
+export function cafeAdvanceAction(story: StoryState) {
+  return (
+    story.actions.find((action) => action.id === 'talk-next-scene') ??
+    story.actions.find((action) => action.id === 'choose-reunion')
+  );
+}
+export function cafeLocation(id: string, story?: StoryState): LocationDefinition {
   const location = Object.hasOwn(LOCATIONS, id) ? LOCATIONS[id] : undefined;
   if (!location) throw new Error('CAFE_LOCATION_NOT_REGISTERED');
+  if (story && !cafeConversationAvailable(story)) return { ...location, visible: false };
   return location;
 }
 export const CAFE_ASSETS: readonly LocalStageAsset[] = [

@@ -102,8 +102,8 @@
       "height": 936
     },
     "photo-corridor.webp": {
-      "sha256": "be57fe28b5412a435b060a190525179c757caa222ad7418514e69743167a4a9a",
-      "bytes": 286266,
+      "sha256": "6fe7ba9491b9ba45dd81a832e985bf48b2aec156c03a32ea370ea8fef48dc0b5",
+      "bytes": 301608,
       "width": 1664,
       "height": 936
     },
@@ -114,8 +114,8 @@
       "height": 936
     },
     "counter.webp": {
-      "sha256": "94e8f644293531b345b8aa189ac86ace7a9880504fbad64e45eac30eb136934b",
-      "bytes": 333848,
+      "sha256": "4d7a4986a8689c5c5ad8043bb2571880b6af6ffcbb2e6efedea7d02641f11e9e",
+      "bytes": 364396,
       "width": 1664,
       "height": 936
     },
@@ -143,5 +143,16 @@
       "width": 1664,
       "height": 936
     }
+  },
+  "localRetouch": {
+    "date": "2026-11-02",
+    "script": "scripts/retouch-cafe-props.py",
+    "method": "Local raster retouch: reconstruct poster paper from neighbouring pixels, remove obsolete names, replace the envelope face with a public menu card; no image API calls.",
+    "sourceHashes": {
+      "photo-corridor.webp": "be57fe28b5412a435b060a190525179c757caa222ad7418514e69743167a4a9a",
+      "counter.webp": "94e8f644293531b345b8aa189ac86ace7a9880504fbad64e45eac30eb136934b"
+    },
+    "sourceDirectory": "outputs/cafe-props-refresh/source",
+    "outputDirectory": "outputs/cafe-props-refresh/final"
   }
 }

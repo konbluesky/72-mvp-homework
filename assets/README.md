@@ -1,10 +1,8 @@
 # 素材来源与状态
 
-`mock-audio/*.wav` 是本项目原创中文短句，经 eSpeak NG 1.52.0 (`cmn`, 175 words/minute) 在本机离线合成的 PCM WAV。它们是真实语音波形，供 HTTP 下载、Web Audio 解码与播放验收；音色机械，未作为正式 Mira 音色或真人听感验收。
+2026-11-01：Mock TTS 及原离线 WAV 目录、manifest 已移除，当前剧情包和后端部署不再依赖这些文件。此前语音由本机 eSpeak NG 1.52.0（`cmn`、175 words/minute）生成，不包含真人录音，也未作为正式角色音色验收。
 
-文本、文件名、时长、采样率与 SHA-256 见 [manifest](mock-audio/manifest.json)。项目原创文本与合成输出以 [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/) 提供。eSpeak NG 生成器为 [GPL-3.0-or-later](https://github.com/espeak-ng/espeak-ng)，未随应用发布程序或模型。GPL 不自动覆盖本项目原创文本的普通程序输出。
-
-复现：安装 `espeak-ng` 后，对 manifest 中每条文本执行 `espeak-ng -v cmn -s 175 -w <id>.wav '<text>'`。运行 demo 不需要安装此生成器。
+音频编解码、私有媒体与浏览器播放测试使用 [测试信号生成器](../tests/fixtures/audio.ts) 在内存中生成 PCM WAV，再按需经 FFmpeg 编码。该信号为固定正弦波，不是语音、用户录音或生产 TTS 实现；无密钥 Mock 后续通过显式 text.ready 字幕模式演出，不将测试音频作为生产语音。
 
 未提供真人录音或最终 Mira 模型。前端使用真实 Live2D Haru 官方技术替身与本项目自绘海岸照片 `apps/web/public/assets/travel-photo.svg`，匹配 Mock 照片台词。旧探索和原型保留在本地，运行/构建不从探索目录加载。
 
@@ -20,8 +18,12 @@
 
 `apps/web/public/assets/webgal-demo/cafe-night.svg` 与 `cafe-dusk.svg` 是为本项目编写的原创 SVG 插图，不含外部照片或字体。示例调用固定 WebGAL 源码中的原生雨效和纹理，条款沿用保留的 WebGAL MPL/素材说明。详细来源见该目录 README；不导入上游 `public/game` 剧情和音频。
 
-## 最后一盏灯场景与离线语音
+## 最后一盏灯场景
 
-八个独立动漫手绘风格背景与三个打烊变体位于 `apps/web/public/assets/cafe-story/`，由用户授权使用已配置图像 API、`gpt-image-2` 和 imagegen 内置 CLI 生成，替换原有简单 SVG。完整生成提示词见 [场景生成稿](cafe-story-prompts/PROMPTS.md)；来源、原生尺寸、WebP 处理和每文件 SHA-256 随场景目录保存。全部不含人物，Live2D 的素材归属独立保留。新增九条故事/上下文台词由 eSpeak NG/cmn 离线生成，Mock 音频现有十八条，`assets/mock-audio/manifest.json` 保存文本、时长、来源及哈希。没有使用外部 TTS 或用户录音。
+八个独立动漫手绘风格背景与三个打烊变体位于 `apps/web/public/assets/cafe-story/`，由用户授权使用已配置图像 API、`gpt-image-2` 和 imagegen 内置 CLI 生成，替换原有简单 SVG。完整生成提示词见 [场景生成稿](cafe-story-prompts/PROMPTS.md)；来源、原生尺寸、WebP 处理和每文件 SHA-256 随场景目录保存。全部不含人物，Live2D 的素材归属独立保留。
 
-`apps/web/public/SOURCES.json` 记录平台图标、旅行照片和引擎预览图片的来源与 SHA-256；Live2D 和故事背景继续保留各自清单。`npm run assets:check` 现在同时核对全部公开运行资源的清单覆盖、哈希、本地引用，以及十八条离线 WAV 的哈希、文件头、时长/采样率和场景台词绑定。检查不播放音频或调用外部服务。
+2026-11-02：走廊旧海报署名和吧台旧信封已做本地栅格修补，分别改为无署名风景画与饮品卡；脚本为 `scripts/retouch-cafe-props.py`，原图哈希与新文件哈希保留在场景 `SOURCES.json`，没有新增图像 API 请求。
+
+`apps/web/public/SOURCES.json` 记录平台图标、旅行照片和引擎预览图片的来源与 SHA-256；Live2D 和故事背景继续保留各自清单。`npm run assets:check` 核对全部公开运行资源的清单覆盖、哈希和本地引用；当前场景未声明离线 WAV，离线音频检查计数为零。检查不播放音频或调用外部服务。
+
+`assets/images/window-keepsake-mock.webp` 是现有窗边背景的服务端部署副本，仅用于明确标记的模拟图片分享；来源与 SHA-256 见 `assets/images/SOURCES.json`，许可沿用上述原创场景图。Docker 与服务端发布包携带它，不依赖前端 public 目录。真实生成图片仅写私有媒体目录/对象存储，不入库。工作流副本 `apps/server/src/images/workflow/api.json` 与 `params.json` 复用用户指定的 baseGenerate 采样图，仅保存必要 API 节点与经修正的绑定，原探索 prompt/UI data 不作为运行依赖。

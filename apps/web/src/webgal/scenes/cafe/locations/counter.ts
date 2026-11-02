@@ -3,7 +3,7 @@ import { drawCounter } from './foreground.js';
 import type { LocationDefinition } from '../../location.js';
 export const counter: LocationDefinition = {
   label: metadata.locations['counter'],
-  description: '托盘里的旧信与空白便笺。告别或再见，都可以在这里说清楚。',
+  description: '吧台上摆着饮品单，收银台旁留着放杯碟的位置。可以看看喝的东西，再决定是否点单。',
   x: 1040,
   y: 1700,
   height: 1750,
@@ -13,5 +13,5 @@ export const counter: LocationDefinition = {
   lookDirection: 1,
   foreground: drawCounter,
   outdoor: false,
-  anchors: { 'inspect-letter': [1670, 1040], 'inspect-reply': [1880, 1120] },
+  anchors: { 'inspect-menu': [1670, 1040] },
 };

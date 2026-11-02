@@ -19,7 +19,7 @@ import {
 } from './interaction-layout';
 import { StoryIcon } from './StoryIcon';
 import { StoryPanels, type StoryLogEntry, type StoryPanel } from './StoryPanels';
-import { DraftSchema, ReadingHistorySchema } from '../../persistence/browser.js';
+import { DraftSchema } from '../../persistence/browser.js';
 import { MessageStatus } from './MessageStatus';
 import { StageNarrative } from './StageNarrative';
 import '../../interaction/messages.css';
@@ -34,10 +34,12 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
   const [inputMode, setInputMode] = useState<'text' | 'voice'>(
     () => host.api.persistence?.preferences().inputMode ?? 'text',
   );
-  const [log, setLog] = useState<StoryLogEntry[]>(
-    () => host.api.persistence?.read('history', ReadingHistorySchema) ?? [],
-  );
+  const [log, setLog] = useState<StoryLogEntry[]>([]);
+  const [historyReady, setHistoryReady] = useState(false);
+  const historyAttempt = useRef(0);
+  const renderedHistoryAttempt = historyAttempt.current;
   const currentLog = useRef(log);
+  const resettingLog = useRef<StoryLogEntry[] | null>(null);
   const [, resize] = useState(0);
   const input = useRef<HTMLTextAreaElement>(null);
   const stageElement = useRef<HTMLElement>(null);
@@ -55,7 +57,14 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     host.controller.images.gate({ draft: !!draft.trim(), modal: !!panel });
   }, [host, draft, panel]);
   useEffect(() => {
-    if (host.isDisposed) return;
+    if (
+      host.isDisposed ||
+      !historyReady ||
+      !state.connected ||
+      state.connecting ||
+      state.historyLoading
+    )
+      return;
     setLog((entries) => {
       const added = state.imageItems
         .filter((item) => !entries.some((line) => line.shareId === item.shareId))
@@ -67,7 +76,14 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
         }));
       return added.length ? retainReading([...entries, ...added]) : entries;
     });
-  }, [host, state.imageItems]);
+  }, [
+    host,
+    state.imageItems,
+    historyReady,
+    state.connected,
+    state.connecting,
+    state.historyLoading,
+  ]);
   useEffect(() => {
     if (inputMode !== 'voice' || state.voicePreview !== 'idle') finishRecordingGesture();
   }, [inputMode, state.voicePreview]);
@@ -77,31 +93,68 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       setHost(new InteractiveHost(scene));
       return;
     }
-    openingSeen.current = undefined;
-    seenText.current = { subtitle: '', narration: '' };
-    void host.start();
-    return () => host.dispose();
+    const attempt = ++historyAttempt.current;
+    let current = true;
+    setHistoryReady(false);
+    void (async () => {
+      const saved = await host.api.persistence?.loadMessages();
+      if (
+        !current ||
+        host.isDisposed ||
+        attempt !== historyAttempt.current ||
+        (host.api.persistence && !host.api.persistence.ownsSession())
+      )
+        return;
+      const entries = saved?.history ?? [];
+      resettingLog.current = null;
+      setLog(entries);
+      currentLog.current = entries;
+      logId.current = Math.max(0, ...entries.map((line) => line.id));
+      userTurnSeen.current = entries.some((line) => line.kind === 'user');
+      openingSeen.current = undefined;
+      seenText.current = { subtitle: '', narration: '' };
+      setHistoryReady(true);
+      await host.start();
+    })();
+    return () => {
+      current = false;
+      ++historyAttempt.current;
+      host.dispose();
+    };
   }, [host]);
   useEffect(() => {
+    if (!historyReady || host.isDisposed || renderedHistoryAttempt !== historyAttempt.current)
+      return;
+    if (resettingLog.current) {
+      if (log !== resettingLog.current) return;
+      resettingLog.current = null;
+    }
     currentLog.current = log;
-    host.api.persistence?.write('history', log);
-  }, [host, log]);
+    void host.api.persistence?.saveHistory(log);
+  }, [host, log, historyReady, renderedHistoryAttempt]);
   useEffect(() => {
     if (state.connected) host.api.persistence?.updatePreferences({ inputMode });
   }, [host, inputMode, state.connected]);
   useEffect(() => {
     const pagehide = () => {
+      if (
+        !historyReady ||
+        host.isDisposed ||
+        resettingLog.current ||
+        renderedHistoryAttempt !== historyAttempt.current
+      )
+        return;
       const subtitle = seenText.current.subtitle;
       const entries = currentLog.current.map((line) =>
         subtitle && line.kind === 'speech' && line.text === subtitle
           ? { ...line, paused: true }
           : line,
       );
-      host.api.persistence?.write('history', entries);
+      void host.api.persistence?.saveHistory(entries);
     };
     window.addEventListener('pagehide', pagehide);
     return () => window.removeEventListener('pagehide', pagehide);
-  }, [host]);
+  }, [host, historyReady, renderedHistoryAttempt]);
   useEffect(() => {
     const element = stageElement.current;
     if (!element) return;
@@ -110,7 +163,14 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
-    if (host.isDisposed) return;
+    if (
+      host.isDisposed ||
+      !historyReady ||
+      !state.connected ||
+      state.connecting ||
+      state.historyLoading
+    )
+      return;
     const previous = seenText.current;
     const additions: StoryLogEntry[] = [];
     if (state.subtitle && state.subtitle !== previous.subtitle) {
@@ -131,15 +191,34 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     }
     seenText.current = { subtitle: state.subtitle, narration: state.narration };
     if (additions.length) setLog((entries) => retainReading([...entries, ...additions]));
-  }, [host, state.subtitle, state.narration, state.story.location, state.activeMessageId]);
+  }, [
+    host,
+    state.subtitle,
+    state.narration,
+    state.story.location,
+    state.activeMessageId,
+    historyReady,
+    state.connected,
+    state.connecting,
+    state.historyLoading,
+  ]);
   useEffect(() => {
-    if (host.isDisposed || !state.opening || openingSeen.current === state.opening) return;
+    if (
+      host.isDisposed ||
+      !historyReady ||
+      !state.connected ||
+      state.connecting ||
+      state.historyLoading ||
+      !state.opening ||
+      openingSeen.current === state.opening
+    )
+      return;
     openingSeen.current = state.opening;
     const opening = state.opening;
     setLog((entries) =>
       entries.length ? entries : [{ id: ++logId.current, kind: 'opening', text: opening.text }],
     );
-  }, [host, state.opening]);
+  }, [host, state.opening, historyReady, state.connected, state.connecting, state.historyLoading]);
   useEffect(() => {
     if (host.isDisposed || state.voicePreview !== 'ready') return;
     editDraft(state.voiceDraft);
@@ -208,22 +287,33 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     state.playback === 'buffering';
   const canAct = canUseStoryActions(state);
   const privateView = !!state.story.shot && state.story.shot.mode !== 'shared';
-  const canChat = canSubmitConversation(state) && !privateView;
+  const advanceAction = scene.advanceAction?.(state.story);
+  const conversationAvailable = scene.conversationAvailable?.(state.story) ?? true;
+  const canChat = canSubmitConversation(state) && !privateView && conversationAvailable;
   // Keep the active pointer target enabled through permission and recording phases.
   const canRecord =
     state.connected &&
     !state.connecting &&
     state.animation === 'live2d' &&
     !privateView &&
+    conversationAvailable &&
     state.voiceInput &&
     state.voicePreview === 'idle';
   const voicePending = state.recording !== 'idle' || state.voicePreview === 'transcribing';
-  const suggestions = conversationSuggestions(state, !userTurnSeen.current);
+  const suggestions = conversationAvailable
+    ? conversationSuggestions(state, !userTurnSeen.current)
+    : [];
   const progressActions = state.story.actions.filter(
-    (action) => action.kind === 'talk' || action.kind === 'choose',
+    (action) =>
+      action.kind === 'talk' ||
+      action.kind === 'choose' ||
+      (!conversationAvailable && action.kind === 'move'),
   );
   const openingText = state.opening?.text ?? host.location.description;
-  const stageLocation = scene.location(state.story.shot?.location ?? state.story.location);
+  const stageLocation = scene.location(
+    state.story.shot?.location ?? state.story.location,
+    state.story,
+  );
   const stageWidth = stageElement.current?.getBoundingClientRect().width ?? 0;
   const actorX = parseFloat(host.point(stageLocation.x, 0).left);
   const narrativeSide = stageWidth && actorX > stageWidth / 2 ? 'left' : 'right';
@@ -293,6 +383,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       !text ||
       host.isDisposed ||
       !canSubmitConversation(current) ||
+      scene.conversationAvailable?.(current.story) === false ||
       (current.story.shot && current.story.shot.mode !== 'shared')
     )
       return;
@@ -322,6 +413,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     host.controller.interrupt();
   }
   function newStory() {
+    if (!historyReady || host.isDisposed || host.getSnapshot().connecting) return;
     if (host.getSnapshot().reloadRequired) {
       window.location.reload();
       return;
@@ -329,9 +421,13 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     finishRecordingGesture();
     setPanel(null);
     setExploring(false);
-    host.api.persistence?.clearReading();
+    ++historyAttempt.current;
+    const empty: StoryLogEntry[] = [];
+    resettingLog.current = empty;
+    currentLog.current = empty;
+    setLog(empty);
+    void host.api.persistence?.clearReading();
     editDraft('');
-    setLog([]);
     userTurnSeen.current = false;
     openingSeen.current = undefined;
     seenText.current = { subtitle: '', narration: '' };
@@ -343,6 +439,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       host.isDisposed ||
       !current.voiceInput ||
       !current.connected ||
+      scene.conversationAvailable?.(current.story) === false ||
       current.animation === 'loading' ||
       current.recording !== 'idle' ||
       current.voicePreview !== 'idle'
@@ -447,7 +544,11 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
         {exploring && canAct && !state.documentTitle && (
           <div className="scene-observations" aria-label="当前剧情机会与可选物件">
             <div className="observation-list story-progress-actions">
-              <p className="chat-narration">继续当前环节，也可以留在这里自由聊。</p>
+              <p className="chat-narration">
+                {conversationAvailable
+                  ? '继续当前环节，也可以留在这里自由聊。'
+                  : '尚未开始交谈，先选择接下来的行动。'}
+              </p>
               {progressActions.map((action) => (
                 <button key={action.id} onClick={() => perform(action)}>
                   <StoryIcon name="arrow" />
@@ -489,7 +590,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
         )}
         {state.animation === 'live2d' && !state.documentTitle && !exploring && (
           <StageNarrative
-            caption={state.narration}
+            caption={state.narration || (!conversationAvailable ? openingText : '')}
             speaker={scene.speaker}
             side={narrativeSide}
             solitary={!stageLocation.visible || state.story.shot?.mode === 'blackout'}
@@ -526,6 +627,35 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
         )}
       </section>
       <section className="story-content" aria-label="持续对话">
+        {(advanceAction || groups.decisions.length > 0) && !state.documentTitle && (
+          <div className="story-progression" aria-label="剧情推进">
+            <div>
+              <span>{advanceAction ? '可选的下一步' : '接下来的选择'}</span>
+              <p>{advanceAction?.label ?? '选择接下来怎么做'}</p>
+              {conversationAvailable && !privateView && (
+                <small>可以留在这里继续聊，也可以选择下一步。</small>
+              )}
+            </div>
+            <button
+              type="button"
+              className="story-primary"
+              disabled={!canAct}
+              onClick={() => (advanceAction ? perform(advanceAction) : setExploring(true))}
+            >
+              {advanceAction ? '推进剧情' : '剧情选择'} <StoryIcon name="arrow" />
+            </button>
+          </div>
+        )}
+        {state.historyLoading && (
+          <p className="browser-storage-note" role="status">
+            正在恢复聊天记录…
+          </p>
+        )}
+        {state.storageError && (
+          <p className="browser-storage-note" role="status">
+            {state.storageError}
+          </p>
+        )}
         {(state.reloadRequired ||
           state.sessionExpired ||
           (state.failure && state.playback !== 'audio-error' && state.animation === 'live2d')) && (
@@ -682,6 +812,20 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
                 纪念照状态 · 查看原卡
               </button>
             ))}
+          {!conversationAvailable && progressActions.length > 0 && (
+            <div className="next-replies" aria-label="当前场景的行动">
+              {progressActions.map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  disabled={!canAct}
+                  onClick={() => perform(action)}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
           {suggestions.length > 0 && (!draft.trim() || privateView) && (
             <div className="next-replies" aria-label="推荐的下一句话，点击发送">
               {suggestions.map((candidate) => (
@@ -712,168 +856,175 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
               {state.voiceInputError}
             </p>
           )}
-          <form
-            className={`story-composer ${state.recording === 'recording' ? 'is-recording' : ''}`}
-            onSubmit={(event) => {
-              event.preventDefault();
-              send();
-            }}
-          >
-            {(state.voiceInput || inputMode === 'voice') && (
-              <button
-                type="button"
-                className="story-icon-button input-mode-switch"
-                aria-label={inputMode === 'text' ? '切换语音输入' : '切换文字输入'}
-                title={inputMode === 'text' ? '语音输入' : '文字输入'}
-                disabled={
-                  voicePending ||
-                  (inputMode === 'text' && (!state.voiceInput || state.voicePreview !== 'idle'))
-                }
-                onClick={() => {
-                  focusText.current = true;
-                  setInputMode((mode) => (mode === 'text' ? 'voice' : 'text'));
-                }}
-              >
-                <StoryIcon name={inputMode === 'text' ? 'mic' : 'keyboard'} />
-              </button>
-            )}
-            {inputMode === 'text' ? (
-              <>
-                <label className="sr-only" htmlFor="story-input">
-                  和{scene.speaker}说话
-                </label>
-                <textarea
-                  id="story-input"
-                  ref={input}
-                  onCompositionStart={() => host.controller.images.gate({ composing: true })}
-                  onCompositionEnd={() => host.controller.images.gate({ composing: false })}
-                  value={draft}
-                  rows={1}
-                  maxLength={1000}
-                  onChange={(event) => editDraft(event.target.value)}
-                  placeholder={state.voicePreview === 'ready' ? '编辑语音草稿…' : '写下你想说的话…'}
-                  disabled={!canChat}
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === 'Enter' &&
-                      !event.shiftKey &&
-                      !event.nativeEvent.isComposing
-                    ) {
-                      event.preventDefault();
-                      send();
-                    }
-                  }}
-                />
-                {busy && !draft.trim() ? (
-                  <button
-                    type="button"
-                    className="story-stop-button"
-                    aria-label="停止当前演出"
-                    onClick={stop}
-                  >
-                    <StoryIcon name="stop" />
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    className="send-button"
-                    aria-label={state.voicePreview === 'ready' ? '确认发送语音草稿' : '发送消息'}
-                    disabled={!canChat || !draft.trim()}
-                  >
-                    <StoryIcon name="send" />
-                  </button>
-                )}
-              </>
-            ) : (
-              <>
+          {conversationAvailable && (
+            <form
+              className={`story-composer ${state.recording === 'recording' ? 'is-recording' : ''}`}
+              onSubmit={(event) => {
+                event.preventDefault();
+                send();
+              }}
+            >
+              {(state.voiceInput || inputMode === 'voice') && (
                 <button
                   type="button"
-                  className="record-button"
-                  aria-label="按住录音，松开后预览识别文字"
-                  disabled={!canRecord}
-                  onContextMenu={(event) => {
-                    // A recording hold must not open native menus or reach WebGAL's right-click hotkey.
-                    event.preventDefault();
-                    event.stopPropagation();
-                  }}
-                  onPointerDown={(event) => {
-                    if (
-                      event.button !== 0 ||
-                      !event.isPrimary ||
-                      !canRecord ||
-                      pointer.current !== undefined ||
-                      host.getSnapshot().recording !== 'idle'
-                    )
-                      return;
-                    event.preventDefault();
-                    recordingGesture.current = protectRecordingGesture(event.currentTarget);
-                    pointer.current = event.pointerId;
-                    pressY.current = event.clientY;
-                    try {
-                      event.currentTarget.setPointerCapture(event.pointerId);
-                    } catch {
-                      recordingGesture.current.dispose();
-                      recordingGesture.current = undefined;
-                      pointer.current = undefined;
-                      return;
-                    }
-                    startRecording();
-                  }}
-                  onPointerUp={(event) => {
-                    if (event.pointerId !== pointer.current) return;
-                    finishRecordingGesture();
-                    if (event.currentTarget.hasPointerCapture(event.pointerId))
-                      event.currentTarget.releasePointerCapture(event.pointerId);
-                    host.controller.release();
-                  }}
-                  onPointerCancel={(event) => {
-                    if (event.pointerId === pointer.current) cancelRecording();
-                  }}
-                  onLostPointerCapture={(event) => {
-                    if (event.pointerId !== pointer.current) return;
-                    const wasHeld = pointer.current !== undefined;
-                    finishRecordingGesture();
-                    if (wasHeld && host.getSnapshot().recording !== 'idle')
-                      host.controller.cancelRecording();
-                  }}
-                  onPointerMove={(event) => {
-                    if (event.pointerId === pointer.current && pressY.current - event.clientY > 70)
-                      cancelRecording();
-                  }}
-                  onKeyDown={(event) => {
-                    if ([' ', 'Enter'].includes(event.key)) {
-                      event.preventDefault();
-                      if (!event.repeat) startRecording();
-                    }
-                  }}
-                  onKeyUp={(event) => {
-                    if ([' ', 'Enter'].includes(event.key)) {
-                      event.preventDefault();
-                      host.controller.release();
-                    }
+                  className="story-icon-button input-mode-switch"
+                  aria-label={inputMode === 'text' ? '切换语音输入' : '切换文字输入'}
+                  title={inputMode === 'text' ? '语音输入' : '文字输入'}
+                  disabled={
+                    voicePending ||
+                    (inputMode === 'text' && (!state.voiceInput || state.voicePreview !== 'idle'))
+                  }
+                  onClick={() => {
+                    focusText.current = true;
+                    setInputMode((mode) => (mode === 'text' ? 'voice' : 'text'));
                   }}
                 >
-                  {state.recording === 'recording'
-                    ? '松开识别'
-                    : state.recording === 'permission'
-                      ? '等待麦克风授权'
-                      : state.voicePreview === 'transcribing'
-                        ? '识别中…'
-                        : '按住录音'}
+                  <StoryIcon name={inputMode === 'text' ? 'mic' : 'keyboard'} />
                 </button>
-                {busy && state.recording === 'idle' && state.voicePreview === 'idle' && (
+              )}
+              {inputMode === 'text' ? (
+                <>
+                  <label className="sr-only" htmlFor="story-input">
+                    和{scene.speaker}说话
+                  </label>
+                  <textarea
+                    id="story-input"
+                    ref={input}
+                    onCompositionStart={() => host.controller.images.gate({ composing: true })}
+                    onCompositionEnd={() => host.controller.images.gate({ composing: false })}
+                    value={draft}
+                    rows={1}
+                    maxLength={1000}
+                    onChange={(event) => editDraft(event.target.value)}
+                    placeholder={
+                      state.voicePreview === 'ready' ? '编辑语音草稿…' : '写下你想说的话…'
+                    }
+                    disabled={!canChat}
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === 'Enter' &&
+                        !event.shiftKey &&
+                        !event.nativeEvent.isComposing
+                      ) {
+                        event.preventDefault();
+                        send();
+                      }
+                    }}
+                  />
+                  {busy && !draft.trim() ? (
+                    <button
+                      type="button"
+                      className="story-stop-button"
+                      aria-label="停止当前演出"
+                      onClick={stop}
+                    >
+                      <StoryIcon name="stop" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      className="send-button"
+                      aria-label={state.voicePreview === 'ready' ? '确认发送语音草稿' : '发送消息'}
+                      disabled={!canChat || !draft.trim()}
+                    >
+                      <StoryIcon name="send" />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
                   <button
                     type="button"
-                    className="story-stop-button"
-                    aria-label="停止当前演出"
-                    onClick={stop}
+                    className="record-button"
+                    aria-label="按住录音，松开后预览识别文字"
+                    disabled={!canRecord}
+                    onContextMenu={(event) => {
+                      // A recording hold must not open native menus or reach WebGAL's right-click hotkey.
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    onPointerDown={(event) => {
+                      if (
+                        event.button !== 0 ||
+                        !event.isPrimary ||
+                        !canRecord ||
+                        pointer.current !== undefined ||
+                        host.getSnapshot().recording !== 'idle'
+                      )
+                        return;
+                      event.preventDefault();
+                      recordingGesture.current = protectRecordingGesture(event.currentTarget);
+                      pointer.current = event.pointerId;
+                      pressY.current = event.clientY;
+                      try {
+                        event.currentTarget.setPointerCapture(event.pointerId);
+                      } catch {
+                        recordingGesture.current.dispose();
+                        recordingGesture.current = undefined;
+                        pointer.current = undefined;
+                        return;
+                      }
+                      startRecording();
+                    }}
+                    onPointerUp={(event) => {
+                      if (event.pointerId !== pointer.current) return;
+                      finishRecordingGesture();
+                      if (event.currentTarget.hasPointerCapture(event.pointerId))
+                        event.currentTarget.releasePointerCapture(event.pointerId);
+                      host.controller.release();
+                    }}
+                    onPointerCancel={(event) => {
+                      if (event.pointerId === pointer.current) cancelRecording();
+                    }}
+                    onLostPointerCapture={(event) => {
+                      if (event.pointerId !== pointer.current) return;
+                      const wasHeld = pointer.current !== undefined;
+                      finishRecordingGesture();
+                      if (wasHeld && host.getSnapshot().recording !== 'idle')
+                        host.controller.cancelRecording();
+                    }}
+                    onPointerMove={(event) => {
+                      if (
+                        event.pointerId === pointer.current &&
+                        pressY.current - event.clientY > 70
+                      )
+                        cancelRecording();
+                    }}
+                    onKeyDown={(event) => {
+                      if ([' ', 'Enter'].includes(event.key)) {
+                        event.preventDefault();
+                        if (!event.repeat) startRecording();
+                      }
+                    }}
+                    onKeyUp={(event) => {
+                      if ([' ', 'Enter'].includes(event.key)) {
+                        event.preventDefault();
+                        host.controller.release();
+                      }
+                    }}
                   >
-                    <StoryIcon name="stop" />
+                    {state.recording === 'recording'
+                      ? '松开识别'
+                      : state.recording === 'permission'
+                        ? '等待麦克风授权'
+                        : state.voicePreview === 'transcribing'
+                          ? '识别中…'
+                          : '按住录音'}
                   </button>
-                )}
-              </>
-            )}
-          </form>
+                  {busy && state.recording === 'idle' && state.voicePreview === 'idle' && (
+                    <button
+                      type="button"
+                      className="story-stop-button"
+                      aria-label="停止当前演出"
+                      onClick={stop}
+                    >
+                      <StoryIcon name="stop" />
+                    </button>
+                  )}
+                </>
+              )}
+            </form>
+          )}
         </section>
       </section>
       <StoryPanels

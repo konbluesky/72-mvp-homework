@@ -1,7 +1,12 @@
 import { initialStory } from '@mira/protocol';
 import type { SceneModule } from '../module.js';
 import { CafePresentation } from './presentation.js';
-import { CAFE_ASSETS, cafeLocation } from './definition.js';
+import {
+  CAFE_ASSETS,
+  cafeLocation,
+  cafeConversationAvailable,
+  cafeAdvanceAction,
+} from './definition.js';
 import metadata from './manifest.generated.json';
 import { isCharacterId, type CharacterId } from '../../characters/profiles/index.js';
 const defaultCharacter = metadata.defaultCharacter;
@@ -32,10 +37,12 @@ export const cafeSceneModule: SceneModule = {
   },
   assets: CAFE_ASSETS,
   initialView: {
-    story: initialStory({ location: 'lobby', ambience: 'open', phase: 'exploration' }),
+    story: initialStory({ location: 'street-wide', ambience: 'open', phase: 'arrival' }),
     environment: metadata.environment.default,
   },
   location: cafeLocation,
+  conversationAvailable: cafeConversationAvailable,
+  advanceAction: cafeAdvanceAction,
   createPresentation: (lease, actor, state) => new CafePresentation(lease, actor, state),
   environmentPreviews: metadata.environment.variants.map((variant) => ({
     label: '环境预览',

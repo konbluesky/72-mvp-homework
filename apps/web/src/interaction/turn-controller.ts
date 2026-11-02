@@ -41,12 +41,16 @@ export class TurnController {
   private recoveryCancellation?: FrozenTurn;
   private savedPresentation?: ActiveRecovery['presentation'];
   private removeStorageListener?: () => void;
+  private removeMessageStatusListener?: () => void;
 
   constructor(
     private readonly api: ApiClient,
     private readonly playback: PlaybackScheduler,
     private readonly store: InteractiveState,
   ) {
+    // A retained Vue store (for example during HMR) cannot accept input before this owner restores it.
+    this.store.connected = false;
+    this.store.connecting = false;
     this.images = new MediaShareCoordinator(
       api,
       store,
@@ -56,6 +60,11 @@ export class TurnController {
       },
     );
     playback.setImages(this.images);
+    this.removeMessageStatusListener = api.persistence?.onMessageStatus((status) => {
+      if (this.disposed) return;
+      this.store.historyLoading = status.loading;
+      this.store.storageError = status.error;
+    });
     this.removeStorageListener = api.persistence?.onReplacement(() => {
       if (this.disposed) return;
       this.connectionLost();
@@ -136,9 +145,13 @@ export class TurnController {
     try {
       if (!this.browserLoaded || !this.api.persistence?.ownsSession()) {
         const saved = this.api.persistence?.claimRecovery();
+        const messages = this.api.persistence
+          ? await this.api.persistence.loadMessages()
+          : undefined;
+        if (!this.ownsConnection(epoch) || signal.aborted) return;
         this.browserLoaded = true;
         if (!reset && saved) {
-          this.store.outgoing = saved.outgoing ?? [];
+          this.store.outgoing = messages?.outgoing ?? [];
           if (
             saved.status === 'expired' ||
             (!saved.pendingRestart &&
@@ -160,7 +173,7 @@ export class TurnController {
           );
           this.recoveryCancellation = saved.activeTurn;
           this.savedPresentation = saved.presentation;
-          this.store.outgoing = saved.outgoing ?? [];
+          this.store.outgoing = messages?.outgoing ?? [];
         }
       }
       if (reset) {
@@ -172,6 +185,10 @@ export class TurnController {
         this.store.outgoing = [];
         if (this.api.credentials()) this.checkpointBrowser();
         else this.api.persistence?.saveRecovery({ status: 'expired' });
+      }
+      if (this.api.persistence) {
+        await this.api.persistence.loadMessages();
+        if (!this.ownsConnection(epoch) || signal.aborted) return;
       }
       if (this.sessionId && !reset) {
         const cancelled = this.recoveryCancellation;
@@ -523,11 +540,12 @@ export class TurnController {
     this.checkpointBrowser();
     this.disposed = true;
     this.removeStorageListener?.();
+    this.removeMessageStatusListener?.();
     this.images.dispose();
     this.connection.abort();
     this.receipts.clear();
     this.api.clear();
-    await this.playback.dispose();
+    await Promise.all([this.api.persistence?.flushMessages(), this.playback.dispose()]);
   }
   private async presentImage(share: ImageShareView, revision: number): Promise<boolean> {
     if (

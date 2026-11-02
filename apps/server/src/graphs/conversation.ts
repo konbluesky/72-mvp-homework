@@ -25,7 +25,10 @@ import {
   trimPlannerHistory,
 } from '../scenario/runtime/context.js';
 import type { Session, SessionManager, Turn } from '../sessions/manager.js';
-import { actionConfirmationInput } from '../scenario/runtime/action-confirmation.js';
+import {
+  actionConfirmationInput,
+  interactionActionId,
+} from '../scenario/runtime/action-confirmation.js';
 
 export type TurnInput =
   | { kind: 'media'; media: { kind: 'image-share'; shareId: string; claimId: string } }
@@ -202,6 +205,21 @@ export async function runConversation(
       });
       return { text };
     })
+    .addNode('review_interaction', async () => {
+      if (input.kind !== 'interaction') return {};
+      active();
+      // Resolve and validate the exact current choice before asking about character willingness.
+      scenario.propose(input.interaction, origin);
+      const actionId = interactionActionId(input.interaction);
+      const action = scenario.frame(origin).story.actions.find((item) => item.id === actionId);
+      if (!action) throw new AppError('INVALID_REQUEST', 400, '这里的选择已经更新。', true);
+      const needsConfirmation = !!scenario.actionReview?.(origin, actionId);
+      if (needsConfirmation) {
+        turn.conversationSnapshot = { revision: origin.revision, location: session.story.location };
+        sessions.addUser(session, turn, `[选择：${action.label}]`);
+      }
+      return { actionId, needsConfirmation, text: needsConfirmation ? action.label : '' };
+    })
     .addNode('story_interaction', async (state) => {
       active();
       if (session.narrative.revision !== origin.revision)
@@ -219,7 +237,7 @@ export async function runConversation(
       sessions.imageDecision(session, state.mediaDecision?.decision);
       const dependencies: string[] = [];
       let audioCount = 0;
-      let usedGeneratedReply = false;
+      const hasAuthoredSpeech = beats.some((beat) => !!beat.line);
       for (const beat of beats) {
         active();
         if (dependencies.length) {
@@ -230,21 +248,9 @@ export async function runConversation(
           if (turn.targets.get(previous)?.confirmed?.status !== 'presented')
             throw new AppError('MEDIA_FAILED', 502, '场景未完成，已保留最后确认的位置。', true);
         }
-        // Ordinary response beats may use the LLM's actual reply. Authored facts, shots,
-        // movement and milestone changes retain their deterministic presentation anchors.
-        const canImprovise =
-          beats.length === 1 &&
-          beat.event.type === 'beat' &&
-          !beat.event.shot &&
-          beat.frame.story.milestones.join('|') ===
-            scenario.frame(origin).story.milestones.join('|');
-        if (canImprovise && state.plan?.segments.length) usedGeneratedReply = true;
-        const lines =
-          canImprovise && state.plan?.segments.length
-            ? state.plan.segments
-            : beat.line
-              ? [beat.line]
-              : [];
+        // Only short authored anchors (a greeting, puzzle answer or consent) are spoken here.
+        // Ordinary conversation is generated after the actual event has been presented.
+        const lines = beat.line ? [beat.line] : [];
         for (const line of lines) {
           const payload = await prepareLine(line.text, line.emotion, line.action);
           sessions.issue(session, turn, payload);
@@ -267,10 +273,7 @@ export async function runConversation(
           type: 'presentation.ready',
           payload: {
             presentationId: id(),
-            caption:
-              canImprovise && state.plan?.segments.length
-                ? '她听完你的话，自然地接着回应。'
-                : beat.caption,
+            caption: beat.caption,
             events: [event],
             storyAfter: beat.frame.story,
             factsAfter: beat.frame.facts,
@@ -291,39 +294,120 @@ export async function runConversation(
       }
       let suggestions: ReplyPlan['suggestions'] = [];
       const latest = scenario.frame(session.narrative);
-      if (usedGeneratedReply && state.plan) {
-        suggestions = state.plan.suggestions.filter(notAlreadySaid);
-      } else if (!latest.story.shot || latest.story.shot.mode === 'shared') {
+      if (
+        (scenario.canConverse?.(session.narrative) ?? true) &&
+        (!latest.story.shot || latest.story.shot.mode === 'shared')
+      ) {
+        const currentActionId = interactionActionId(intent);
+        const action = scenario
+          .frame(origin)
+          .story.actions.find((item) => item.id === currentActionId);
+        const latestContext = scenario.context(session.narrative, session.history);
+        let response: ReplyPlan | undefined;
         try {
-          const latestContext = scenario.context(session.narrative, session.history);
-          const raw = await stage('story_suggestions', () =>
-            providers.planner.plan(
-              {
-                ...latestContext,
-                systemPrompt:
-                  latestContext.systemPrompt +
-                  '\n本次只为刚刚实际说完的回应生成玩家下一句推荐。segments必须为空，actionId和actionRequest必须为null。依据最新历史与当前剧情机会，不重复已经完成的邀请或旧问题。',
-                text: '',
-                facts: Object.entries(session.facts)
-                  .filter(([, value]) => value)
-                  .map(([key]) => key),
-                history: session.history.map(({ role, text }) => ({ role, text })).slice(-16),
-              },
-              signal,
-            ),
-          );
-          const generated = PlannerOutputSchema.safeParse(raw);
-          if (generated.success && !generated.data.actionId)
-            suggestions = filterSuggestions(
-              generated.data.suggestions,
-              latest.story.actions,
-              latest.story.phase,
-              latest.recommendationPolicy,
-            ).filter(notAlreadySaid);
+          for (let attempt = 0; attempt <= config.MAX_SCHEMA_REPAIRS; attempt++) {
+            const raw = await stage(
+              hasAuthoredSpeech ? 'story_suggestions' : 'story_reply',
+              async () =>
+                providers.planner.plan(
+                  {
+                    ...latestContext,
+                    systemPrompt:
+                      latestContext.systemPrompt +
+                      (hasAuthoredSpeech
+                        ? '\n本次只为刚刚实际说完的回应生成玩家下一句推荐。segments必须为空。'
+                        : '\n刚才的场景事件已经实际呈现。请依据最新真实历史、当前玩家原话与确认后的场景，生成一句自然承接（必要时两句），并同时生成贴合这次回应的玩家推荐。先接住玩家实际的问题或意图，不念剧本，不为切换场景重新打招呼，不编之前没有谈过的话。') +
+                      '\nactionId和actionRequest必须为null，events必须为空；不得发起另一项动作。当前章是可停留的交流空间，不是待逐条完成的问题清单。选择标签不是玩家说出口的话。',
+                    scene: {
+                      ...(latestContext.scene && typeof latestContext.scene === 'object'
+                        ? latestContext.scene
+                        : {}),
+                      completedInteraction: {
+                        id: currentActionId,
+                        label: action?.label ?? '',
+                        source: input.kind === 'interaction' ? 'choice' : 'speech',
+                      },
+                    },
+                    text: input.kind === 'interaction' ? '' : state.text,
+                    facts: Object.entries(session.facts)
+                      .filter(([, value]) => value)
+                      .map(([key]) => key),
+                    history: await trimPlannerHistory(
+                      [...session.history],
+                      config.CONTEXT_HISTORY_TOKENS,
+                    ),
+                    ...(attempt
+                      ? { repair: '输出必须是无动作的自然回应和推荐，不能再提议执行刚完成的事件。' }
+                      : {}),
+                  },
+                  signal,
+                ),
+            );
+            const generated = PlannerOutputSchema.safeParse(raw);
+            if (
+              generated.success &&
+              !generated.data.actionId &&
+              !generated.data.actionRequest &&
+              (hasAuthoredSpeech
+                ? generated.data.segments.length === 0
+                : generated.data.segments.length > 0)
+            ) {
+              suggestions = filterSuggestions(
+                generated.data.suggestions,
+                latest.story.actions,
+                latest.story.phase,
+                latest.recommendationPolicy,
+              ).filter((item) => item.draft.trim() !== state.text.trim() && notAlreadySaid(item));
+              if (!hasAuthoredSpeech) {
+                response = ReplyPlanSchema.parse({
+                  segments: generated.data.segments,
+                  suggestions,
+                });
+                scenario.validate(response);
+              }
+              break;
+            }
+            if (attempt === config.MAX_SCHEMA_REPAIRS && !hasAuthoredSpeech)
+              throw new AppError(
+                'INVALID_PLAN',
+                502,
+                '刚才的行动已完成，回应暂时没有准备好，可以接着聊。',
+                true,
+              );
+          }
         } catch (error) {
           if (signal.aborted) throw error;
           active(); // A late failed request must not finish a superseded turn.
+          if (!hasAuthoredSpeech) throw error;
           logger.info({ ...turn.identity, stage: 'story_suggestions', outcome: 'unavailable' });
+        }
+        if (response) {
+          const spoken: string[] = [];
+          for (const line of response.segments) {
+            const predecessor = spoken.at(-1);
+            if (predecessor) {
+              await stage('story_reply_presentation', () =>
+                sessions.waitForPresentation(session, turn, predecessor),
+              );
+              if (turn.targets.get(predecessor)?.confirmed?.status !== 'presented')
+                throw new AppError('MEDIA_FAILED', 502, '回应未完成，已保留刚才确认的场景。', true);
+            }
+            active();
+            const payload = await prepareLine(line.text, line.emotion, line.action);
+            sessions.issue(session, turn, payload);
+            try {
+              await publish(
+                'audioUrl' in payload
+                  ? { type: 'audio.ready', payload }
+                  : { type: 'text.ready', payload },
+              );
+            } catch (error) {
+              if ('audioUrl' in payload) await media.delete(payload.audioUrl.split('/').at(-1)!);
+              throw error;
+            }
+            spoken.push(payload.segmentId);
+            audioCount++;
+          }
         }
       }
       active();
@@ -332,6 +416,8 @@ export async function runConversation(
       return {};
     })
     .addNode('build_context', async (state) => {
+      if (scenario.canConverse && !scenario.canConverse(session.narrative))
+        throw new AppError('INVALID_REQUEST', 400, '尚未开始交谈，请先选择当前场景的行动。', true);
       const shot = scenario.frame(session.narrative).story.shot;
       if (shot && shot.mode !== 'shared')
         throw new AppError(
@@ -361,34 +447,14 @@ export async function runConversation(
           state.text,
           scenario.frame(origin).story.actions,
         );
-        if (action) {
-          const actionFrame = scenario.frame(origin);
-          const response = decision.data.segments.length
-            ? ReplyPlanSchema.safeParse({
-                segments: decision.data.segments,
-                suggestions: filterSuggestions(
-                  decision.data.suggestions,
-                  actionFrame.story.actions,
-                  actionFrame.story.phase,
-                  actionFrame.recommendationPolicy,
-                ).filter((item) => item.draft.trim() !== state.text.trim() && notAlreadySaid(item)),
-              })
-            : null;
-          if (!response || response.success) {
-            try {
-              if (response?.success) scenario.validate(response.data);
-              return {
-                actionId: action.id,
-                needsConfirmation: action.explicit,
-                plan: response?.success ? response.data : null,
-                mediaDecision: decision.data.mediaDecision ?? null,
-                valid: true,
-              };
-            } catch (error) {
-              if (!(error instanceof AppError)) throw error;
-            }
-          }
-        }
+        if (action)
+          return {
+            actionId: action.id,
+            needsConfirmation: action.explicit || !!scenario.actionReview?.(origin, action.id),
+            plan: null,
+            mediaDecision: decision.data.mediaDecision ?? null,
+            valid: true,
+          };
       } else if (!decision.success || (!decision.data.actionId && !decision.data.actionRequest)) {
         const frame = scenario.frame(session.narrative);
         const raw = decision.success
@@ -411,7 +477,8 @@ export async function runConversation(
               plan: parsed.data,
               actionId: null,
               valid: true,
-              mediaDecision: decision.success ? decision.data.mediaDecision : null,
+              mediaDecision:
+                decision.success && !state.conversationOnly ? decision.data.mediaDecision : null,
             };
           } catch (error) {
             if (!(error instanceof AppError)) throw error;
@@ -428,8 +495,16 @@ export async function runConversation(
       const action = actions.find((item) => item.id === state.actionId);
       if (!action) throw new AppError('INVALID_PLAN', 502, '这个选择暂时无法执行。', true);
       const raw = await stage('llm_action_confirmation', async () =>
-        providers.planner.plan(actionConfirmationInput(await context(state.text), action), signal),
+        providers.planner.plan(
+          actionConfirmationInput(await context(state.text), action, {
+            characterCondition: scenario.actionReview?.(origin, action.id),
+            source: input.kind === 'interaction' ? 'choice' : 'speech',
+          }),
+          signal,
+        ),
       );
+      if (session.narrative.revision !== origin.revision)
+        throw new AppError('STALE_TURN', 409, '场景已更新，请重新表达这次的想法。', true);
       const reviewed = PlannerOutputSchema.safeParse(raw);
       if (reviewed.success && authorizedPlannerAction(reviewed.data, state.text, [action]))
         return { needsConfirmation: false };
@@ -558,8 +633,11 @@ export async function runConversation(
       input.kind === 'audio'
         ? 'transcribe'
         : input.kind === 'interaction'
-          ? 'story_interaction'
+          ? 'review_interaction'
           : 'build_context',
+    )
+    .addConditionalEdges('review_interaction', (state) =>
+      state.needsConfirmation ? 'confirm_action' : 'story_interaction',
     )
     .addConditionalEdges('transcribe', () => 'build_context')
     .addEdge('story_interaction', END)

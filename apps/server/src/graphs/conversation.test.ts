@@ -1,5 +1,6 @@
 import { plannerOutput } from '../../../../tests/fixtures/provider-http.js';
 import { cafeScenario } from '../scenario/cafe/index.js';
+import { advance, firstEncounter, followTo } from '../scenario/cafe/story.test.helpers.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Receipt, ServerEvent, ReplyPlan } from '@mira/protocol';
 import { runConversation } from './conversation.js';
@@ -16,11 +17,15 @@ import type { ProviderSet } from '../providers/index.js';
 import { GptPlanner } from '../providers/openai/planner.js';
 import type { Fetch } from '../providers/http.js';
 
-function setup(providers: ProviderSet, overrides: Record<string, string> = {}) {
+function setup(providers: ProviderSet, overrides: Record<string, string> = {}, arrival = false) {
   const config = testConfig(overrides);
   const sessions = new SessionManager(config, { scenario: cafeScenario });
   const created = sessions.create();
   const session = sessions.authenticate(created.sessionId, `Bearer ${created.sessionToken}`);
+  if (!arrival) {
+    session.narrative = advance(firstEncounter(), 'talk-sit');
+    session.story = cafeScenario.frame(session.narrative).story;
+  }
   sessions.begin(session, { generation: 1, turnId: 'turn', receipts: [], frozenTurns: [] });
   const turn = sessions.startInput(session, 'turn', 1, 'input', 'digest');
   const media = testMedia(config);
@@ -48,13 +53,65 @@ function setup(providers: ProviderSet, overrides: Record<string, string> = {}) {
     },
   };
 }
+async function acknowledge(
+  ctx: ReturnType<typeof setup>,
+  event: Pick<ServerEvent, 'type' | 'payload'>,
+) {
+  await ctx.publish(event);
+  const targets =
+    event.type === 'presentation.ready'
+      ? (event.payload as import('@mira/protocol').PresentationReadyPayload).events.map((item) => ({
+          targetId: item.eventId,
+          kind: item.type,
+        }))
+      : event.type === 'audio.ready'
+        ? [
+            {
+              targetId: (event.payload as import('@mira/protocol').AudioReadyPayload).segmentId,
+              kind: 'segment' as const,
+              mode: 'audio' as const,
+            },
+          ]
+        : [];
+  ctx.dependencies.sessions.receipts(
+    ctx.session,
+    targets.map((target, index) => ({
+      ...ctx.turn.identity,
+      ...target,
+      receiptId: `presented-${ctx.events.length}-${index}`,
+      status: 'presented' as const,
+    })),
+  );
+}
 afterEach(() => vi.useRealTimers());
 
 describe('real LangGraph orchestration', () => {
+  it('does not call a planner or voice provider before the player has met the character', async () => {
+    const plan = vi.fn(async () => oneSegment);
+    const synthesize = vi.fn(async () => ({ bytes: wav(), mimeType: 'audio/wav' }));
+    const ctx = setup(testProviders({ plan, synthesize }), {}, true);
+    try {
+      await expect(
+        runConversation(
+          ctx.dependencies,
+          ctx.session,
+          ctx.turn,
+          { kind: 'text', text: '你好' },
+          ctx.publish,
+        ),
+      ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+      expect(plan).not.toHaveBeenCalled();
+      expect(synthesize).not.toHaveBeenCalled();
+      expect(ctx.session.history).toEqual([]);
+      expect(ctx.events).toEqual([]);
+    } finally {
+      await ctx.cleanup();
+    }
+  });
   it('generates context-aware suggestions in the same planner call without committing them as dialogue', async () => {
     const suggestions = [{ label: '问问那位朋友', draft: '你们上次见面是什么时候？' }];
     const plan = vi.fn<ProviderSet['planner']['plan']>(async () => ({
-      ...oneSegment,
+      ...(oneSegment as ReplyPlan),
       suggestions,
     }));
     const ctx = setup(testProviders({ plan }));
@@ -123,7 +180,10 @@ describe('real LangGraph orchestration', () => {
     await ctx.cleanup();
   });
   it.each([
-    { name: 'root', invalid: { ...oneSegment, url: 'https://unexpected.example/media' } },
+    {
+      name: 'root',
+      invalid: { ...(oneSegment as ReplyPlan), url: 'https://unexpected.example/media' },
+    },
     {
       name: 'segment',
       invalid: {
@@ -264,34 +324,53 @@ describe('real LangGraph orchestration', () => {
     expect(ctx.session.history.filter((entry) => entry.role === 'assistant')).toHaveLength(2);
     await ctx.cleanup();
   });
-  it('resolves structured navigation inside LangGraph without invoking a paid planner or TTS', async () => {
-    const planner = vi.fn(async () => oneSegment),
-      tts = vi.fn(async () => ({ bytes: wav(), mimeType: 'audio/wav' }));
+  it('generates a contextual reply only after structured movement is actually presented', async () => {
+    const planner = vi.fn<ProviderSet['planner']['plan']>(async () =>
+      plannerOutput(oneSegment as ReplyPlan),
+    );
+    const tts = vi.fn(async () => ({ bytes: wav(), mimeType: 'audio/wav' }));
     const ctx = setup(testProviders({ plan: planner, synthesize: tts }));
-    await runConversation(
+    const shown = deferred<Pick<ServerEvent, 'type' | 'payload'>>();
+    const task = runConversation(
       ctx.dependencies,
       ctx.session,
       ctx.turn,
       { kind: 'interaction', interaction: { kind: 'move', location: 'counter' } },
-      ctx.publish,
+      async (event) => {
+        if (event.type === 'presentation.ready') {
+          await ctx.publish(event);
+          shown.resolve(event);
+        } else await ctx.publish(event);
+      },
     );
+    const event = await shown.promise;
     expect(planner).not.toHaveBeenCalled();
     expect(tts).not.toHaveBeenCalled();
-    expect(ctx.events[0]).toMatchObject({
-      type: 'presentation.ready',
-      payload: {
-        events: expect.arrayContaining([
-          expect.objectContaining({ type: 'location', location: 'counter' }),
-        ]),
-      },
+    expect(ctx.session.story.location).toBe('window-seat');
+    const payload = event.payload as import('@mira/protocol').PresentationReadyPayload;
+    ctx.dependencies.sessions.receipts(
+      ctx.session,
+      payload.events.map((item, index) => ({
+        ...ctx.turn.identity,
+        targetId: item.eventId,
+        receiptId: `move-${index}`,
+        kind: item.type,
+        status: 'presented' as const,
+      })),
+    );
+    await task;
+    expect(planner).toHaveBeenCalledOnce();
+    expect(planner.mock.calls[0]?.[0]).toMatchObject({
+      scene: { location: 'counter', beat: 'first-counter' },
     });
-    expect(ctx.session.story.location).toBe('lobby');
-    expect(ctx.events.at(-1)).toMatchObject({ type: 'reply.done', payload: { segmentCount: 0 } });
+    expect(tts).toHaveBeenCalledOnce();
+    expect(ctx.session.story.location).toBe('counter');
+    expect(ctx.events.at(-1)).toMatchObject({ type: 'reply.done', payload: { segmentCount: 1 } });
     await ctx.cleanup();
   });
-  it('rejects model world mutations and resolves a natural-language action with one planner call', async () => {
+  it('rejects model world mutations and generates a fresh response after a natural-language event', async () => {
     const invalid = vi.fn(async () => ({
-      ...oneSegment,
+      ...(oneSegment as ReplyPlan),
       segments: [
         { ...oneSegment.segments[0], events: [{ type: 'photo', resourceId: 'travel_photo_01' }] },
       ],
@@ -307,32 +386,45 @@ describe('real LangGraph orchestration', () => {
       ),
     ).rejects.toMatchObject({ code: 'INVALID_PLAN' });
     expect(invalid).toHaveBeenCalledTimes(2);
-    expect(bad.events).toHaveLength(0);
     await bad.cleanup();
-    const plan = vi.fn(async () => ({
+    const request = {
       actionId: 'move-counter',
       actionRequest: { quote: '去吧台吧', confirmed: true },
       segments: [],
-      suggestions: [
-        { label: '旧推荐', draft: '继续问那次旅行。', kind: 'chat', relatedActionId: null },
-      ],
-    }));
+      suggestions: [],
+    };
+    const latest = plannerOutput({
+      ...(oneSegment as ReplyPlan),
+      suggestions: [{ label: '饮品单', draft: '我想看看饮品单。' }],
+    });
+    const plan = vi
+      .fn<ProviderSet['planner']['plan']>()
+      .mockResolvedValueOnce(request)
+      .mockResolvedValueOnce(request)
+      .mockResolvedValueOnce(latest);
     const ctx = setup(testProviders({ plan }));
     await runConversation(
       ctx.dependencies,
       ctx.session,
       ctx.turn,
       { kind: 'text', text: '去吧台吧' },
-      ctx.publish,
+      (event) => acknowledge(ctx, event),
     );
-    expect(plan).toHaveBeenCalledOnce();
-    expect(ctx.events.map((event) => event.type)).toEqual(['presentation.ready', 'reply.done']);
-    const target = cafeScenario.propose('move-counter', ctx.session.narrative).at(-1)!.checkpoint;
+    expect(plan).toHaveBeenCalledTimes(3);
+    expect(plan.mock.calls[2]?.[0]).toMatchObject({
+      text: '去吧台吧',
+      scene: { location: 'counter' },
+    });
+    expect(ctx.events.map((event) => event.type)).toEqual([
+      'presentation.ready',
+      'audio.ready',
+      'reply.done',
+    ]);
     expect(ctx.events.at(-1)).toMatchObject({
       type: 'reply.done',
-      payload: { suggestions: cafeScenario.suggestions!(target) },
+      payload: { suggestions: [{ label: '饮品单', draft: '我想看看饮品单。' }] },
     });
-    expect(ctx.session.story.location).toBe('lobby');
+    expect(ctx.session.story.location).toBe('counter');
     await ctx.cleanup();
   });
   it('transcribes real uploaded bytes inside the graph and labels simulated recognition', async () => {
@@ -401,22 +493,25 @@ it('clears the first budget after audio readiness and independently bounds the n
 
 // Regression sources only: runtime execution requires explicit user authorization.
 describe('conversational action confirmation', () => {
-  const text = '我们一起把这封信打开吧。';
+  const text = '我们一起看看这张饮品单吧。';
   const proposal = {
-    actionId: 'inspect-letter',
+    actionId: 'inspect-menu',
     actionRequest: { quote: text, confirmed: true },
     segments: [],
     suggestions: [],
   };
   function atCounter(providers: ProviderSet) {
     const ctx = setup(providers);
-    for (const beat of cafeScenario.propose('move-counter', ctx.session.narrative))
-      ctx.session.narrative = cafeScenario.accept(ctx.session.narrative, beat.checkpoint);
+    ctx.session.narrative = followTo(ctx.session.narrative, 'first-counter');
     ctx.session.story = cafeScenario.frame(ctx.session.narrative).story;
     return ctx;
   }
   it('reviews explicit text intent inside Graph, then commits only receipt-confirmed beats', async () => {
-    const plan = vi.fn<ProviderSet['planner']['plan']>(async () => proposal);
+    const plan = vi
+      .fn<ProviderSet['planner']['plan']>()
+      .mockResolvedValueOnce(proposal)
+      .mockResolvedValueOnce(proposal)
+      .mockResolvedValueOnce(plannerOutput(oneSegment as ReplyPlan));
     const ctx = atCounter(testProviders({ plan }));
     const presented = async (event: Pick<ServerEvent, 'type' | 'payload'>) => {
       await ctx.publish(event);
@@ -452,11 +547,11 @@ describe('conversational action confirmation', () => {
         { kind: 'text', text },
         presented,
       );
-      expect(plan).toHaveBeenCalledTimes(2);
+      expect(plan).toHaveBeenCalledTimes(3);
       expect(plan.mock.calls[1]?.[0]).toMatchObject({
-        allowedActions: [expect.objectContaining({ id: 'inspect-letter' })],
+        allowedActions: [expect.objectContaining({ id: 'inspect-menu' })],
       });
-      expect(ctx.session.story.revealed).toContain('letter');
+      expect(ctx.session.story.revealed).toContain('menu');
       expect(ctx.events.at(-1)?.type).toBe('reply.done');
     } finally {
       await ctx.cleanup();
@@ -467,7 +562,7 @@ describe('conversational action confirmation', () => {
     const plan = vi
       .fn<ProviderSet['planner']['plan']>()
       .mockResolvedValueOnce({ ...proposal, actionRequest: { quote: ambiguous, confirmed: true } })
-      .mockResolvedValueOnce({ ...oneSegment, actionId: null, actionRequest: null });
+      .mockResolvedValueOnce({ ...(oneSegment as ReplyPlan), actionId: null, actionRequest: null });
     const ctx = atCounter(testProviders({ plan }));
     try {
       await runConversation(
@@ -478,7 +573,7 @@ describe('conversational action confirmation', () => {
         ctx.publish,
       );
       expect(ctx.events.some((event) => event.type === 'presentation.ready')).toBe(false);
-      expect(ctx.session.story.revealed).not.toContain('letter');
+      expect(ctx.session.story.revealed).not.toContain('menu');
       expect(ctx.events.at(-1)?.type).toBe('reply.done');
     } finally {
       await ctx.cleanup();
@@ -547,10 +642,9 @@ describe('conversational action confirmation', () => {
 });
 
 it('keeps a player message from becoming overheard dialogue during a private cutaway', async () => {
-  const { advance, followTo } = await import('../scenario/cafe/story.test.helpers.js');
   const plan = vi.fn<ProviderSet['planner']['plan']>(async () => oneSegment);
   const ctx = setup(testProviders({ plan }));
-  ctx.session.narrative = advance(followTo(cafeScenario.initial(), 'a05-2'), 'talk-a05-2');
+  ctx.session.narrative = followTo(cafeScenario.initial(), 'first-mirror');
   ctx.session.story = cafeScenario.frame(ctx.session.narrative).story;
   const history = [...ctx.session.history];
   try {
@@ -569,4 +663,131 @@ it('keeps a player message from becoming overheard dialogue during a private cut
   } finally {
     await ctx.cleanup();
   }
+});
+
+describe('character willingness and late contextual replies', () => {
+  it('lets a UI proposal receive a cautious answer without granting attraction', async () => {
+    const plan = vi.fn<ProviderSet['planner']['plan']>(async () =>
+      plannerOutput({
+        segments: [
+          { text: '我还想先聊聊，慢慢认识吧。', emotion: 'curious', action: 'none', events: [] },
+        ],
+        suggestions: [],
+      }),
+    );
+    const ctx = setup(testProviders({ plan }));
+    const original = ctx.session.narrative;
+    try {
+      await runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        {
+          kind: 'interaction',
+          interaction: { kind: 'action', actionId: 'talk-spark', revision: original.revision },
+        },
+        ctx.publish,
+      );
+      expect(plan).toHaveBeenCalledOnce();
+      expect(plan.mock.calls[0]?.[0].systemPrompt).toContain('点击只证明玩家提出该请求');
+      expect(ctx.session.narrative).toEqual(original);
+      expect(ctx.session.story.milestones).not.toContain('chemistry');
+      expect(ctx.events.some((event) => event.type === 'presentation.ready')).toBe(false);
+      expect(ctx.events[0]).toMatchObject({
+        type: 'audio.ready',
+        payload: { text: '我还想先聊聊，慢慢认识吧。' },
+      });
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+  it('records mutual interest only after independent willingness review and the event receipt', async () => {
+    let calls = 0;
+    const ctx: ReturnType<typeof setup> = setup(
+      testProviders({
+        plan: async (input) => {
+          calls++;
+          if (calls === 1) {
+            expect(ctx.session.story.milestones).not.toContain('chemistry');
+            return {
+              actionId: 'talk-spark',
+              actionRequest: { quote: input.text, confirmed: true },
+              segments: [],
+              suggestions: [],
+            };
+          }
+          expect(ctx.session.story.milestones).toContain('chemistry');
+          return plannerOutput({
+            segments: [
+              { text: '我也想再认识你一点。', emotion: 'curious', action: 'none', events: [] },
+            ],
+            suggestions: [],
+          });
+        },
+      }),
+    );
+    ctx.session.history.push(
+      { role: 'user', text: '我也喜欢不赶路的散步。' },
+      { role: 'assistant', text: '那下次有机会可以再一起走走。' },
+    );
+    try {
+      await runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        {
+          kind: 'interaction',
+          interaction: {
+            kind: 'action',
+            actionId: 'talk-spark',
+            revision: ctx.session.narrative.revision,
+          },
+        },
+        (event) => acknowledge(ctx, event),
+      );
+      expect(calls).toBe(2);
+      expect(ctx.session.story.milestones).toContain('chemistry');
+      expect(ctx.session.story.milestones).not.toContain('appointment');
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+  it('preserves an already-presented movement while discarding a late reply from the cancelled turn', async () => {
+    const began = deferred<void>();
+    const late = deferred<unknown>();
+    const ctx = setup(
+      testProviders({
+        plan: async () => {
+          began.resolve();
+          return late.promise;
+        },
+      }),
+    );
+    try {
+      const task = runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        { kind: 'interaction', interaction: { kind: 'move', location: 'counter' } },
+        (event) => acknowledge(ctx, event),
+      );
+      const rejected = expect(task).rejects.toMatchObject({ code: 'TURN_CANCELLED' });
+      await began.promise;
+      ctx.dependencies.sessions.begin(ctx.session, {
+        generation: 2,
+        turnId: 'newer',
+        receipts: [],
+        frozenTurns: [],
+      });
+      late.resolve(plannerOutput(oneSegment as ReplyPlan));
+      await rejected;
+      expect(ctx.session.story.location).toBe('counter');
+      expect(ctx.session.current?.identity.turnId).toBe('newer');
+      expect(
+        ctx.events.some((event) => event.type === 'audio.ready' || event.type === 'reply.done'),
+      ).toBe(false);
+    } finally {
+      await ctx.cleanup();
+    }
+  });
 });

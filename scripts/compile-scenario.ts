@@ -8,6 +8,8 @@ import {
   ScenarioPresentationSchema,
   ScenarioResourceSchema,
   ScenarioThoughtsSchema,
+  ScenarioProgressionSchema,
+  ScenarioChaptersSchema,
   publicPresentation,
 } from '../apps/server/src/scenario/runtime/content-schema.js';
 
@@ -23,9 +25,11 @@ const schema = z.object({
   endings: z.array(id),
   resources: z.record(id, ScenarioResourceSchema),
   openingVoice: z.string().optional(),
+  openingNarration: z.string().trim().min(1).max(160).optional(),
   voices: z.record(id, z.unknown()),
   thoughts: ScenarioThoughtsSchema,
-  playerReplies: z.record(id, z.string()).optional(),
+  progression: ScenarioProgressionSchema,
+  actionReview: z.record(id, z.string().trim().min(1).max(800)).optional(),
   directorNotes: z.array(z.object({ replyActions: z.array(id).optional() })).optional(),
 });
 async function exists(url: URL) {
@@ -69,6 +73,10 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
   const lore = z
     .array(z.object({ id: z.string().min(1).max(80), text: z.string() }))
     .parse(JSON.parse(await readFile(new URL('lore.json', root), 'utf8')));
+  const chapterText = (await exists(new URL('chapters.json', root)))
+    ? await readFile(new URL('chapters.json', root), 'utf8')
+    : null;
+  const chapters = chapterText ? ScenarioChaptersSchema.parse(JSON.parse(chapterText)) : [];
   const allowed: Record<string, readonly string[]> = {
     location: Object.keys(manifest.locations),
     prop: lore.map((item) => item.id),
@@ -105,17 +113,34 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
     }
   }
   if (!sources['main.ink']) throw new Error(`Missing main.ink in ${entry.name}`);
+  const beats = new Set(
+    Object.values(sources).flatMap((source) =>
+      [...source.matchAll(/~\s*beat\s*=\s*"([a-zA-Z0-9_-]+)"/g)].map((match) => match[1]!),
+    ),
+  );
+  for (const chapter of chapters)
+    if (!beats.has(chapter.id)) throw new Error(`Chapter has no authored event: ${chapter.id}`);
+  const knots = new Set(
+    Object.values(sources).flatMap((source) =>
+      [...source.matchAll(/^\s*={2,}\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*={0,}\s*$/gm)].map(
+        (match) => match[1]!,
+      ),
+    ),
+  );
+  for (const step of manifest.progression)
+    if (!knots.has(step.knot) || step.locations?.some((location) => !manifest.locations[location]))
+      throw new Error(`Invalid progression destination: ${step.knot}`);
   const actionIds = new Set(
     Object.values(sources).flatMap((source) =>
       [...source.matchAll(/action:([a-z0-9-]+)/g)].map((match) => match[1]!),
     ),
   );
-  for (const key of Object.keys(manifest.playerReplies ?? {}))
-    if (!actionIds.has(key)) throw new Error(`Unknown player reply action: ${key}`);
   for (const note of manifest.directorNotes ?? [])
     for (const key of note.replyActions ?? [])
-      if (!actionIds.has(key) || !manifest.playerReplies?.[key])
+      if (!actionIds.has(key) && !(key === 'talk-next-scene' && manifest.progression.length))
         throw new Error(`Invalid guided reply reference: ${key}`);
+  for (const key of Object.keys(manifest.actionReview ?? {}))
+    if (!actionIds.has(key)) throw new Error(`Unknown reviewed action: ${key}`);
   if (manifest.openingVoice && !manifest.voices[manifest.openingVoice])
     throw new Error('Undeclared opening voice');
   // Publish only the opening already visible when a session starts, never the voice catalogue.
@@ -146,6 +171,7 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
     manifestText,
     await readFile(new URL('character.json', root), 'utf8'),
     await readFile(new URL('lore.json', root), 'utf8'),
+    ...(chapterText ? [chapterText] : []),
     ...Object.entries(sources).flat(),
   ];
   const hash = createHash('sha256').update(content.join('\n')).digest('hex');
@@ -169,6 +195,7 @@ for (const entry of await readdir(scenarios, { withFileTypes: true })) {
         locations: manifest.locations,
         resources: manifest.resources,
         ...(opening ? { opening } : {}),
+        ...(manifest.openingNarration ? { openingNarration: manifest.openingNarration } : {}),
       },
       null,
       2,

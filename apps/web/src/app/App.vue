@@ -343,13 +343,14 @@ function interrupt() {
   controller.interrupt();
 }
 function restart() {
+  if (scene.connecting || scene.historyLoading) return;
   if (scene.reloadRequired) {
     reloadPage();
     return;
   }
   editEpoch += 1;
   cancel();
-  api.persistence?.clearReading();
+  void api.persistence?.clearReading();
   conversation.reset();
   selectedSuggestion.value = undefined;
   followConversation.value = true;
@@ -474,7 +475,9 @@ function pagehide() {
   controller.interrupt('connection');
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await conversation.ready;
+  if (disposed || (api.persistence && !api.persistence.ownsSession())) return;
   if (navigator.onLine) {
     void controller.connect();
     if (!document.hidden) connectionMonitor.start();
@@ -497,6 +500,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('online', online);
   window.removeEventListener('pagehide', pagehide);
   conversation.pauseCaption();
+  conversation.dispose();
   connectionMonitor.dispose();
   void controller.dispose();
 });
@@ -657,6 +661,12 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
         </button>
       </div>
       <div class="interaction-area">
+        <p v-if="scene.historyLoading" class="browser-storage-note" role="status">
+          正在恢复聊天记录…
+        </p>
+        <p v-if="scene.storageError" class="browser-storage-note" role="status">
+          {{ scene.storageError }}
+        </p>
         <button
           v-for="item in imageShortcuts"
           :key="item.shareId"

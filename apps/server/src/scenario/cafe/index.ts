@@ -5,6 +5,7 @@ import manifestData from './manifest.json' with { type: 'json' };
 import characterData from './character.json' with { type: 'json' };
 import imageData from './image-sharing.json' with { type: 'json' };
 import loreData from './lore.json' with { type: 'json' };
+import chapterData from './chapters.json' with { type: 'json' };
 import type { ScenarioDefinition } from '../ports.js';
 import { createMockProviders } from './mock.js';
 import { InkScenario } from '../runtime/ink.js';
@@ -13,6 +14,8 @@ import {
   ScenarioPresentationSchema,
   ScenarioResourceSchema,
   ScenarioThoughtsSchema,
+  ScenarioProgressionSchema,
+  ScenarioChaptersSchema,
 } from '../runtime/content-schema.js';
 
 const flag = z
@@ -43,7 +46,9 @@ const manifest = z
     endings: z.array(z.string().min(1).max(80)).max(32),
     resources: z.record(ContentIdSchema, ScenarioResourceSchema),
     openingVoice: z.string().min(1).max(80),
-    playerReplies: z.record(z.string().regex(/^[a-z0-9-]+$/), z.string().trim().min(1).max(120)),
+    openingNarration: z.string().trim().min(1).max(160),
+    progression: ScenarioProgressionSchema,
+    actionReview: z.record(z.string().regex(/^[a-z0-9-]+$/), z.string().trim().min(1).max(800)),
     actionDescriptions: z.record(z.string(), z.string().max(300)),
     entries: z
       .object({ story: z.literal('story_start'), conversation: z.literal('conversation_start') })
@@ -109,6 +114,7 @@ const character = z
   })
   .strict()
   .parse(characterData);
+const chapters = ScenarioChaptersSchema.parse(chapterData);
 const lore = z
   .array(
     z
@@ -157,9 +163,21 @@ const runtime = new InkScenario({
   voices: manifest.voices,
   thoughts: manifest.thoughts,
   actionDescriptions: manifest.actionDescriptions,
-  playerReplies: manifest.playerReplies,
+  progression: manifest.progression,
   documents: lore,
 });
+const canConverse = (checkpoint: Parameters<typeof runtime.frame>[0]) => {
+  if (runtime.variable(checkpoint, 'view_mode') === 'conversation') return true;
+  const { story } = runtime.frame(checkpoint);
+  return (
+    story.milestones.includes('met') &&
+    (story.milestones.includes('companionship') || story.location === 'lobby')
+  );
+};
+const openingText = (checkpoint: Parameters<typeof runtime.frame>[0]) =>
+  runtime.frame(checkpoint).story.beat === 'legacy'
+    ? manifest.voices[manifest.openingVoice]!.text
+    : manifest.openingNarration;
 const imageRecipe = z
   .object({
     slotKey: ContentIdSchema,
@@ -240,12 +258,12 @@ export const cafeScenario: ScenarioDefinition = {
   mockProviders: createMockProviders,
   initial: (entry) => runtime.initial(entry),
   frame: (checkpoint) => runtime.frame(checkpoint),
+  canConverse,
+  actionReview: (_checkpoint, actionId) => manifest.actionReview[actionId],
   suggestions: (checkpoint) => runtime.suggestions(checkpoint),
   opening: (checkpoint) => {
-    const line = manifest.voices[manifest.openingVoice];
-    if (!line) throw new Error('Scenario opening voice is not declared.');
     return {
-      text: line.text,
+      text: openingText(checkpoint),
       revision: checkpoint.revision,
       suggestions: runtime.suggestions(checkpoint),
     };
@@ -253,19 +271,24 @@ export const cafeScenario: ScenarioDefinition = {
   propose: (input, checkpoint) => runtime.propose(input, checkpoint),
   accept: (current, next) => runtime.accept(current, next),
   context: (checkpoint, history) => {
-    const context = scenarioContext(
-      character,
-      runtime.frame(checkpoint),
-      history,
-      manifest.recommendations,
-    );
+    const frame = runtime.frame(checkpoint);
+    const context = scenarioContext(character, frame, history, manifest.recommendations);
     return {
       ...context,
       scene: {
         ...context.scene,
+        chapter: chapters.find((chapter) => chapter.id === frame.story.beat) ?? null,
+        relationship: {
+          basis:
+            '只依据已呈现的实际对话、当前输入与已确认事件。位置、章节和聊天次数不代表信任或心动。',
+          sharedTable: frame.story.milestones.includes('companionship'),
+          mutualInterest: frame.story.milestones.includes('chemistry'),
+          keepDistance:
+            frame.story.milestones.includes('boundary_set') &&
+            !frame.story.milestones.includes('boundary_repaired'),
+        },
         performanceActions: manifest.performanceActions,
-        openingLine:
-          checkpoint.revision === 0 ? manifest.voices[manifest.openingVoice]?.text : null,
+        openingLine: checkpoint.revision === 0 ? openingText(checkpoint) : null,
       },
     };
   },

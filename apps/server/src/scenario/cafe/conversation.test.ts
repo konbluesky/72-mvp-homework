@@ -9,7 +9,11 @@ it('keeps the original conversation at its seat without requiring WebGAL navigat
   expect(original.story.actions.some((action) => action.id === 'view-photo')).toBe(true);
   expect(original.story.actions.some((action) => action.kind === 'move')).toBe(false);
   expect(original.facts).toEqual({ photo_revealed: false, rain_softened: false });
-  expect(story.story.location).toBe('lobby');
+  expect(story.story.location).toBe('street-wide');
+  expect(cafeScenario.canConverse!(conversation)).toBe(true);
+  expect(cafeScenario.opening!(conversation).text).not.toBe(
+    cafeScenario.opening!(cafeScenario.initial()).text,
+  );
 });
 
 it('keeps photo and rain receipts separate in the original page without changing the story path', () => {
@@ -25,7 +29,7 @@ it('keeps photo and rain receipts separate in the original page without changing
 
 it('offers a continuous authored story route and rejects a recommendation from an old checkpoint', () => {
   let checkpoint = cafeScenario.initial('story');
-  const route = ['talk-a01-1', 'talk-a01-2', 'talk-a01-3', 'talk-a01-4'];
+  const route = ['move-cafe-front', 'move-lobby', 'talk-sit', 'talk-next-scene'];
   const opening = { kind: 'action' as const, actionId: route[0]!, revision: checkpoint.revision };
   for (const actionId of route) {
     expect(cafeScenario.frame(checkpoint).story.actions[0]?.id).toBe(actionId);
@@ -35,6 +39,6 @@ it('offers a continuous authored story route and rejects a recommendation from a
     ))
       checkpoint = cafeScenario.accept(checkpoint, beat.checkpoint);
   }
-  expect(cafeScenario.frame(checkpoint).story.beat).toBe('a02-1');
+  expect(cafeScenario.frame(checkpoint).story.beat).toBe('first-coffee');
   expect(() => cafeScenario.propose(opening, checkpoint)).toThrow();
 });

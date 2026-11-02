@@ -1,4 +1,18 @@
 === early_goodnight ===
+{not met:
+    ~ location = "street-wide"
+    ~ shot_location = "street-wide"
+    ~ shot_mode = "shared"
+    # cue:location:street-wide
+    你转身走回街角。那扇玻璃门还亮着，里面的人并不知道你曾在门外停留。
+    ~ first_ending = "letter"
+    ~ ending = "letter"
+    ~ phase = 3
+    ~ beat = "first-closed"
+    # cue:ending:letter
+    《未推开的门》：今晚只是路过。有些相遇，从一个愿不愿意走进去的决定开始。
+    -> menu
+}
 ~ shot_location = "cafe-front"
 ~ shot_mode = "shared"
 # cue:shot:shared:cafe-front
@@ -11,9 +25,8 @@
 ~ first_ending = "letter"
 ~ ending = "letter"
 ~ phase = 3
-~ beat = "a-closed"
+~ beat = "first-closed"
 # cue:ending:letter
-# voice:earlyGoodnight
 《先说一声晚安》：相遇可以在这里停下，不欠一段必须走完的剧情。
 -> menu
 
@@ -32,10 +45,9 @@
 ~ ending = "depart"
 ~ first_ending = "depart"
 ~ phase = 3
-~ beat = "a-closed"
+~ beat = "first-closed"
 # cue:ending:depart
-# voice:storyDepart
-《先欠下一次》：道别没有把刚才认真说过的话收回去。
+《再走一段》：今晚的散步不自动约定下一次见面。
 -> menu
 
 === ending_letter ===
@@ -47,9 +59,8 @@
 ~ ending = "letter"
 ~ first_ending = "letter"
 ~ phase = 3
-~ beat = "a-closed"
+~ beat = "first-closed"
 # cue:ending:letter
-# voice:storyLetter
 《一句好好的晚安》：不需要用承诺证明这个晚上值得记住。
 -> menu
 
@@ -65,9 +76,8 @@
 ~ ending = "stay"
 ~ first_ending = "stay"
 ~ phase = 3
-~ beat = "a-closed"
+~ beat = "first-closed"
 # cue:ending:stay
-# voice:storyStay
 《今晚没有返程》：这一晚在灯下收束，想再见仍需另一个明确约定。
 -> menu
 
@@ -85,9 +95,8 @@
 # cue:shot:shared:cafe-front
 镜头回到门前。你们把选择停在此刻，不再继续那段留白。
 ~ night_offer = false
-~ beat = "a-ending"
+~ beat = "first-choice"
 # cue:beat:night-declined
-# voice:nightDecline
 你们决定先停下来。这一晚仍然可以用散步或道别收尾。
 -> menu
 
@@ -101,7 +110,7 @@
 ~ ending = "overnight"
 ~ first_ending = "overnight"
 ~ phase = 3
-~ beat = "a-closed"
+~ beat = "first-closed"
 # cue:ending:overnight
 《这一夜，不是误会》：那一夜，两个人都知道是彼此清醒作出的选择；它没有被写成关于以后的保证。
 -> menu
@@ -109,10 +118,5 @@
 === make_appointment ===
 ~ appointment = true
 # cue:prop:appointment
-{overnight:
-# voice:nightLater
-- else:
-# voice:v3Appointment
-}
-新的约定便笺展开。另一次见面来自双方愿意，不是已经亲近过便自动续上的义务。
+双方愿意再见，约定便笺展开；没有约好具体日期，也没有发送现实消息。
 -> menu

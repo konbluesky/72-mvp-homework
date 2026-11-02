@@ -112,7 +112,7 @@ export class InteractiveHost {
     });
   }
   get location() {
-    return this.scene.location(this.state.story.location);
+    return this.scene.location(this.state.story.location, this.state.story);
   }
   get phaseLabel() {
     return this.scene.phaseLabels[this.state.story.phase] ?? this.state.story.phase;

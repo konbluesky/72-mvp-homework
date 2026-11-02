@@ -1,5 +1,6 @@
 import { abortable } from '../playback/abortable.js';
 import { BrowserPersistence, type SessionCredentials } from '../persistence/browser.js';
+import type { MessageDatabase } from '../persistence/messages.js';
 import {
   ImageShareSchema,
   type MediaPresentationSchema,
@@ -41,6 +42,7 @@ export class ApiClient {
     private readonly fetcher: typeof fetch = fetch.bind(globalThis),
     private readonly sessionEntry: 'story' | 'conversation' = 'story',
     private readonly expectedScenario?: { id: string; version: string },
+    messageDatabase?: MessageDatabase,
   ) {
     const url = new URL(base, window.location.origin);
     if (
@@ -52,7 +54,13 @@ export class ApiClient {
       throw new Error('API 地址必须为 HTTP(S) origin');
     this.base = url.origin;
     if (expectedScenario)
-      this.persistence = new BrowserPersistence(this.base, sessionEntry, expectedScenario);
+      this.persistence = new BrowserPersistence(
+        this.base,
+        sessionEntry,
+        expectedScenario,
+        undefined,
+        messageDatabase,
+      );
   }
   async createSession(signal?: AbortSignal, replaceCurrent = false): Promise<SessionCreated> {
     const session = await this.json(

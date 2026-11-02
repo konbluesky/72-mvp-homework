@@ -118,7 +118,7 @@ export class CafePresentation implements PresentationPort {
   }
   private furniture(story: StoryState) {
     this.scenery.clear();
-    const location = cafeLocation(story.shot?.location ?? story.location);
+    const location = cafeLocation(story.shot?.location ?? story.location, story);
     if (story.shot?.mode === 'blackout') {
       this.scenery.beginFill(0x070c10).drawRect(0, 0, 2560, 1440).endFill();
       this.actor.layout({ ...location, visible: false });

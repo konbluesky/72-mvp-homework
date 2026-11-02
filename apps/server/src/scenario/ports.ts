@@ -51,6 +51,9 @@ export interface ScenarioDefinition {
   initial(entry?: 'story' | 'conversation'): StoryCheckpoint;
   frame(checkpoint: StoryCheckpoint): StoryFrame;
   opening?(checkpoint: StoryCheckpoint): SessionOpening;
+  canConverse?(checkpoint: StoryCheckpoint): boolean;
+  /** Character willingness, independently reviewed inside Graph for speech and UI choices. */
+  actionReview?(checkpoint: StoryCheckpoint, actionId: string): string | undefined;
   suggestions?(checkpoint: StoryCheckpoint): ReplySuggestion[];
   propose(input: StoryInteraction | string, checkpoint: StoryCheckpoint): StoryBeat[];
   context(

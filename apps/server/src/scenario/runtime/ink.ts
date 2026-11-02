@@ -26,7 +26,7 @@ export interface InkContent {
   phases: readonly string[];
   actionDescriptions: Record<string, string>;
   recommendations?: { decisionPhases: readonly string[]; maxGuiding: number };
-  playerReplies?: Record<string, string>;
+  progression?: Array<{ beats: string[]; knot: string; label: string; locations?: string[] }>;
   projection: {
     flags: string[];
     revealed: Record<string, string>;
@@ -106,11 +106,29 @@ export class InkScenario {
     }
     return this.checkpoint(story, 0);
   }
+  /** Read-only queries let the authored scenario interpret its own private flags. */
+  variable(checkpoint: StoryCheckpoint, name: string): unknown {
+    return this.read(this.story(checkpoint), name);
+  }
   private read(story: Story, name: string): unknown {
     return story.variablesState.$(name);
   }
+  private progression(story: Story) {
+    if (
+      !this.content.progression?.length ||
+      !this.content.projection.beat ||
+      this.read(story, 'ending')
+    )
+      return undefined;
+    const beat = this.read(story, this.content.projection.beat);
+    return this.content.progression.find(
+      (step) =>
+        step.beats.includes(String(beat)) &&
+        (!step.locations || step.locations.includes(String(this.read(story, 'location')))),
+    );
+  }
   private actions(story: Story): StoryAction[] {
-    return story.currentChoices.map((choice: Choice) => {
+    const actions = story.currentChoices.map((choice: Choice) => {
       const id = choice.tags
         ?.map((tag) => tag.trim())
         .find((tag: string) => tag.startsWith('action:'))
@@ -124,6 +142,19 @@ export class InkScenario {
         explicit: choice.tags?.some((tag) => tag.trim() === 'explicit') ?? false,
       });
     });
+    const next = this.progression(story);
+    if (next)
+      actions.push(
+        StoryActionSchema.parse({
+          id: 'talk-next-scene',
+          kind: 'talk',
+          explicit: true,
+          label: next.label,
+          description:
+            '用户明确选择当前下一项行动或话题；没有说过的话不补写，位置与章节变化不授予信任、心动或亲密许可。',
+        }),
+      );
+    return actions;
   }
   frame(checkpoint: StoryCheckpoint): StoryFrame {
     const story = this.story(checkpoint);
@@ -176,7 +207,10 @@ export class InkScenario {
         (!note.beats || (!!state.beat && note.beats.includes(state.beat))) &&
         (!note.locations || note.locations.includes(state.location)),
     );
-    const preferred = direction?.replyActions ?? [];
+    const preferred = [
+      ...(direction?.replyActions ?? []),
+      ...(this.progression(story) ? ['talk-next-scene'] : []),
+    ];
     state.actions.sort((a, b) => {
       const rank = (id: string) => {
         const index = preferred.indexOf(id);
@@ -242,17 +276,19 @@ export class InkScenario {
               : `choose-${input.ending}`;
     const story = this.story(checkpoint);
     this.menu(story);
+    const next = actionId === 'talk-next-scene' ? this.progression(story) : undefined;
     const choice = story.currentChoices.find((item: Choice) =>
       item.tags?.some((tag) => tag.trim() === `action:${actionId}`),
     );
-    if (!choice)
+    if (!choice && !next)
       throw new AppError(
         'INVALID_REQUEST',
         400,
         '现在还不能这样做，可以继续聊聊或选择当前的互动。',
         true,
       );
-    story.ChooseChoiceIndex(choice.index);
+    if (next) story.ChoosePathString(next.knot);
+    else story.ChooseChoiceIndex(choice!.index);
     const beats: StoryBeat[] = [];
     let steps = 0;
     let parent = checkpoint;

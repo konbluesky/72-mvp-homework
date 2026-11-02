@@ -2,7 +2,7 @@ import metadata from '../manifest.generated.json';
 import type { LocationDefinition } from '../../location.js';
 export const cafeFront: LocationDefinition = {
   label: metadata.locations['cafe-front'],
-  description: '门铃、雨棚和营业牌。进门、告别，或另一次专门的见面，都从这里开始。',
+  description: '雨棚挡住一部分雨声。营业牌仍朝外，隔着玻璃能看见独坐的身影；先决定要不要推门。',
   x: 1650,
   y: 1440,
   height: 1410,

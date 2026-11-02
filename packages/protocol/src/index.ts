@@ -217,6 +217,7 @@ export const MediaInputSchema = z
   .object({
     generation: z.number().int().positive(),
     inputId: IdSchema,
+    voicePlayback: z.boolean().optional(),
     media: z
       .object({ kind: z.literal('image-share'), shareId: IdSchema, claimId: IdSchema })
       .strict(),
@@ -362,9 +363,9 @@ export const AudioReadyPayloadSchema = z
   .strict();
 
 export type AudioReadyPayload = z.infer<typeof AudioReadyPayloadSchema>;
-/** Explicit caption-only mode for an offline session; never masquerades as played audio. */
+/** Captions for an explicit voice-off request or an offline session; never claims audio playback. */
 export const CaptionReadyPayloadSchema = AudioReadyPayloadSchema.omit({ audioUrl: true })
-  .extend({ captionOnly: z.literal(true) })
+  .extend({ captionOnly: z.literal(true), autoAdvance: z.literal(true).optional() })
   .strict();
 export type SpeechReadyPayload = AudioReadyPayload | z.infer<typeof CaptionReadyPayloadSchema>;
 export const SpeechReadyPayloadSchema = z.union([
@@ -487,6 +488,7 @@ export const TextInputSchema = z
     generation: z.number().int().positive(),
     // 输入幂等键；同一轮次重试时须保持标识和内容一致。
     inputId: IdSchema,
+    voicePlayback: z.boolean().optional(),
     text: z.string().trim().min(1).max(1000),
   })
   .strict();
@@ -495,6 +497,7 @@ export const InteractionInputSchema = z
   .object({
     generation: z.number().int().positive(),
     inputId: IdSchema,
+    voicePlayback: z.boolean().optional(),
     interaction: StoryInteractionSchema,
   })
   .strict();
@@ -506,6 +509,7 @@ export const AudioInputMetadataSchema = z
     generation: z.number().int().positive(),
     // 输入幂等键；同一轮次重试时须保持标识和内容一致。
     inputId: IdSchema,
+    voicePlayback: z.boolean().optional(),
     // 客户端申报时长；服务端仍须解码验证真实时长、格式和大小。
     durationMs: z.number().min(200).max(15000),
   })

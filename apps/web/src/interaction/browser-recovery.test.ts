@@ -2,18 +2,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initialStory, type Receipt } from '@mira/protocol';
 import { ApiClient } from '../api/client.js';
-import {
-  BrowserPersistence,
-  DraftSchema,
-  ReadingHistorySchema,
-  type ActiveRecovery,
-} from '../persistence/browser.js';
+import { BrowserPersistence, DraftSchema, type ActiveRecovery } from '../persistence/browser.js';
 import { PlaybackScheduler } from '../playback/scheduler.js';
 import { initialInteractiveState } from './state.js';
 import { TurnController } from './turn-controller.js';
+import { MemoryMessageDatabase } from '../../test/message-database.js';
 
 const scenario = { id: 'sample-story', version: '1' };
 const origin = 'http://localhost:3000';
+let database: MemoryMessageDatabase;
 const json = (value: unknown) => new Response(JSON.stringify(value));
 const session = () => ({
   sessionId: 'session',
@@ -44,9 +41,9 @@ const recovery = (): ActiveRecovery => ({
   frozenTurns: [],
 });
 function save(value: ActiveRecovery, entry: 'story' | 'conversation' = 'story') {
-  const storage = new BrowserPersistence(origin, entry, scenario);
+  const storage = new BrowserPersistence(origin, entry, scenario, undefined, database);
+  storage.write('session', { version: 1, owner: 'legacy-page', value });
   storage.claimRecovery();
-  storage.saveRecovery(value);
   return storage;
 }
 function harness(
@@ -54,12 +51,14 @@ function harness(
   entry: 'story' | 'conversation' = 'story',
 ) {
   const requests: Array<{ path: string; body: unknown }> = [];
+  const waiters = new Map<string, () => void>();
   const api = new ApiClient(
     origin,
     async (input, init) => {
       const path = new URL(String(input)).pathname;
       const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
       requests.push({ path, body });
+      waiters.get(path)?.();
       const response = responder?.(path, body);
       if (response) return response;
       if (path === '/api/sessions') return json(session());
@@ -69,6 +68,7 @@ function harness(
     },
     entry,
     scenario,
+    database,
   );
   const state = initialInteractiveState();
   const playback = new PlaybackScheduler({
@@ -83,9 +83,23 @@ function harness(
     failure() {},
   });
   const controller = new TurnController(api, playback, state);
-  return { api, controller, requests, state };
+  return {
+    api,
+    controller,
+    requests,
+    state,
+    waitForRequest: (path: string) =>
+      requests.some((request) => request.path === path)
+        ? Promise.resolve()
+        : new Promise<void>((resolve) => {
+            waiters.set(path, resolve);
+          }),
+  };
 }
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  database = new MemoryMessageDatabase();
+});
 afterEach(() => vi.useRealTimers());
 
 describe.each(['story', 'conversation'] as const)(
@@ -171,7 +185,7 @@ describe.each(['story', 'conversation'] as const)(
       const old = save(recovery(), entry);
       old.write('draft', '刷新后继续说');
       const history = [{ id: 1, kind: 'user' as const, text: '保留已经读过的内容', paused: false }];
-      old.write('history', history);
+      await old.saveHistory(history);
       const h = harness(
         (path) =>
           path === '/api/sessions/session'
@@ -193,7 +207,7 @@ describe.each(['story', 'conversation'] as const)(
       expect(saved?.status === 'active' && saved.session.sessionId).toBe('session');
       expect(h.api.credentials()?.sessionId).toBe('session');
       expect(h.api.persistence?.read('draft', DraftSchema)).toBe('刷新后继续说');
-      expect(h.api.persistence?.read('history', ReadingHistorySchema)).toEqual(history);
+      expect((await h.api.persistence?.loadMessages())?.history).toEqual(history);
       await h.controller.dispose();
       const refreshed = harness(undefined, entry);
       await refreshed.controller.connect();
@@ -243,6 +257,7 @@ describe.each(['story', 'conversation'] as const)(
         entry,
       );
       const connecting = h.controller.connect();
+      await h.waitForRequest('/api/sessions/session');
       await vi.advanceTimersByTimeAsync(10001);
       await connecting;
       expect(h.state.connected).toBe(false);
@@ -266,6 +281,7 @@ describe.each(['story', 'conversation'] as const)(
         return json(snapshot(2, 7));
       }, entry);
       const older = h.controller.connect();
+      await h.waitForRequest('/api/sessions/session');
       h.controller.pauseRecovery();
       await h.controller.connect();
       complete(
@@ -289,6 +305,38 @@ describe.each(['story', 'conversation'] as const)(
 );
 
 describe('reload recovery ownership', () => {
+  it('waits for local message hydration before requesting the server snapshot', async () => {
+    save(recovery());
+    const delayed = database.holdNext();
+    const h = harness();
+    const connecting = h.controller.connect();
+    await delayed.started;
+    expect(h.requests).toEqual([]);
+    expect(h.state.connected).toBe(false);
+    delayed.release();
+    await connecting;
+    expect(h.state.connected).toBe(true);
+    expect(h.requests.map((request) => request.path)).toEqual(['/api/sessions/session']);
+    await h.controller.dispose();
+  });
+  it('waits for a pending clear before creating a new session and enabling input', async () => {
+    save(recovery());
+    const h = harness();
+    await h.controller.connect();
+    const delayed = database.holdNext();
+    const clearing = h.api.persistence!.clearReading();
+    const restarting = h.controller.connect(true);
+    await delayed.started;
+    expect(h.requests.filter((request) => request.path === '/api/sessions')).toEqual([]);
+    expect(h.state.connected).toBe(false);
+    h.controller.send('尚未准备好的输入');
+    expect(h.state.outgoing).toEqual([]);
+    delayed.release();
+    await Promise.all([clearing, restarting]);
+    expect(h.state.connected).toBe(true);
+    expect(h.requests.filter((request) => request.path === '/api/sessions')).toHaveLength(1);
+    await h.controller.dispose();
+  });
   it('never replays a visibly started response even if its final receipt was not committed', async () => {
     const turn = { sessionId: 'session', generation: 1, turnId: 'attempt' };
     save({
@@ -507,6 +555,7 @@ describe('reload recovery ownership', () => {
           : undefined,
     );
     const older = next.controller.connect();
+    await next.waitForRequest('/api/sessions/session');
     await next.controller.connect(true);
     finish(json(snapshot(50, 50)));
     await older;

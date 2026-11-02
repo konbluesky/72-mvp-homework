@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { LOCATIONS, cafeLocation } from './definition.js';
+import {
+  LOCATIONS,
+  cafeLocation,
+  cafeConversationAvailable,
+  cafeAdvanceAction,
+} from './definition.js';
 import { cafeResource } from './resources.js';
 import metadata from './manifest.generated.json';
 describe('scene package render bindings', () => {
@@ -17,6 +22,21 @@ describe('scene package render bindings', () => {
     expect(cafeLocation('counter').anchors['view-photo']).toBeUndefined();
     expect(cafeLocation('window-seat').lookDirection).toBe(-1);
     expect(cafeLocation('counter').lookDirection).toBe(1);
+  });
+  it('uses only the current server-issued shortcut and never substitutes a relationship choice', async () => {
+    const { initialStory } = await import('@mira/protocol');
+    const state = initialStory();
+    const decision = {
+      id: 'choose-night',
+      kind: 'choose' as const,
+      label: '一起离开',
+      description: '',
+      explicit: true,
+    };
+    expect(cafeAdvanceAction({ ...state, actions: [decision] })).toBeUndefined();
+    const next = { ...decision, id: 'talk-next-scene', kind: 'talk' as const, label: '下一段' };
+    expect(cafeAdvanceAction({ ...state, actions: [decision, next] })).toBe(next);
+    expect(cafeAdvanceAction({ ...state, revision: 1, actions: [] })).toBeUndefined();
   });
 });
 
@@ -48,4 +68,14 @@ it('renders an independent viewpoint without changing the player location', asyn
       shot: { location: 'washroom', mode: 'execute' },
     }).success,
   ).toBe(false);
+});
+
+it('keeps the character absent before meeting and enables conversation after entering', async () => {
+  const { initialStory } = await import('@mira/protocol');
+  const outside = initialStory({ location: 'cafe-front', ambience: 'open', phase: 'arrival' });
+  expect(cafeLocation('cafe-front', outside).visible).toBe(false);
+  expect(cafeConversationAvailable(outside)).toBe(false);
+  const entered = { ...outside, location: 'lobby', milestones: ['met'] };
+  expect(cafeLocation('lobby', entered).visible).toBe(true);
+  expect(cafeConversationAvailable(entered)).toBe(true);
 });

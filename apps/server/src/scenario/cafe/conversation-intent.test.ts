@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { StoryAction } from '@mira/protocol';
-import { MockPlanner } from './mock.js';
-import manifest from './manifest.json' with { type: 'json' };
+import { MockPlanner, MOCK_ACTION_UTTERANCES } from './mock.js';
 
-const actions: StoryAction[] = ['choose-depart', 'choose-letter', 'inspect-letter'].map((id) => ({
+const actions: StoryAction[] = ['choose-depart', 'choose-letter', 'inspect-menu'].map((id) => ({
   id,
-  kind: id === 'inspect-letter' ? 'inspect' : 'choose',
+  kind: id === 'inspect-menu' ? 'inspect' : 'choose',
   explicit: true,
   label: id,
   description: '',
@@ -18,15 +17,15 @@ const plan = (text: string) =>
 
 describe('offline conversational consent fixtures', () => {
   it('recognizes the authored decision containing 告别 as an affirmative, not a 别 refusal', async () => {
-    expect(await plan(manifest.playerReplies['choose-letter'])).toMatchObject({
+    expect(await plan(MOCK_ACTION_UTTERANCES['choose-letter']!)).toMatchObject({
       actionId: 'choose-letter',
       actionRequest: { confirmed: true },
       segments: [],
     });
   });
   it.each([
-    '不要打开信',
-    '如果打开信会怎样？',
+    '不要看菜单',
+    '如果看了菜单会怎样？',
     '我们一起出去走走是什么意思？',
     '好',
     '她说我们一起离开，但我没决定',

@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { filterSuggestions, validateReply } from './context.js';
 import { cafeScenario } from '../cafe/index.js';
+import { advance, firstEncounter } from '../cafe/story.test.helpers.js';
 
 describe('scenario context and soft suggestions', () => {
   it('keeps chat suggestions independent of Ink choices and filters unavailable or excessive guidance', () => {
-    const actions = cafeScenario.frame(cafeScenario.initial()).story.actions;
+    const actions = cafeScenario.frame(advance(firstEncounter(), 'talk-sit')).story.actions;
     const suggestions = [
       { label: '聊聊', draft: '雨夜的咖啡馆是什么样的？', kind: 'chat', relatedActionId: null },
       {
-        label: '窗边',
-        draft: '我们去窗边坐坐吧。',
+        label: '画廊',
+        draft: '一起去看看风景画吧。',
         kind: 'explore',
-        relatedActionId: 'move-window-seat',
+        relatedActionId: 'move-photo-corridor',
       },
       { label: '再引导', draft: '去门口吧。', kind: 'explore', relatedActionId: 'move-cafe-front' },
       {
@@ -26,7 +27,7 @@ describe('scenario context and soft suggestions', () => {
         decisionPhases: ['decision', 'epilogue'],
         maxGuiding: 1,
       }).map((item) => item.label),
-    ).toEqual(['聊聊', '窗边']);
+    ).toEqual(['聊聊', '画廊']);
   });
   it('does not give the model unrevealed prop text or require every conversation to progress', () => {
     const state = cafeScenario.initial();
@@ -55,9 +56,9 @@ describe('scenario context and soft suggestions', () => {
 });
 
 it('preserves LLM recommendation wording without binding it to a scripted interaction', () => {
-  const checkpoint = cafeScenario.initial('story');
+  const checkpoint = firstEncounter();
   const frame = cafeScenario.frame(checkpoint);
-  const action = frame.story.actions.find((item) => item.id === 'talk-a01-1')!;
+  const action = frame.story.actions.find((item) => item.id === 'talk-sit')!;
   const generated = {
     label: '接话',
     draft: '你今天下班后，最想做什么？',

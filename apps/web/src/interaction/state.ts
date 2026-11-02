@@ -22,6 +22,8 @@ export function initialInteractiveState() {
     reloadRequired: false,
     connection: initialConnectionView(),
     connecting: false,
+    historyLoading: false,
+    storageError: '',
     mode: 'mock' as 'mock' | 'live',
     voiceInput: false,
     interaction: 'idle' as Interaction,
