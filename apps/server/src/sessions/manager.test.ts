@@ -167,7 +167,7 @@ describe('single owner and presented facts', () => {
     );
     manager.close();
   });
-  it('commits sentence/photo/environment independently and preserves deduplication', () => {
+  it('commits sentence/prop/environment independently and preserves deduplication', () => {
     const { manager, session, receipt } = setup();
     const sentence = receipt('seg-1');
     manager.receipts(session, [sentence, sentence]);
@@ -177,6 +177,7 @@ describe('single owner and presented facts', () => {
     expect(session.facts).toEqual({ rain_softened: false });
     manager.receipts(session, [receipt('menu-1', 'prop'), receipt('rain-1', 'environment')]);
     expect(session.facts).toEqual({ rain_softened: false });
+    expect(session.story.revealed).toContain('menu');
     manager.close();
   });
   it('merges frozen presented receipts before a rapid next turn context', () => {

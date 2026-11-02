@@ -31,6 +31,9 @@
 .webgal-stage-controls .webgal-stage-control[aria-pressed='true'] {
   background: #ffffff1a;
 }
+.webgal-stage-controls .webgal-stage-control:focus-visible {
+  outline-offset: -2px;
+}
 .webgal-stage-controls .webgal-stage-control > span {
   inset: auto;
   padding: 0;
@@ -40,11 +43,22 @@
   width: 19px;
   height: 19px;
 }
-.story-stage:has(.webgal-stage-controls) .stage-character-identity { bottom: 64px; }
-.story-stage:has(.webgal-stage-controls) .stage-narrative:not(.is-solitary) { bottom: 66px; }
+.story-stage:has(.webgal-stage-controls) .stage-character-identity {
+  bottom: 64px;
+}
+.story-stage:has(.webgal-stage-controls) .stage-narrative:not(.is-solitary) {
+  bottom: 66px;
+}
 @media (max-width: 680px) {
-  .webgal-stage-controls { right: 8px; bottom: 7px; max-width: calc(100% - 16px); }
-  .webgal-stage-controls .webgal-stage-control { padding-inline: 7px; font-size: 11px; }
+  .webgal-stage-controls {
+    right: 8px;
+    bottom: 7px;
+    max-width: calc(100% - 16px);
+  }
+  .webgal-stage-controls .webgal-stage-control {
+    padding-inline: 7px;
+    font-size: 11px;
+  }
   .story-stage:has(.webgal-stage-controls) .stage-narrative[data-side],
   .story-stage:has(.webgal-stage-controls) .stage-narrative.is-solitary {
     bottom: 60px;

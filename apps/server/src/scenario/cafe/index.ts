@@ -246,11 +246,9 @@ export const cafeScenario: ScenarioDefinition = {
     accepts: (checkpoint, recipe) => {
       const frame = runtime.frame(checkpoint);
       return (
-        recipe.appearanceState ===
-          (frame.story.milestones.includes('makeup_returned') ? 'after-makeup' : 'initial') &&
-        frame.story.location === recipe.location &&
+        recipe.slotKey === imageRecipe.slotKey &&
+        recipe.location === imageRecipe.location &&
         frame.story.milestones.includes('companionship') &&
-        !frame.story.ending &&
         (!frame.story.shot || frame.story.shot.mode === 'shared')
       );
     },

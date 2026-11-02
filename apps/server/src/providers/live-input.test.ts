@@ -94,7 +94,7 @@ describe('Live voice HTTP to actual capability adapters', () => {
         'audio.ready',
         'reply.done',
       ]);
-      expect(frames[1]?.payload).toEqual({ text: '能看看照片吗？', simulated: false });
+      expect(frames[1]?.payload).toEqual({ text: '你刚下班吗？', simulated: false });
       expect(stages).toEqual(['stt', 'planner', 'tts']);
       const snapshot = (await app.inject({ url: base, headers })).json();
       expect(snapshot.capabilities.voiceInput).toBe(true);

@@ -69,7 +69,11 @@ test('real backend audio, interruption and continuous context without retired pr
   await send(page, '你刚下班吗？');
   await expect(page.locator('main')).toHaveAttribute('data-state', 'speaking');
   await expect(page.locator('[data-photo]')).toHaveCount(0);
-  expect((await snapshot(page, session)).scene.story.actions.some((action) => action.id === 'view-photo')).toBe(false);
+  expect(
+    (await snapshot(page, session)).scene.story?.actions.some(
+      (action) => action.id === 'view-photo',
+    ),
+  ).toBe(false);
   expect(external).toEqual([]);
 });
 

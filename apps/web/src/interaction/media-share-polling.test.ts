@@ -53,6 +53,52 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe('bounded polling and independent idle delivery', () => {
+  it('uses a visible image dialog instead of a clipped chat copy of the same share', async () => {
+    const h = setup();
+    h.coordinator.setSession('session', [{ ...share, phase: 'ready', version: 2 }]);
+    const pane = document.createElement('div');
+    pane.setAttribute('role', 'log');
+    const clipped = document.createElement('article');
+    const hiddenPreview = document.createElement('div');
+    hiddenPreview.className = 'image-share-preview';
+    clipped.append(hiddenPreview);
+    pane.append(clipped);
+    document.body.append(pane);
+    const rect = (top: number, height: number): DOMRect => ({
+      x: 0,
+      y: top,
+      top,
+      bottom: top + height,
+      left: 0,
+      right: 224,
+      width: 224,
+      height,
+      toJSON: () => ({}),
+    });
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue(rect(200, 100));
+    vi.spyOn(clipped, 'getBoundingClientRect').mockReturnValue(rect(0, 300));
+    vi.spyOn(hiddenPreview, 'getBoundingClientRect').mockReturnValue(rect(20, 142));
+    h.coordinator.register('share', clipped);
+    const dialog = document.createElement('dialog');
+    dialog.setAttribute('open', '');
+    const visible = document.createElement('article');
+    const preview = document.createElement('div');
+    preview.className = 'image-share-preview';
+    visible.append(preview);
+    dialog.append(visible);
+    document.body.append(dialog);
+    vi.spyOn(visible, 'getBoundingClientRect').mockReturnValue(rect(100, 300));
+    vi.spyOn(preview, 'getBoundingClientRect').mockReturnValue(rect(140, 142));
+    h.coordinator.register('share', visible);
+    h.coordinator.gate({ modal: true });
+    h.coordinator.gate({ draft: true });
+    await h.coordinator.view('share');
+    expect(h.deliver).toHaveBeenCalledOnce();
+    expect(h.deliver).toHaveBeenCalledWith(
+      expect.objectContaining({ shareId: 'share' }),
+      expect.any(Number),
+    );
+  });
   it('holds one request in flight and waits two seconds after completion before another query', async () => {
     const pending = deferred<ImageShare>();
     const h = setup(vi.fn(() => pending.promise));

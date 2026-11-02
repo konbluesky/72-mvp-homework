@@ -43,7 +43,7 @@ export function cafeImageGeneration(story: StoryState) {
   return {
     label: '生成纪念照',
     available,
-    hint: available ? '点击后开始准备，留在窗边可自动展示。' : '在窗边落座后可生成。',
+    hint: available ? '点击后开始准备，完成后可在图片中查看。' : '在窗边落座后可生成。',
   };
 }
 export function cafeLocation(id: string, story?: StoryState): LocationDefinition {

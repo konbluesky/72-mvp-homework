@@ -7,7 +7,7 @@ import { CHARACTERS, isCharacterId } from '../characters/profiles/index';
 import { StoryIcon } from './StoryIcon';
 import { messageStatusText } from '../../interaction/messages.js';
 
-export type StoryPanel = 'locations' | 'menu' | 'history' | 'document' | 'restart' | null;
+export type StoryPanel = 'locations' | 'menu' | 'history' | 'image' | 'document' | 'restart' | null;
 export interface StoryLogEntry {
   id: number;
   kind: 'speech' | 'narration' | 'user' | 'opening' | 'image-share';
@@ -32,6 +32,7 @@ const titles = {
   locations: '去别处看看',
   menu: '故事菜单',
   history: '对话回看',
+  image: '图片',
   document: '阅读资料',
   restart: '重新开始',
 };
@@ -48,6 +49,7 @@ export function StoryPanels({
   onRestart,
 }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const image = Object.values(state.imageShares)[0];
   useEffect(() => {
     const element = dialog.current;
     if (!element) return;
@@ -56,6 +58,35 @@ export function StoryPanels({
       element.querySelector<HTMLButtonElement>('.story-dialog-header button')?.focus();
     } else if (element.open) element.close();
   }, [panel]);
+  useEffect(() => {
+    if (
+      panel !== 'image' ||
+      !image ||
+      image.phase !== 'ready' ||
+      image.collapsed ||
+      image.cancelRequested ||
+      image.display === 'load_failed' ||
+      (state.story.shot && state.story.shot.mode !== 'shared') ||
+      state.interaction !== 'idle' ||
+      state.playback !== 'idle'
+    )
+      return;
+    // Let the dialog mount and the parent's modal gate settle before acquiring a media turn.
+    const frame = requestAnimationFrame(() => {
+      void host.controller.images.view(image.shareId);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [
+    host,
+    panel,
+    image?.shareId,
+    image?.phase,
+    image?.collapsed,
+    image?.cancelRequested,
+    state.interaction,
+    state.playback,
+    state.story.shot?.mode,
+  ]);
   function closePanel() {
     if (panel === 'document') host.presentation?.dismiss();
     onClose();
@@ -88,6 +119,17 @@ export function StoryPanels({
         </button>
       </header>
       <div className="story-dialog-body">
+        {panel === 'image' &&
+          (image ? (
+            <>
+              {state.story.shot && state.story.shot.mode !== 'shared' && (
+                <p className="panel-note">片段结束后可以查看图片。</p>
+              )}
+              <ImageShareCard share={image} coordinator={host.controller.images} />
+            </>
+          ) : (
+            <p className="panel-note">还没有准备图片。</p>
+          ))}
         {panel === 'locations' && (
           <>
             <p className="panel-context">

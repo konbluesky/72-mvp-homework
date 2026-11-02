@@ -1216,7 +1216,6 @@ body {
     padding-top: 8px;
     padding-bottom: 8px;
   }
-
 }
 @media (prefers-reduced-motion: reduce) {
   .story-app *,
@@ -1281,4 +1280,75 @@ body {
 }
 .story-progress-actions > p {
   margin: 7px 10px;
+}
+
+.chat-image-share {
+  max-width: 100%;
+  white-space: normal;
+}
+.story-app .image-share-card {
+  background: #17282b;
+  border-color: #aabba547;
+  color: #e0e6d8;
+  white-space: normal;
+}
+.story-app .image-share-card > p[role='status'] {
+  color: #cbd6c1;
+}
+.story-app .image-share-preview {
+  background: #263b3c;
+  color: #cbd6c1;
+}
+.story-dialog-image {
+  width: min(540px, calc(100% - 24px));
+  background: #142426;
+  color: #e0e6d8;
+}
+.story-dialog-image .story-dialog-header h2 {
+  color: inherit;
+}
+.story-dialog-image .image-share-card {
+  width: 100%;
+  margin: 0;
+}
+.story-dialog-image .image-share-preview,
+.story-dialog-image .image-share-preview img {
+  height: min(42dvh, 360px);
+}
+.story-conversation .image-share-card {
+  display: grid;
+  width: min(420px, 100%);
+  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-areas: 'preview heading' 'preview status' 'preview origin' 'actions actions';
+  gap: 3px 10px;
+  padding: 8px;
+}
+.story-conversation .image-share-card > header {
+  grid-area: heading;
+  min-width: 0;
+}
+.story-conversation .image-share-card > .image-share-preview {
+  grid-area: preview;
+  margin: 0;
+  height: 100px;
+}
+.story-conversation .image-share-preview img {
+  height: 100px;
+}
+.story-conversation .image-share-card > p[role='status'] {
+  grid-area: status;
+  margin: 0;
+  min-height: 0;
+}
+.story-conversation .image-share-card > small {
+  grid-area: origin;
+}
+.story-conversation .image-share-actions {
+  grid-area: actions;
+  min-height: 32px;
+  margin-top: 3px;
+}
+.story-conversation .image-share-card.is-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'heading' 'status' 'origin' 'actions';
 }

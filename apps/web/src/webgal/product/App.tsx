@@ -550,7 +550,6 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
               {state.story.shot?.mode === 'character' ? `${scene.speaker} · 独处中` : '剧情留白'}
             </span>
           )}
-
         </div>
         {exploring && canAct && !state.documentTitle && (
           <div className="scene-observations" aria-label="当前剧情机会与可选物件">
@@ -636,23 +635,36 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
             )}
           </div>
         )}
-        {!state.documentTitle && <StageControls
-          canAdvance={!!advanceAction || groups.decisions.length > 0}
-          advanceLabel={advanceAction?.label ?? '选择接下来怎么做'}
-          advanceDisabled={!canAct}
-          choosing={!advanceAction}
-          voicePlayback={voicePlayback}
-          voiceDisabled={voicePending}
-          imageLabel={imageOpportunity ? (existingImage ? '查看图片' : imageOpportunity.label) : undefined}
-          imageTitle={existingImage ? '打开已生成图片的查看面板' : !state.imageGeneration ? '当前服务未开启图片生成' : imageOpportunity?.hint}
-          imageDisabled={!canAct || (!existingImage && (!state.imageGeneration || !imageOpportunity?.available))}
-          moreDisabled={!canAct || !(progressActions.length || groups.observations.length)}
-          moreOpen={exploring}
-          onAdvance={() => advanceAction ? perform(advanceAction) : setExploring(true)}
-          onVoice={toggleVoicePlayback}
-          onImage={generateImage}
-          onMore={() => setExploring((value) => !value)}
-        />}
+        {!state.documentTitle && (
+          <StageControls
+            canAdvance={!!advanceAction || groups.decisions.length > 0}
+            advanceLabel={advanceAction?.label ?? '选择接下来怎么做'}
+            advanceDisabled={!canAct}
+            choosing={!advanceAction}
+            voicePlayback={voicePlayback}
+            voiceDisabled={voicePending}
+            imageLabel={
+              imageOpportunity ? (existingImage ? '查看图片' : imageOpportunity.label) : undefined
+            }
+            imageTitle={
+              existingImage
+                ? '打开已生成图片的查看面板'
+                : !state.imageGeneration
+                  ? '当前服务未开启图片生成'
+                  : imageOpportunity?.hint
+            }
+            imageDisabled={
+              !canAct ||
+              (!existingImage && (!state.imageGeneration || !imageOpportunity?.available))
+            }
+            moreDisabled={!canAct || !(progressActions.length || groups.observations.length)}
+            moreOpen={exploring}
+            onAdvance={() => (advanceAction ? perform(advanceAction) : setExploring(true))}
+            onVoice={toggleVoicePlayback}
+            onImage={generateImage}
+            onMore={() => setExploring((value) => !value)}
+          />
+        )}
       </section>
       <section className="story-content" aria-label="持续对话">
         {state.historyLoading && (

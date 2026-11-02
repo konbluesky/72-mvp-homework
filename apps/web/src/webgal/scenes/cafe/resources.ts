@@ -1,7 +1,8 @@
 import metadata from './manifest.generated.json';
 import type { LocalStageAsset } from '../../runtime/visual-port.js';
 
-const declaredResources: Readonly<Record<string, { asset: string; url: string }>> = metadata.resources;
+const declaredResources: Readonly<Record<string, { asset: string; url: string }>> =
+  metadata.resources;
 
 /** Shared public resource bindings; importing these never loads a rendering engine. */
 export const CAFE_RESOURCES: Readonly<Record<string, LocalStageAsset>> = Object.fromEntries(

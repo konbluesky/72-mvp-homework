@@ -47,7 +47,7 @@ export function imageStatus(view: ImageShareView): string {
     case 'submit_unknown':
       return '正在确认照片进度，可以继续聊';
     case 'ready':
-      return '已准备好，空闲时给你看';
+      return '已准备好，可以查看';
     case 'presented':
       return '已分享';
     case 'failed':

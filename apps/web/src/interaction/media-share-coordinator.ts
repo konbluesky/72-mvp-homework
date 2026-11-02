@@ -159,7 +159,7 @@ export class MediaShareCoordinator {
   }
   private visibleNode(id: string): HTMLElement | undefined {
     if (document.hidden) return;
-    return [...(this.nodes.get(id) ?? [])].find((node) => {
+    const visible = [...(this.nodes.get(id) ?? [])].filter((node) => {
       if (!node.isConnected || node.closest('dialog:not([open])')) return false;
       const rect = node.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0 || rect.bottom <= 0 || rect.top >= innerHeight)
@@ -171,11 +171,16 @@ export class MediaShareCoordinator {
       }
       return true;
     });
+    // A partially clipped chat copy must not hide a fully visible dialog copy of the same share.
+    return (
+      visible.find((node) => node.closest('dialog[open]') && this.previewVisible(node)) ??
+      visible.find((node) => this.previewVisible(node)) ??
+      visible[0]
+    );
   }
-  private visiblePreview(id: string): boolean {
-    const node = this.visibleNode(id);
-    const preview = node?.querySelector<HTMLElement>('.image-share-preview');
-    if (!node || !preview) return false;
+  private previewVisible(node: HTMLElement): boolean {
+    const preview = node.querySelector<HTMLElement>('.image-share-preview');
+    if (!preview) return false;
     const rect = preview.getBoundingClientRect();
     const viewport = node
       .closest<HTMLElement>('[role="log"],.history-lines,.story-dialog-body')
@@ -187,6 +192,10 @@ export class MediaShareCoordinator {
       rect.top < innerHeight &&
       (!viewport || (rect.bottom > viewport.top && rect.top < viewport.bottom))
     );
+  }
+  private visiblePreview(id: string): boolean {
+    const node = this.visibleNode(id);
+    return !!node && this.previewVisible(node);
   }
   private async revealPreview(id: string): Promise<void> {
     const node = this.visibleNode(id);
@@ -409,19 +418,34 @@ export class MediaShareCoordinator {
   async view(id: string) {
     const share = this.state.imageShares[id];
     if (!share) return;
+    const epoch = this.epoch;
+    const activity = this.userActivityRevision;
     if (share.cancelRequested || (share.display === 'presented' && !share.presentedAt)) return;
     if (share.presentedAt) {
       await this.restore(share);
       return;
     }
-    if (this.idle(true) && !share.collapsed) {
-      const activity = this.userActivityRevision;
+    if (share.collapsed) {
+      this.patch(id, { collapsed: false });
+      try {
+        await frame(this.abort.signal);
+        await frame(this.abort.signal);
+      } catch {
+        return;
+      }
+    }
+    if (epoch === this.epoch && activity === this.userActivityRevision && this.idle(true)) {
       try {
         await this.revealPreview(id);
       } catch {
         return;
       }
-      if (activity === this.userActivityRevision && this.idle(true))
+      if (
+        epoch === this.epoch &&
+        activity === this.userActivityRevision &&
+        this.idle(true) &&
+        this.visiblePreview(id)
+      )
         await this.deliver(this.state.imageShares[id]!, this.revision);
     }
   }
@@ -438,9 +462,10 @@ export class MediaShareCoordinator {
       this.state.recording === 'idle' &&
       this.state.voicePreview === 'idle' &&
       this.state.animation === 'live2d' &&
+      (!this.state.story.shot || this.state.story.shot.mode === 'shared') &&
       !this.gates.composing &&
       (manual || (!this.heldInputs.size && Date.now() > this.activityUntil)) &&
-      !this.gates.draft &&
+      (manual || !this.gates.draft) &&
       (manual || !this.gates.reading) &&
       (manual || !this.gates.modal) &&
       this.gates.appearance &&

@@ -4,7 +4,7 @@
 
 音频编解码、私有媒体与浏览器播放测试使用 [测试信号生成器](../tests/fixtures/audio.ts) 在内存中生成 PCM WAV，再按需经 FFmpeg 编码。该信号为固定正弦波，不是语音、用户录音或生产 TTS 实现；无密钥 Mock 后续通过显式 text.ready 字幕模式演出，不将测试音频作为生产语音。
 
-未提供真人录音或最终 Mira 模型。前端使用真实 Live2D Haru 官方技术替身与本项目自绘海岸照片 `apps/web/public/assets/travel-photo.svg`，匹配 Mock 照片台词。旧探索和原型保留在本地，运行/构建不从探索目录加载。
+未提供真人录音或最终 Mira 模型。前端使用真实 Live2D Haru 官方技术替身。旧海岸 SVG 道具已从公开资源、两套页面及剧情中移除。旧探索和原型保留在本地，运行/构建不从探索目录加载。
 
 ## 当前Live2D资源
 
@@ -24,6 +24,6 @@
 
 2026-11-02：走廊旧海报署名和吧台旧信封已做本地栅格修补，分别改为无署名风景画与饮品卡；脚本为 `scripts/retouch-cafe-props.py`，原图哈希与新文件哈希保留在场景 `SOURCES.json`，没有新增图像 API 请求。
 
-`apps/web/public/SOURCES.json` 记录平台图标、旅行照片和引擎预览图片的来源与 SHA-256；Live2D 和故事背景继续保留各自清单。`npm run assets:check` 核对全部公开运行资源的清单覆盖、哈希和本地引用；当前场景未声明离线 WAV，离线音频检查计数为零。检查不播放音频或调用外部服务。
+`apps/web/public/SOURCES.json` 记录平台图标和引擎预览图片的来源与 SHA-256；Live2D 和故事背景继续保留各自清单。`npm run assets:check` 核对全部公开运行资源的清单覆盖、哈希和本地引用；当前场景未声明离线 WAV，离线音频检查计数为零。检查不播放音频或调用外部服务。
 
 `assets/images/window-keepsake-mock.webp` 是现有窗边背景的服务端部署副本，仅用于明确标记的模拟图片分享；来源与 SHA-256 见 `assets/images/SOURCES.json`，许可沿用上述原创场景图。Docker 与服务端发布包携带它，不依赖前端 public 目录。真实生成图片仅写私有媒体目录/对象存储，不入库。工作流副本 `apps/server/src/images/workflow/api.json` 与 `params.json` 复用用户指定的 baseGenerate 采样图，仅保存必要 API 节点与经修正的绑定，原探索 prompt/UI data 不作为运行依赖。

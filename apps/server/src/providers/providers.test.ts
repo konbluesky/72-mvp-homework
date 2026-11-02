@@ -300,21 +300,21 @@ describe('mock conversation content without a speech implementation', () => {
   it('keeps conversation fixtures valid without providing a TTS adapter', async () => {
     const provider = createMockProviders();
     expect('tts' in provider).toBe(false);
-    for (const input of ['你好', '你在等谁', '旅行', '我陪你', '能看看照片吗', '不要照片', '雨'])
+    for (const input of ['你好', '你在等谁', '旅行', '我陪你', '咖啡', '换个话题', '雨'])
       expect(
         PlannerOutputSchema.safeParse(
           await provider.planner.plan({ text: input, history: [], facts: [] }, signal()),
         ).success,
       ).toBe(true);
   });
-  it('refusal does not reveal media and confirmed history changes the branch', () => {
-    expect(mockPlan('我不想看照片', []).segments.flatMap((s) => s.events)).toEqual([]);
-    expect(mockPlan('我也有一张照片', []).segments.flatMap((s) => s.events)).toEqual([]);
+  it('ordinary replies do not create media and confirmed weather changes the branch', () => {
+    expect(mockPlan('我不想聊工作', []).segments.flatMap((s) => s.events)).toEqual([]);
+    expect(mockPlan('我也喜欢散步', []).segments.flatMap((s) => s.events)).toEqual([]);
     expect(mockPlan('天气怎么样', []).segments[0]).toMatchObject({
       text: MOCK_LINES.hello,
       events: [],
     });
-    expect(mockPlan('谢谢你', ['photo_revealed']).segments[0]?.text).toBe(MOCK_LINES.comfort);
-    expect(mockPlan('然后呢', ['photo_revealed']).segments[0]?.text).toBe(MOCK_LINES.after);
+    expect(mockPlan('谢谢你', ['rain_softened']).segments[0]?.text).toBe(MOCK_LINES.comfort);
+    expect(mockPlan('天气怎么样', ['rain_softened']).segments[0]?.text).toBe(MOCK_LINES.rain);
   });
 });
