@@ -23,7 +23,7 @@
   "assetRoot": "/assets/cafe-story/",
   "minimumBackgrounds": 8,
   "id": "last-lamp",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "locations": {
     "street-wide": "街角远景",
     "cafe-front": "门头雨棚",
@@ -34,13 +34,7 @@
     "counter": "吧台结账台",
     "street-walk": "店外街道"
   },
-  "resources": {
-    "travel_photo_01": {
-      "kind": "image",
-      "asset": "travel-photo",
-      "url": "/assets/travel-photo.svg"
-    }
-  },
+  "resources": {},
   "opening": "你好，这边还有个空位。",
   "openingNarration": "夜雨把街角的灯光拖得很长。路边一家咖啡馆还亮着灯，门前的雨棚下空着。此刻，你还不知道今晚会遇见谁。"
 }

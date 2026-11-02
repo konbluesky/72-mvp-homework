@@ -36,7 +36,7 @@ test('real recorder to Deepgram STT adapter, GPT graph, Deepgram TTS adapter and
       expect(request?.body).toBeInstanceOf(Buffer);
       if (!(request?.body instanceof Buffer)) throw new Error('Expected normalized WAV');
       expect(request.body.subarray(0, 4).toString()).toBe('RIFF');
-      return Response.json(transcriptResponse('能看看照片吗？'));
+      return Response.json(transcriptResponse('你刚下班吗？'));
     }
     if (path === '/v1/chat/completions') {
       stages.push('planner');
@@ -46,8 +46,8 @@ test('real recorder to Deepgram STT adapter, GPT graph, Deepgram TTS adapter and
           {
             text: MOCK_LINES.hello,
             emotion: 'relieved',
-            action: 'offerPhoto',
-            events: [{ type: 'photo', resourceId: 'travel_photo_01' }],
+            action: 'none',
+            events: [],
           },
         ],
       });
@@ -89,17 +89,17 @@ test('real recorder to Deepgram STT adapter, GPT graph, Deepgram TTS adapter and
     // Actual capture interval, not a readiness wait.
     await page.waitForTimeout(650);
     await page.keyboard.up('Space');
-    await expect(page.getByRole('textbox', { name: '编辑语音消息' })).toHaveValue('能看看照片吗？');
+    await expect(page.getByRole('textbox', { name: '编辑语音消息' })).toHaveValue('你刚下班吗？');
     expect(stages).toEqual(['stt']);
     await expect(page.locator('.recent-user')).toHaveCount(0);
     await page
       .getByRole('textbox', { name: '编辑语音消息' })
-      .fill('能看看照片吗？我想听听那次旅行。');
+      .fill('你刚下班吗？我想听听你平时怎么放松。');
     await page.getByRole('button', { name: '确认发送', exact: true }).click();
-    await expect(page.locator('.recent-user').last()).toContainText('能看看照片吗？');
+    await expect(page.locator('.recent-user').last()).toContainText('你刚下班吗？');
     await expect(page.locator('main')).toHaveAttribute('data-state', 'speaking');
     await expect(page.locator('.subtitle')).toContainText(MOCK_LINES.hello);
-    await expect(page.locator('[data-photo]')).toBeVisible();
+    await expect(page.locator('[data-photo]')).toHaveCount(0);
     expect(stages).toEqual(['stt', 'planner', 'tts']);
     await page.getByRole('button', { name: '停止当前回复', exact: true }).click();
     await expect(page.locator('main')).toHaveAttribute('data-state', 'idle');

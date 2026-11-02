@@ -77,7 +77,78 @@ function harness() {
 const tick = async () => {
   for (let i = 0; i < 8; i++) await Promise.resolve();
 };
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+describe('explicit voice-off presentation', () => {
+  function frames() {
+    const pending = new Map<number, FrameRequestCallback>();
+    let next = 0;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      pending.set(++next, callback);
+      return next;
+    });
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => pending.delete(id));
+    vi.stubGlobal('document', { hidden: false });
+    return () => {
+      const entry = [...pending.entries()][0];
+      if (entry) {
+        pending.delete(entry[0]);
+        entry[1](0);
+      }
+    };
+  }
+  it('waits for the caption paint, skips audio, and records a text receipt', async () => {
+    const paint = frames();
+    const h = harness();
+    h.scheduler.begin(turn(1));
+    h.scheduler.enqueue(turn(1), {
+      segmentId: 'quiet',
+      text: '显示文字',
+      emotion: 'curious',
+      action: 'none',
+      events: [],
+      captionOnly: true,
+      autoAdvance: true,
+    });
+    h.scheduler.generationDone(turn(1), []);
+    expect(h.receipt).not.toHaveBeenCalled();
+    paint();
+    await tick();
+    expect(h.receipt).not.toHaveBeenCalled();
+    paint();
+    await tick();
+    expect(h.prepare).not.toHaveBeenCalled();
+    expect(h.receipt).toHaveBeenCalledWith(
+      { targetId: 'quiet', kind: 'segment', status: 'presented', mode: 'text' },
+      turn(1),
+    );
+    expect(h.view.playback).toBe('idle');
+  });
+  it('does not acknowledge an old caption after cancellation and a newer turn', async () => {
+    const paint = frames();
+    const h = harness();
+    h.scheduler.begin(turn(1));
+    h.scheduler.enqueue(turn(1), {
+      segmentId: 'old',
+      text: '旧文字',
+      emotion: 'curious',
+      action: 'none',
+      events: [],
+      captionOnly: true,
+      autoAdvance: true,
+    });
+    paint();
+    h.scheduler.begin(turn(2));
+    paint();
+    await tick();
+    expect(h.receipt).not.toHaveBeenCalled();
+    expect(h.view.subtitle).not.toBe('旧文字');
+    h.scheduler.cancel();
+  });
+});
 describe('single playback scheduler', () => {
   it('removes unconfirmed narration when a pending milestone is interrupted', async () => {
     const pending = deferred<void>();
@@ -120,7 +191,7 @@ describe('single playback scheduler', () => {
     h.scheduler.begin(turn(1));
     h.scheduler.enqueue(
       turn(1),
-      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'travel_photo_01' }]),
+      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'fixture-photo' }]),
     );
     h.scheduler.generationDone(turn(1), choices);
     h.ready('one');
@@ -161,7 +232,7 @@ describe('single playback scheduler', () => {
     h.scheduler.begin(turn(1));
     h.scheduler.enqueue(
       turn(1),
-      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'travel_photo_01' }]),
+      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'fixture-photo' }]),
     );
     h.scheduler.generationDone(turn(1), [{ label: '继续聊', draft: '能说说这次旅行吗？' }]);
     h.ready('one');
@@ -259,7 +330,7 @@ describe('single playback scheduler', () => {
     h.scheduler.begin(turn(1));
     h.scheduler.enqueue(
       turn(1),
-      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'travel_photo_01' }]),
+      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'fixture-photo' }]),
     );
     h.ready('one', true);
     await tick();
@@ -275,7 +346,7 @@ describe('single playback scheduler', () => {
     h.scheduler.begin(turn(1));
     h.scheduler.enqueue(
       turn(1),
-      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'travel_photo_01' }]),
+      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'fixture-photo' }]),
     );
     h.scheduler.enqueue(
       turn(1),
@@ -334,7 +405,7 @@ describe('single playback scheduler', () => {
     h.scheduler.begin(turn(1));
     h.scheduler.enqueue(
       turn(1),
-      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'travel_photo_01' }]),
+      segment('one', [{ type: 'photo', eventId: 'photo1', resourceId: 'fixture-photo' }]),
     );
     h.ready('one');
     await tick();

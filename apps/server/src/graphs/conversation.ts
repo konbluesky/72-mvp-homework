@@ -30,11 +30,12 @@ import {
   interactionActionId,
 } from '../scenario/runtime/action-confirmation.js';
 
-export type TurnInput =
+export type TurnInput = { voicePlayback?: boolean } & (
   | { kind: 'media'; media: { kind: 'image-share'; shareId: string; claimId: string } }
   | { kind: 'text'; text: string }
   | { kind: 'audio'; bytes: Uint8Array; mimeType: string }
-  | { kind: 'interaction'; interaction: StoryInteraction };
+  | { kind: 'interaction'; interaction: StoryInteraction }
+);
 type EventContent = ServerEvent extends infer E
   ? E extends ServerEvent
     ? Pick<E, 'type' | 'payload'>
@@ -134,7 +135,7 @@ export async function runConversation(
     lineSignal: AbortSignal = signal,
   ): Promise<SpeechReadyPayload> => {
     let audioUrl: string | undefined;
-    if (providers.tts.info.provider !== 'text-only') {
+    if (input.voicePlayback !== false && providers.tts.info.provider !== 'text-only') {
       const audio = await stage('tts', () =>
         abortable(providers.tts.synthesize(text, lineSignal), lineSignal),
       );
@@ -152,9 +153,57 @@ export async function runConversation(
       emotion,
       action,
       events: [],
-      ...(audioUrl ? { audioUrl } : { captionOnly: true as const }),
+      ...(audioUrl
+        ? { audioUrl }
+        : {
+            captionOnly: true as const,
+            ...(input.voicePlayback === false ? { autoAdvance: true as const } : {}),
+          }),
     };
   };
+  const announceImage = async (work: NonNullable<ReturnType<typeof sessions.reserveImage>>) => {
+    const introduction = await prepareLine(work.recipe.introduction);
+    active();
+    sessions.issue(session, turn, introduction);
+    sessions.issueImageSlot(session, turn, work);
+    await publish({
+      type: 'image.pending',
+      payload: {
+        share: sessions.imageProjection(work),
+        slotEventId: work.slotEventId,
+        introduction,
+      },
+    });
+    sessions.firstAudioPublished(turn);
+  };
+  // An explicit image request uses the current scene recipe, not a guessed LLM utterance.
+  if (input.kind === 'interaction' && input.interaction.kind === 'image') {
+    active();
+    if (input.interaction.revision !== origin.revision)
+      throw new AppError('STALE_TURN', 409, '场景已更新，请重新选择生成图片。', true);
+    if (!providers.image)
+      throw new AppError('INVALID_REQUEST', 400, '当前服务未开启图片生成。', true);
+    const work = sessions.reserveImage(
+      session,
+      turn,
+      { focus: 'character', mood: 'warm', framing: 'medium' },
+      providers.image.simulated,
+      true,
+    );
+    if (!work)
+      throw new AppError(
+        'INVALID_REQUEST',
+        400,
+        '请在可生成图片的场景中操作，已有图片请在原卡片查看。',
+        true,
+      );
+    sessions.imageDecision(session, 'prepare');
+    await announceImage(work);
+    active();
+    await publish({ type: 'reply.done', payload: { segmentCount: 1, suggestions: [] } });
+    sessions.generated(turn);
+    return;
+  }
   // A finite media turn reuses SSE and the scheduler, without creating a user message or GPT call.
   if (input.kind === 'media') {
     const work = sessions.claimImage(session, turn, input.media.shareId, input.media.claimId);
@@ -605,18 +654,7 @@ export async function runConversation(
         }
       }
       if (work) {
-        const introduction = await prepareLine(work.recipe.introduction);
-        sessions.issue(session, turn, introduction);
-        sessions.issueImageSlot(session, turn, work);
-        await publish({
-          type: 'image.pending',
-          payload: {
-            share: sessions.imageProjection(work),
-            slotEventId: work.slotEventId,
-            introduction,
-          },
-        });
-        sessions.firstAudioPublished(turn);
+        await announceImage(work);
       }
       await publish({
         type: 'reply.done',

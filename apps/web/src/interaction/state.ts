@@ -26,6 +26,7 @@ export function initialInteractiveState() {
     storageError: '',
     mode: 'mock' as 'mock' | 'live',
     voiceInput: false,
+    imageGeneration: false,
     interaction: 'idle' as Interaction,
     emotion: 'guarded' as Emotion,
     action: 'none' as Action,

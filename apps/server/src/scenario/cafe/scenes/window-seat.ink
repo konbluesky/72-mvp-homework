@@ -18,17 +18,6 @@
 你表示愿意坐下聊聊。共桌只代表眼前的相处。
 -> menu
 
-=== view_photo ===
-~ photo_seen = true
-# cue:photo:travel_photo_01
-她愿意分享的海岸照片在眼前展开，画面中没有人物。
-{view_mode == "conversation" && not rain_softened:
-    ~ rain_softened = true
-    # cue:environment:rain-soft
-    雨窗上的水痕稀疏下来。
-}
--> menu
-
 === inspect_coffee ===
 ~ coffee_seen = true
 # cue:prop:coffee

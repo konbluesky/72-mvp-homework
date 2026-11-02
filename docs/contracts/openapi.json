@@ -875,6 +875,10 @@
                           "captionOnly": {
                             "type": "boolean",
                             "const": true
+                          },
+                          "autoAdvance": {
+                            "type": "boolean",
+                            "const": true
                           }
                         },
                         "required": [
@@ -1533,6 +1537,10 @@
                             }
                           },
                           "captionOnly": {
+                            "type": "boolean",
+                            "const": true
+                          },
+                          "autoAdvance": {
                             "type": "boolean",
                             "const": true
                           }
@@ -2221,6 +2229,10 @@
                   "captionOnly": {
                     "type": "boolean",
                     "const": true
+                  },
+                  "autoAdvance": {
+                    "type": "boolean",
+                    "const": true
                   }
                 },
                 "required": [
@@ -2796,6 +2808,25 @@
                               "properties": {
                                 "kind": {
                                   "type": "string",
+                                  "const": "image"
+                                },
+                                "revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "revision"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
                                   "const": "move"
                                 },
                                 "location": {
@@ -3187,6 +3218,25 @@
                       "properties": {
                         "kind": {
                           "type": "string",
+                          "const": "image"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "revision"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
                           "const": "move"
                         },
                         "location": {
@@ -3299,6 +3349,9 @@
             "minLength": 1,
             "maxLength": 100,
             "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "voicePlayback": {
+            "type": "boolean"
           },
           "durationMs": {
             "type": "number",
@@ -4534,6 +4587,9 @@
                       "properties": {
                         "voiceInput": {
                           "type": "boolean"
+                        },
+                        "imageGeneration": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -4778,6 +4834,27 @@
                               },
                               "interaction": {
                                 "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "image"
+                                        ]
+                                      },
+                                      "revision": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "revision"
+                                    ],
+                                    "additionalProperties": false
+                                  },
                                   {
                                     "type": "object",
                                     "properties": {
@@ -5902,6 +5979,9 @@
                       "type": "object",
                       "properties": {
                         "voiceInput": {
+                          "type": "boolean"
+                        },
+                        "imageGeneration": {
                           "type": "boolean"
                         }
                       },
@@ -16204,6 +16284,9 @@
                           "maxLength": 100,
                           "pattern": "^[a-zA-Z0-9_-]+$"
                         },
+                        "voicePlayback": {
+                          "type": "boolean"
+                        },
                         "durationMs": {
                           "type": "number",
                           "minimum": 200,
@@ -16253,6 +16336,9 @@
                         "maxLength": 100,
                         "pattern": "^[a-zA-Z0-9_-]+$"
                       },
+                      "voicePlayback": {
+                        "type": "boolean"
+                      },
                       "text": {
                         "type": "string",
                         "minLength": 1,
@@ -16280,8 +16366,30 @@
                         "maxLength": 100,
                         "pattern": "^[a-zA-Z0-9_-]+$"
                       },
+                      "voicePlayback": {
+                        "type": "boolean"
+                      },
                       "interaction": {
                         "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "image"
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "revision"
+                            ],
+                            "additionalProperties": false
+                          },
                           {
                             "type": "object",
                             "properties": {
@@ -16392,6 +16500,9 @@
                         "maxLength": 100,
                         "pattern": "^[a-zA-Z0-9_-]+$"
                       },
+                      "voicePlayback": {
+                        "type": "boolean"
+                      },
                       "media": {
                         "type": "object",
                         "properties": {
@@ -16455,6 +16566,9 @@
                           "minLength": 1,
                           "maxLength": 100,
                           "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "voicePlayback": {
+                          "type": "boolean"
                         },
                         "durationMs": {
                           "type": "number",
@@ -17379,6 +17493,10 @@
                                     "captionOnly": {
                                       "type": "boolean",
                                       "const": true
+                                    },
+                                    "autoAdvance": {
+                                      "type": "boolean",
+                                      "const": true
                                     }
                                   },
                                   "required": [
@@ -18037,6 +18155,10 @@
                                       }
                                     },
                                     "captionOnly": {
+                                      "type": "boolean",
+                                      "const": true
+                                    },
+                                    "autoAdvance": {
                                       "type": "boolean",
                                       "const": true
                                     }
@@ -18725,6 +18847,10 @@
                             "captionOnly": {
                               "type": "boolean",
                               "const": true
+                            },
+                            "autoAdvance": {
+                              "type": "boolean",
+                              "const": true
                             }
                           },
                           "required": [
@@ -19295,6 +19421,25 @@
                                   },
                                   "interaction": {
                                     "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "image"
+                                          },
+                                          "revision": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "revision"
+                                        ],
+                                        "additionalProperties": false
+                                      },
                                       {
                                         "type": "object",
                                         "properties": {

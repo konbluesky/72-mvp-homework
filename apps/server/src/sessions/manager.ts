@@ -833,11 +833,16 @@ export class SessionManager {
     turn: Turn,
     intent: MediaVisualIntent,
     simulated: boolean,
+    explicitlyRequested = false,
   ): ImageWork | undefined {
     this.assertCurrent(session, turn);
     if (session.imageShares.size) return undefined;
-    const candidate = this.imageCandidate(session);
+    const candidate = explicitlyRequested
+      ? this.scenario.imageSharing?.candidate(session.narrative, session.history)
+      : this.imageCandidate(session);
     if (!candidate) return undefined;
+    if (!this.scenario.imageSharing?.accepts(session.narrative, { ...candidate, intent, seed: 0 }))
+      return undefined;
     const shareId = this.id();
     const now = this.now();
     const work: ImageWork = {

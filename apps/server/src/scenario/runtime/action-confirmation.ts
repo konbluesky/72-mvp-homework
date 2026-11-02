@@ -2,6 +2,7 @@ import type { PlanInput } from '../../providers/types.js';
 import type { StoryAction, StoryInteraction } from '@mira/protocol';
 
 export function interactionActionId(input: StoryInteraction): string {
+  if (input.kind === 'image') return 'generate-image';
   return input.kind === 'action'
     ? input.actionId
     : input.kind === 'move'

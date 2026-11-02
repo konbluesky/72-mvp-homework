@@ -42,10 +42,14 @@ export async function readInput(request: FastifyRequest, config: Config): Promis
         .digest('hex'),
       input:
         'interaction' in parsed.data
-          ? { kind: 'interaction', interaction: parsed.data.interaction }
+          ? {
+              kind: 'interaction',
+              interaction: parsed.data.interaction,
+              voicePlayback: parsed.data.voicePlayback,
+            }
           : 'media' in parsed.data
-            ? { kind: 'media', media: parsed.data.media }
-            : { kind: 'text', text: parsed.data.text },
+            ? { kind: 'media', media: parsed.data.media, voicePlayback: parsed.data.voicePlayback }
+            : { kind: 'text', text: parsed.data.text, voicePlayback: parsed.data.voicePlayback },
     };
   }
   let metadata: unknown;
@@ -89,6 +93,7 @@ export async function readInput(request: FastifyRequest, config: Config): Promis
     throw new AppError('INVALID_REQUEST', 400, '录音时间或信息不完整，请重新录制。');
   const digest = createHash('sha256')
     .update(`audio:${audio.mimeType}:${parsed.data.durationMs}:`)
+    .update(JSON.stringify({ voicePlayback: parsed.data.voicePlayback }))
     .update(audio.bytes)
     .digest('hex');
   return {
@@ -96,6 +101,6 @@ export async function readInput(request: FastifyRequest, config: Config): Promis
     inputId: parsed.data.inputId,
     digest,
     contentDigest: digest,
-    input: { kind: 'audio', ...audio },
+    input: { kind: 'audio', ...audio, voicePlayback: parsed.data.voicePlayback },
   };
 }

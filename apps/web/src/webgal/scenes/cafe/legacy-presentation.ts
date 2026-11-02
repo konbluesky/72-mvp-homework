@@ -1,9 +1,7 @@
-import { cafeResource } from './resources.js';
 import { nextTick } from 'vue';
 import { projectStory } from '@mira/protocol';
 import type { PresentationPort } from '../../../playback/scheduler.js';
 import type { SceneStore } from '../../../stores/scene.js';
-import { abortable } from '../../../playback/abortable.js';
 
 function frame(signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -29,49 +27,9 @@ async function painted(signal: AbortSignal): Promise<void> {
 export function createPresentation(store: SceneStore): PresentationPort {
   let pendingEnvironment: { previous: string; next: string } | undefined;
   return {
-    async photo(event, ownerSignal) {
-      const signal = AbortSignal.any([ownerSignal, AbortSignal.timeout(8_000)]);
-      store.photo = 'loading';
-      const image = new Image();
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const cleanup = () => {
-            image.onload = null;
-            image.onerror = null;
-            signal.removeEventListener('abort', abort);
-          };
-          const abort = () => {
-            cleanup();
-            image.src = '';
-            reject(signal.reason);
-          };
-          signal.addEventListener('abort', abort, { once: true });
-          image.onerror = () => {
-            cleanup();
-            reject(new Error('PHOTO_FAILED'));
-          };
-          image.onload = () => {
-            cleanup();
-            resolve();
-          };
-          image.src = cafeResource(event.resourceId).url;
-        });
-        await abortable(image.decode(), signal);
-        signal.throwIfAborted();
-        store.photo = 'visible';
-        await painted(signal);
-        const displayed = document.querySelector<HTMLImageElement>('[data-photo]');
-        if (
-          !displayed?.complete ||
-          displayed.naturalWidth === 0 ||
-          displayed.getBoundingClientRect().width === 0
-        )
-          throw new Error('PHOTO_NOT_VISIBLE');
-      } catch (error) {
-        image.src = '';
-        if (!ownerSignal.aborted) store.photo = 'failed';
-        throw error;
-      }
+    async photo(_event, signal) {
+      signal.throwIfAborted();
+      throw new Error('SCENE_PHOTO_NOT_AVAILABLE');
     },
     async environment(event, signal) {
       signal.throwIfAborted();

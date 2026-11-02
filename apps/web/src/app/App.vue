@@ -573,11 +573,11 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
         <span aria-hidden="true" class="location-line" /><span>{{ content.locationLabel }}</span
         ><span class="location-weather">{{ content.environmentLabel(scene.environment) }}</span>
       </div>
-      <div v-if="scene.photo === 'loading'" class="photo-loading" role="status">
+      <div v-if="content.photo && scene.photo === 'loading'" class="photo-loading" role="status">
         <span class="spinner" />照片加载中
       </div>
       <section
-        v-if="scene.photo === 'visible'"
+        v-if="content.photo && scene.photo === 'visible'"
         class="photo-view"
         :aria-label="content.photo.caption"
       >

@@ -227,6 +227,7 @@ export class TurnController {
         this.reconcileMessages(snapshot.messageAttempts, snapshot.generation);
         this.images.setSession(this.sessionId, snapshot.imageShares ?? []);
         this.store.voiceInput = snapshot.capabilities.voiceInput;
+        this.store.imageGeneration = snapshot.capabilities.imageGeneration ?? false;
         this.store.scenario = snapshot.scene.scenario ?? null;
         this.store.environment = snapshot.scene.environment;
         this.store.facts = snapshot.scene.facts;
@@ -254,6 +255,7 @@ export class TurnController {
         this.receipts.clear();
         this.store.mode = session.mode;
         this.store.voiceInput = session.capabilities.voiceInput;
+        this.store.imageGeneration = session.capabilities.imageGeneration ?? false;
         this.store.scenario = session.scene.scenario ?? null;
         this.store.environment = session.scene.environment;
         this.store.facts = session.scene.facts;
@@ -397,9 +399,10 @@ export class TurnController {
       if ('interaction' in message.input) {
         const interaction = message.input.interaction;
         if (
-          interaction.kind === 'action' &&
-          (interaction.revision !== this.store.story.revision ||
-            !this.store.story.actions.some((action) => action.id === interaction.actionId))
+          (interaction.kind === 'image' && interaction.revision !== this.store.story.revision) ||
+          (interaction.kind === 'action' &&
+            (interaction.revision !== this.store.story.revision ||
+              !this.store.story.actions.some((action) => action.id === interaction.actionId)))
         ) {
           this.updateMessage(message.turn, {
             retryable: false,

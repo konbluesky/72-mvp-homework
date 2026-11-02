@@ -7,11 +7,6 @@
       "bytes": 285,
       "sha256": "2741b1963c92af2aa7c84a7d75a123822bd0ef0c9d1c7d09b125ee53fe6cbe3e"
     },
-    "assets/travel-photo.svg": {
-      "source": "Project-authored SVG; provenance described in assets/README.md and assets/webgal-demo/README.md.",
-      "bytes": 1691,
-      "sha256": "990e04712a2b8fd994990279ad006e63ca73e602cd23be42882bc42464c6a012"
-    },
     "assets/webgal-demo/cafe-night.svg": {
       "source": "Project-authored SVG; provenance described in assets/README.md and assets/webgal-demo/README.md.",
       "bytes": 4240,

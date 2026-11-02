@@ -370,7 +370,10 @@ export async function createApp(options: AppOptions = {}) {
       if (config.RATE_LIMIT_ENABLED) creationTimes.set(request.ip, [...times, now]);
       return reply.status(201).send({
         ...created,
-        capabilities: { voiceInput: Boolean(providers.stt) },
+        capabilities: {
+          voiceInput: Boolean(providers.stt),
+          imageGeneration: Boolean(providers.image),
+        },
       });
     },
   );
@@ -386,7 +389,10 @@ export async function createApp(options: AppOptions = {}) {
     },
     async (request) => ({
       ...sessions.snapshot(sessions.authenticate(request.params.id, request.headers.authorization)),
-      capabilities: { voiceInput: Boolean(providers.stt) },
+      capabilities: {
+        voiceInput: Boolean(providers.stt),
+        imageGeneration: Boolean(providers.image),
+      },
     }),
   );
   app.get(

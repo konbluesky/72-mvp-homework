@@ -1,6 +1,6 @@
 {
   "id": "last-lamp",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "inkVersion": "2.4.0",
   "entry": "menu",
   "voices": {
@@ -50,7 +50,12 @@
       "action": "none"
     }
   },
-  "phases": ["arrival", "exploration", "decision", "epilogue"],
+  "phases": [
+    "arrival",
+    "exploration",
+    "decision",
+    "epilogue"
+  ],
   "locations": {
     "street-wide": "街角远景",
     "cafe-front": "门头雨棚",
@@ -72,7 +77,6 @@
       "second_date",
       "date_finished",
       "handheld",
-      "photo_seen",
       "rain_softened",
       "notice_read",
       "wall_art_seen",
@@ -91,7 +95,6 @@
       "appointment": "appointment"
     },
     "facts": {
-      "photo_revealed": "photo_seen",
       "rain_softened": "rain_softened"
     },
     "beat": "beat",
@@ -102,113 +105,166 @@
   },
   "directorNotes": [
     {
-      "beats": ["arrival-street"],
+      "beats": [
+        "arrival-street"
+      ],
       "text": "玩家独自在街角，尚未见面。先提供走近雨棚或离开的选择，不让角色隔空搭话。",
-      "replyActions": ["move-cafe-front"]
+      "replyActions": [
+        "move-cafe-front"
+      ]
     },
     {
-      "beats": ["arrival-front"],
+      "beats": [
+        "arrival-front"
+      ],
       "text": "玩家独自在雨棚下，只隔窗注意到一个身影。可读提示、进店或离开，不能提前相识。",
-      "replyActions": ["move-lobby"]
+      "replyActions": [
+        "move-lobby"
+      ]
     },
     {
-      "beats": ["first-greeting"],
+      "beats": [
+        "first-greeting"
+      ],
       "text": "礼貌确认空位，不把进店视为想搭讪或同意拼桌。 当前关系以已呈现的对话与明确选择为准。双方刚见面，名字与职业未必已经介绍；不急着问来意、住处或感情状态；玩家道谢、问姓名不等于同意坐下",
-      "replyActions": ["talk-sit"]
+      "replyActions": [
+        "talk-sit"
+      ]
     },
     {
-      "beats": ["first-small-talk"],
+      "beats": [
+        "first-small-talk"
+      ],
       "text": "让陌生人共桌有一段自然的适应过程。 当前关系以已呈现的对话与明确选择为准。共桌不等于陪伴承诺或有好感；不突然讲糗事、履历、感情观来讨好；不要重复询问已经知道的姓名或再次邀坐",
       "replyActions": []
     },
     {
-      "beats": ["first-coffee"],
+      "beats": [
+        "first-coffee"
+      ],
       "text": "通过眼前的小事和往来认识说话的节奏。 当前关系以已呈现的对话与明确选择为准。没有描述咖啡就不说你看出来了；游戏不承担示爱或证明观察力的任务；不知道的饮品或店家细节不编造",
       "replyActions": []
     },
     {
-      "beats": ["first-gallery"],
+      "beats": [
+        "first-gallery"
+      ],
       "text": "把共同看的东西变成话题，不急着深入私人关系。 当前关系以已呈现的对话与明确选择为准。画属于店内装饰，没有署名和私人留言；不虚构旧友、前任、竞争关系或玩家吃醋；玩家没表态时不说你停了半拍或我知道你在意",
       "replyActions": []
     },
     {
-      "beats": ["first-personal"],
+      "beats": [
+        "first-personal"
+      ],
       "text": "接住已主动透露的小事，让进一步了解有具体依据。 当前关系以已呈现的对话与明确选择为准。不安排职业偏见盘问、冒犯或道歉关卡；对方没冒犯就不发起分歧；不把礼貌、笑话或愿意聊天认作互相心动",
       "replyActions": []
     },
     {
-      "beats": ["first-return"],
+      "beats": [
+        "first-return"
+      ],
       "text": "根据实际等候和此前交流继续，允许语气只比之前松一点。 当前关系以已呈现的对话与明确选择为准。补妆不自动制造依恋、患得患失或暧昧；不说我练习若无其事回来等未发生的内心戏；玩家仍在场不证明愿意等她一整晚",
       "replyActions": []
     },
     {
-      "beats": ["first-counter"],
+      "beats": [
+        "first-counter"
+      ],
       "text": "临近离开时商量眼前安排，不把买单当好感测试。 当前关系以已呈现的对话与明确选择为准。看饮品单不代表点单或付款已发生；菜单只有美式、拿铁、红茶，不编价格；不拿付款、等待或客气话交换亲密",
       "replyActions": []
     },
     {
-      "beats": ["first-choice"],
+      "beats": [
+        "first-choice"
+      ],
       "text": "把当下愿意的下一步说清楚，接纳不同去向。 当前关系以已呈现的对话与明确选择为准。不把所有路线都写成舍不得结束；再见、继续同行、共度一夜分别处理；不把普通再陪一会儿解释为性邀请",
       "replyActions": []
     },
     {
-      "beats": ["second-greeting"],
+      "beats": [
+        "second-greeting"
+      ],
       "text": "以实际第一次经历和当下招呼开启重逢。 当前关系以已呈现的对话与明确选择为准。约好再见只代表愿意再见，不代表恋爱或身体接触；未实际介绍过的称呼、爱好不能装作记得；没有共度一夜就不暗示有过亲密经历",
       "replyActions": []
     },
     {
-      "beats": ["second-memory"],
+      "beats": [
+        "second-memory"
+      ],
       "text": "用真实记忆产生熟悉感，也允许两人记得不同的事。 当前关系以已呈现的对话与明确选择为准。没有记录就不编故事、原话或喜好；不自动让玩家重述最浪漫的瞬间；共度一夜可坦然提及，但不展开私密过程",
       "replyActions": []
     },
     {
-      "beats": ["second-walk"],
+      "beats": [
+        "second-walk"
+      ],
       "text": "通过日常观察认识对方，保持有来有往。 当前关系以已呈现的对话与明确选择为准。不虚构未展示的商铺、活动或机场行程；不连续把琐事总结成人生哲理；不因第二次见面就预设要牵手",
       "replyActions": []
     },
     {
-      "beats": ["second-expectations"],
+      "beats": [
+        "second-expectations"
+      ],
       "text": "只有对话触及期待时才说清，普通约会也可以先过好眼前。 当前关系以已呈现的对话与明确选择为准。没有分歧就不制造关系审问或道歉；不要求每个人立刻定义长期关系；没有上一晚亲密经历就不念亲密之后需要确认的说教",
       "replyActions": []
     },
     {
-      "beats": ["second-rest"],
+      "beats": [
+        "second-rest"
+      ],
       "text": "让停顿成为正常相处，不把沉默解释成危机。 当前关系以已呈现的对话与明确选择为准。不凭沉默推断害怕失去、冷落或欲望；未经历补妆就不回忆空椅子；不强行把停顿变成告白",
       "replyActions": []
     },
     {
-      "beats": ["second-everyday"],
+      "beats": [
+        "second-everyday"
+      ],
       "text": "让兴趣落到具体生活，允许各自保留节奏。 当前关系以已呈现的对话与明确选择为准。不编真实日程、电话号码或已发送的消息；不替玩家宣布下次约定已成立；不拿相处成熟与否来评分",
       "replyActions": []
     },
     {
-      "beats": ["second-distance"],
+      "beats": [
+        "second-distance"
+      ],
       "text": "依据真实双向兴趣决定是否试探接触，普通并肩也完整。 当前关系以已呈现的对话与明确选择为准。有过心动、同意赴约或过去亲密都不是本次接触许可；每项接触只有合法事件确认后才描述已经发生；不用固定一套边界演讲打断轻松话题",
       "replyActions": []
     },
     {
-      "beats": ["second-choice"],
+      "beats": [
+        "second-choice"
+      ],
       "text": "回应真实期待，决定是否继续见面或先停在这里。 当前关系以已呈现的对话与明确选择为准。不能凭走到章节结尾就认定感情已成熟；认真约会和轻松关系都需要她当下也愿意；友情、告别与暂缓均是完整结果",
       "replyActions": []
     },
     {
-      "beats": ["first-mirror", "first-mirror-ready"],
+      "beats": [
+        "first-mirror",
+        "first-mirror-ready"
+      ],
       "text": "角色独自整理，玩家仍在原处。只使用等候、继续或离开的事件，不进行隔空聊天。"
     },
     {
-      "beats": ["night-confirm"],
+      "beats": [
+        "night-confirm"
+      ],
       "text": "刚刚讨论继续今晚，还没有共度一夜。只有玩家明确表示愿意共度这一夜才确认；只是散步、含糊附和、拒绝或犹豫都不执行。"
     },
     {
-      "beats": ["first-closed"],
+      "beats": [
+        "first-closed"
+      ],
       "text": "第一晚已结束，按真实结局简短回应。没有约定就不声称下次已约好，不反复重新告别。"
     },
     {
-      "beats": ["finished"],
+      "beats": [
+        "finished"
+      ],
       "text": "第二次见面已有结果。尊重已说清的关系，不重新推销其他结局；只作自然、简短的回应。"
     },
     {
-      "beats": ["legacy"],
+      "beats": [
+        "legacy"
+      ],
       "text": "原版自由交流。仍是刚认识的陌生人，先回答本句；没有逐句任务，不要求看道具或进入故事章节。"
     }
   ],
@@ -224,7 +280,6 @@
     "move-photo-corridor": "玩家明确选择：一起看看走廊的风景画。只执行这个当前事件；没有说过的话不补写，其他关系和行动不自动成立。",
     "move-counter": "玩家明确选择：去吧台看看。只执行这个当前事件；没有说过的话不补写，其他关系和行动不自动成立。",
     "move-street-walk": "玩家明确选择：沿街走走。只执行这个当前事件；没有说过的话不补写，其他关系和行动不自动成立。",
-    "view-photo": "玩家希望看角色自愿分享的无人海岸照片。展示成功才公开照片内容；看照片不授予关系。",
     "inspect-notice": "玩家明确选择：看营业提示。只执行这个当前事件；没有说过的话不补写，其他关系和行动不自动成立。",
     "inspect-wall-art": "玩家明确选择：看墙上的风景画。只执行这个当前事件；没有说过的话不补写，其他关系和行动不自动成立。",
     "inspect-menu": "玩家明确选择：看吧台饮品单。只执行这个当前事件；没有说过的话不补写，其他关系和行动不自动成立。",
@@ -278,7 +333,9 @@
       "default": "rain",
       "variants": [
         {
-          "requires": ["rain_softened"],
+          "requires": [
+            "rain_softened"
+          ],
           "value": "rain-soft"
         }
       ]
@@ -288,10 +345,18 @@
     "speakerDescription": "空乘 · 刚结束执勤"
   },
   "recommendations": {
-    "decisionPhases": ["exploration", "decision", "epilogue"],
+    "decisionPhases": [
+      "exploration",
+      "decision",
+      "epilogue"
+    ],
     "maxGuiding": 1
   },
-  "ambiences": ["open", "closed", "last-lamp"],
+  "ambiences": [
+    "open",
+    "closed",
+    "last-lamp"
+  ],
   "endings": [
     "depart",
     "letter",
@@ -303,17 +368,16 @@
     "farewell",
     "pause"
   ],
-  "resources": {
-    "travel_photo_01": {
-      "kind": "image",
-      "asset": "travel-photo",
-      "url": "/assets/travel-photo.svg"
-    }
-  },
+  "resources": {},
   "mock": {
-    "transcript": "能看看照片吗？"
+    "transcript": "你刚下班吗？"
   },
-  "performanceActions": ["none", "lookWindow", "acknowledge", "focusProp"],
+  "performanceActions": [
+    "none",
+    "lookWindow",
+    "acknowledge",
+    "focusProp"
+  ],
   "thoughts": {
     "mirror-ordinary": "今天说了不少话。先把口红补好，回去再看想聊什么。",
     "mirror-interest": "刚才那句话，原来我还在想。回去的时候，别急着拿玩笑盖过去。",
@@ -323,97 +387,143 @@
   },
   "progression": [
     {
-      "beats": ["arrival-street"],
+      "beats": [
+        "arrival-street"
+      ],
       "knot": "enter_cafe_front",
       "label": "走到店门雨棚下"
     },
     {
-      "beats": ["arrival-front"],
+      "beats": [
+        "arrival-front"
+      ],
       "knot": "enter_lobby",
       "label": "推门进店"
     },
     {
-      "beats": ["first-greeting"],
+      "beats": [
+        "first-greeting"
+      ],
       "knot": "sit_together",
       "label": "接受拼桌，到窗边坐下",
-      "locations": ["lobby"]
+      "locations": [
+        "lobby"
+      ]
     },
     {
-      "beats": ["first-small-talk"],
+      "beats": [
+        "first-small-talk"
+      ],
       "knot": "focus_coffee",
       "label": "留在窗边，聊聊咖啡",
-      "locations": ["window-seat"]
+      "locations": [
+        "window-seat"
+      ]
     },
     {
-      "beats": ["first-coffee"],
+      "beats": [
+        "first-coffee"
+      ],
       "knot": "enter_photo_corridor",
       "label": "一起去看看风景画",
-      "locations": ["window-seat"]
+      "locations": [
+        "window-seat"
+      ]
     },
     {
-      "beats": ["first-gallery"],
+      "beats": [
+        "first-gallery"
+      ],
       "knot": "focus_personal",
       "label": "回窗边继续聊",
-      "locations": ["photo-corridor"]
+      "locations": [
+        "photo-corridor"
+      ]
     },
     {
-      "beats": ["first-personal"],
+      "beats": [
+        "first-personal"
+      ],
       "knot": "wait_at_seat",
       "label": "等她整理一下",
-      "locations": ["window-seat"]
+      "locations": [
+        "window-seat"
+      ]
     },
     {
-      "beats": ["first-mirror"],
+      "beats": [
+        "first-mirror"
+      ],
       "knot": "finish_makeup",
       "label": "等她整理好"
     },
     {
-      "beats": ["first-mirror-ready"],
+      "beats": [
+        "first-mirror-ready"
+      ],
       "knot": "return_from_makeup",
       "label": "等她回到原处"
     },
     {
-      "beats": ["first-return"],
+      "beats": [
+        "first-return"
+      ],
       "knot": "enter_counter",
       "label": "去吧台看看"
     },
     {
-      "beats": ["first-counter"],
+      "beats": [
+        "first-counter"
+      ],
       "knot": "enter_cafe_front",
       "label": "一起走到雨棚下"
     },
     {
-      "beats": ["second-greeting"],
+      "beats": [
+        "second-greeting"
+      ],
       "knot": "focus_memory",
       "label": "接着上次聊过的事说说"
     },
     {
-      "beats": ["second-memory"],
+      "beats": [
+        "second-memory"
+      ],
       "knot": "enter_street_walk",
       "label": "一起沿街走走"
     },
     {
-      "beats": ["second-walk"],
+      "beats": [
+        "second-walk"
+      ],
       "knot": "focus_expectations",
       "label": "商量今天还想做什么"
     },
     {
-      "beats": ["second-expectations"],
+      "beats": [
+        "second-expectations"
+      ],
       "knot": "rest_at_front",
       "label": "到雨棚下歇一会儿"
     },
     {
-      "beats": ["second-rest"],
+      "beats": [
+        "second-rest"
+      ],
       "knot": "focus_everyday",
       "label": "沿街继续聊"
     },
     {
-      "beats": ["second-everyday"],
+      "beats": [
+        "second-everyday"
+      ],
       "knot": "focus_distance",
       "label": "慢下来，聊聊现在的相处"
     },
     {
-      "beats": ["second-distance"],
+      "beats": [
+        "second-distance"
+      ],
       "knot": "focus_date_choices",
       "label": "到街口，决定是否继续见面"
     }

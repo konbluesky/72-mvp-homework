@@ -48,7 +48,7 @@ describe('scenario context and soft suggestions', () => {
       validateReply({
         ...plan,
         segments: [
-          { ...plan.segments[0]!, events: [{ type: 'photo', resourceId: 'travel_photo_01' }] },
+          { ...plan.segments[0]!, events: [{ type: 'photo', resourceId: 'fixture-photo' }] },
         ],
       }),
     ).toThrow();

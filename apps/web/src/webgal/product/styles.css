@@ -170,33 +170,6 @@ body {
   gap: 16px;
   z-index: 3;
 }
-.story-progression {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 12px;
-  padding: 12px 14px;
-  border: 1px solid #94a79540;
-  border-radius: 10px;
-  background: #b4c2a90a;
-}
-.story-progression > div {
-  min-width: 0;
-}
-.story-progression span,
-.story-progression small {
-  font-size: 11px;
-  color: #aebba3;
-}
-.story-progression p {
-  margin: 4px 0;
-  font-size: 13px;
-  overflow-wrap: anywhere;
-}
-.story-progression .story-primary {
-  flex-shrink: 0;
-}
 .location-control {
   display: inline-flex;
   align-items: center;
@@ -437,30 +410,38 @@ body {
 .next-replies {
   flex: none;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 7px;
-  max-height: 100px;
-  overflow-y: auto;
-  padding: 3px 0 11px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 3px 0 8px;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   scrollbar-width: thin;
   scrollbar-color: #9daa8740 transparent;
 }
 .next-replies button {
-  min-height: 38px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  word-break: keep-all;
+  min-height: 36px;
   padding: 7px 12px;
-  max-width: 100%;
+  max-width: none;
   text-align: left;
   font-size: 12px;
   line-height: 1.65;
   color: #c8d2b9;
   border: 1px solid #b6c5a72b;
   border-radius: 8px;
-  background: #b6c5a707;
-  overflow-wrap: anywhere;
+  background: transparent;
+  overflow-wrap: normal;
 }
 .next-replies button:hover {
   border-color: #bfc5a661;
-  background: #b6c5a711;
+  background: transparent;
 }
 
 .story-stop-button {
@@ -1235,9 +1216,7 @@ body {
     padding-top: 8px;
     padding-bottom: 8px;
   }
-  .next-replies {
-    max-height: 74px;
-  }
+
 }
 @media (prefers-reduced-motion: reduce) {
   .story-app *,

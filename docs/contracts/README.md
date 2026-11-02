@@ -2,6 +2,10 @@
 
 协议唯一来源：`packages/protocol/src/index.ts`。HTTP 路由元数据和 Zod schemas 生成 [OpenAPI](openapi.json)，`npm run contracts:generate` 更新，`npm run contracts:check` 检查一致性并由 Swagger Parser 验证。
 
+2026-11-02 语音开关与显式生图：文字、动作、媒体输入及原始录音 metadata 可携带可选 `voicePlayback: boolean`，缺省保留语音。`false` 时服务端跳过 TTS 和音频存储，以现有 `text.ready` 下发 `captionOnly=true, autoAdvance=true`；Scheduler 等文字绘制后提交 `mode=text` 回执，不等待朗读时长，也不声称播放过音频。关闭中的旧轮仍遵守取消冻结，不能用开关补交未呈现目标。
+
+显式生图使用 `interaction: {kind:"image", revision}`。它不接收提示词、位置、模型标识、地址或 Ink 路径；Graph 核对当前 revision、已开启的图片 Provider 与场景配方适用性。玩家主动点击时不要求先完成普通聊天，也不调用 Planner；仍由 `image.pending` 占位回执启动后台任务，每会话原有任务上限与原卡重试规则保留。`capabilities.imageGeneration` 为可选布尔字段，缺失时新前端不开放生图。前后端需一起更新并刷新旧页面。
+
 ## 会话与输入
 
 1. `POST /api/sessions` 返回 sessionToken、expiresAt 与 capabilities.voiceInput。`expiresAt: null` 表示不按时间过期（默认）；正整数表示 Unix 毫秒到期时间，可用 `SESSION_TTL_SECONDS` 正值显式开启。浏览器按 API origin、入口和故事包隔离保存会话凭证，用于刷新恢复；过期或鉴权失效清除凭证，按实际能力开放录音，不由 Mock/Live 字符串推断。凭证方案见 [ADR 013](../architecture/decisions.md#adr-013--浏览器侧保存与短期会话恢复)，保留策略见 [ADR 014](../architecture/decisions.md#adr-014--默认保留会话显式重新开始才替换)。

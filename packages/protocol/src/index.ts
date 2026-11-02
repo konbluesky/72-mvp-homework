@@ -99,7 +99,9 @@ export const SceneSchema = z
   .strict();
 
 /** 实际 Provider 组合支持的入口；UI 按能力开放录音，不按 mock/live 猜测。 */
-export const CapabilitiesSchema = z.object({ voiceInput: z.boolean() }).strict();
+export const CapabilitiesSchema = z
+  .object({ voiceInput: z.boolean(), imageGeneration: z.boolean().optional() })
+  .strict();
 
 export const CreateSessionSchema = z
   .object({

@@ -6,83 +6,105 @@
   },
   {
     "id": "mira.background",
-    "requires": ["met"],
-    "text": "米拉26岁，成年女性空乘，已结束执勤，以私人身份来喝咖啡，不在等人。她喜欢咖啡、听音乐、慢慢散步和不赶日程的休息日；认路不太行，经常把热饮放凉。她去过海边，照片是无人海岸。以上是可用人物设定，不代表已经向玩家逐一介绍，更不代表玩家有相同喜好。具体经历、单位、航班与感情史不得编造。"
+    "requires": [
+      "met"
+    ],
+    "text": "米拉26岁，成年女性空乘，已结束执勤，以私人身份来喝咖啡，不在等人。她喜欢咖啡、听音乐、慢慢散步和不赶日程的休息日；认路不太行，经常把热饮放凉。以上是可用人物设定，不代表已经向玩家逐一介绍，更不代表玩家有相同喜好。具体经历、单位、航班与感情史不得编造。"
   },
   {
     "id": "mira.chemistry",
-    "requires": ["chemistry"],
+    "requires": [
+      "chemistry"
+    ],
     "text": "双方已根据实际交流表达愿意进一步了解。此标记不代表恋爱、依恋、排他关系或任何身体接触许可；未解除的放慢意愿仍须尊重。不要把这次简单表态补写成过去没有发生的调情、告白或承诺。"
   },
   {
     "id": "relationship.boundary",
-    "requires": ["boundary_set"],
+    "requires": [
+      "boundary_set"
+    ],
     "text": "用户曾要求停止或放慢暧昧，她明确接受。boundary_repaired 未成立时，不再主动调情或提议牵手；它只有用户主动重新愿意约会时才成立。保留慢节奏和随时拒绝的空间。礼貌、道歉、继续聊天都不是重新允许亲密。"
   },
   {
     "id": "relationship.reopened",
-    "requires": ["boundary_repaired"],
+    "requires": [
+      "boundary_repaired"
+    ],
     "text": "用户在放慢后主动明确表示愿意试着约会、慢慢来，双方接受重新了解；不抹掉此前边界。后续身体接触仍逐项明确。"
   },
   {
     "id": "notice",
     "title": "今晚的营业提示",
-    "requires": ["notice_read"],
+    "requires": [
+      "notice_read"
+    ],
     "text": "雨停之前 · 营业提示\n今晚部分桌椅已收起，店内仍可落座。\n旧店将在今晚结束营业，之后搬迁。"
   },
   {
     "id": "wall-art",
     "title": "走廊里的风景画",
-    "requires": ["wall_art_seen"],
+    "requires": [
+      "wall_art_seen"
+    ],
     "text": "店内走廊挂着几幅无署名的风景画。眼前这一幅是海岸、天空和晚霞，没有人物或姓名。画面地点和作者没有公开信息。"
   },
   {
     "id": "menu",
     "title": "吧台饮品单",
-    "requires": ["menu_read"],
+    "requires": [
+      "menu_read"
+    ],
     "text": "雨停之前 · 饮品单\n美式咖啡\n拿铁\n红茶"
   },
   {
     "id": "coffee",
     "title": "窗边的咖啡",
-    "requires": ["coffee_seen"],
+    "requires": [
+      "coffee_seen"
+    ],
     "text": "陶瓷杯放在小碟上，杯口已经不冒热气。窗上的水痕映在桌面上。"
   },
   {
     "id": "appointment",
     "title": "下一次，不等雨",
-    "requires": ["appointment"],
+    "requires": [
+      "appointment"
+    ],
     "text": "下一次见面\n地点：旧店门前的雨棚\n时间：双方确认有空的另一个夜晚\n不用等雨，我也想见你。\n——米拉"
   },
   {
-    "id": "photo",
-    "title": "海边的一天",
-    "requires": ["photo_seen"],
-    "text": "已展示的照片是无人海岸风景：明亮天空、蓝绿色海面与沿岸浪花。它是她休息时的海边纪念，不是摄影职业作品。没有人物，不编造同行者或尚未说过的原话。"
-  },
-  {
     "id": "date.reunion",
-    "requires": ["second_date"],
+    "requires": [
+      "second_date"
+    ],
     "text": "已进入同一故事的第二次见面。双方此前明确约好再见，第一晚也已收束。旧店已经搬走，门牌关闭；只能在门前、街角、街道活动。现在不等于第一次相遇当晚，不重复招呼或自动进入关闭的室内。不要假装记得用户没有实际说过的喜好。"
   },
   {
     "id": "date.finished",
-    "requires": ["date_finished"],
+    "requires": [
+      "date_finished"
+    ],
     "text": "第二次见面已有结果，以ending为准：closer继续认真约会，casual双方说清的轻松关系，friends朋友，farewell停在这里，pause今天先结束、关系暂不定义。不得反复重开或劝用户升级。"
   },
   {
     "id": "mira.game",
-    "requires": ["game_answered"],
+    "requires": [
+      "game_answered"
+    ],
     "text": "可选三句话猜谜已揭晓：她喜欢咖啡、认路不太行，经常把热饮放凉；第三句是真的。只记住公布过的题目与答案，是否猜对以真实用户选择为准，不奖励亲密。"
   },
   {
     "id": "makeup.return",
-    "requires": ["makeup_returned"],
+    "requires": [
+      "makeup_returned"
+    ],
     "text": "米拉独自整理妆容后回到玩家等候的位置。补妆与等候不自动形成心动。镜前心声是读者视角，不是对玩家说过的话。"
   },
   {
     "id": "relationship.overnight",
-    "requires": ["overnight"],
+    "requires": [
+      "overnight"
+    ],
     "text": "第一晚双方明确愿意，经过留白转场，已自愿共度过一夜。私密过程不展开。这不表示恋爱、排他性、再次接触或下一次邀约自动成立；第二次见面需要另行明确约定。"
   }
 ]

@@ -3,31 +3,33 @@ import type { AudioReadyPayload, Receipt } from '@mira/protocol';
 import { SessionManager } from './manager.js';
 import { testConfig } from '../../test/helpers.js';
 import { cafeScenario } from '../scenario/cafe/index.js';
+import { followTo } from '../scenario/cafe/story.test.helpers.js';
 import { AppError } from '../http/errors.js';
 
 function setup(extra: Record<string, string> = {}) {
   const manager = new SessionManager(testConfig(extra), { scenario: cafeScenario });
-  const created = manager.create('conversation');
+  const created = manager.create('story');
   const session = manager.authenticate(created.sessionId, `Bearer ${created.sessionToken}`);
+  session.narrative = followTo(session.narrative, 'first-counter');
   const frame = cafeScenario.frame(session.narrative);
   session.story = frame.story;
   session.facts = frame.facts;
   manager.begin(session, { generation: 1, turnId: 'turn-1', receipts: [], frozenTurns: [] });
   const turn = manager.startInput(session, 'turn-1', 1, 'input-1', 'digest-1');
+  const document = cafeScenario.propose('inspect-menu', session.narrative)[0]!;
   const payload: AudioReadyPayload = {
     segmentId: 'seg-1',
-    text: '这张照片，是我旅行时留下的。',
+    text: '这里是一张公开的饮品单。',
     emotion: 'relieved',
-    action: 'offerPhoto',
+    action: 'focusProp',
     audioUrl: '/api/media/a1',
     events: [
-      { eventId: 'photo-1', type: 'photo', resourceId: 'travel_photo_01' },
+      { ...document.event, eventId: 'menu-1' },
       { eventId: 'rain-1', type: 'environment', environment: 'rain-soft' },
     ],
   };
   manager.issue(session, turn, payload);
-  const photo = cafeScenario.propose('view-photo', session.narrative)[0]!;
-  manager.issueEvents(session, turn, [payload.events[0]!], false, [], photo.checkpoint);
+  manager.issueEvents(session, turn, [payload.events[0]!], false, [], document.checkpoint);
   manager.firstAudioPublished(turn);
   const receipt = (
     targetId: string,
@@ -50,7 +52,7 @@ describe('single owner and presented facts', () => {
     vi.useFakeTimers();
     const { manager, session, created, receipt } = setup();
     try {
-      manager.receipts(session, [receipt('seg-1'), receipt('photo-1', 'photo')]);
+      manager.receipts(session, [receipt('seg-1'), receipt('menu-1', 'prop')]);
       const before = manager.snapshot(session);
       const checkpoint = session.narrative;
       expect(created.expiresAt).toBeNull();
@@ -169,17 +171,17 @@ describe('single owner and presented facts', () => {
     const { manager, session, receipt } = setup();
     const sentence = receipt('seg-1');
     manager.receipts(session, [sentence, sentence]);
-    expect(session.facts.photo_revealed).toBe(false);
+    expect(session.story.revealed.includes('menu')).toBe(false);
     expect(session.history).toHaveLength(1);
     manager.receipts(session, [receipt('rain-1', 'environment')]);
-    expect(session.facts).toEqual({ photo_revealed: false, rain_softened: false });
-    manager.receipts(session, [receipt('photo-1', 'photo'), receipt('rain-1', 'environment')]);
-    expect(session.facts).toEqual({ photo_revealed: true, rain_softened: false });
+    expect(session.facts).toEqual({ rain_softened: false });
+    manager.receipts(session, [receipt('menu-1', 'prop'), receipt('rain-1', 'environment')]);
+    expect(session.facts).toEqual({ rain_softened: false });
     manager.close();
   });
   it('merges frozen presented receipts before a rapid next turn context', () => {
     const { manager, session, receipt } = setup();
-    const photo = receipt('photo-1', 'photo');
+    const photo = receipt('menu-1', 'prop');
     manager.begin(session, {
       generation: 2,
       turnId: 'turn-2',
@@ -192,24 +194,24 @@ describe('single owner and presented facts', () => {
       receipts: [photo],
       frozenTurns: [{ generation: 2, turnId: 'turn-2', receipts: [] }],
     });
-    expect(session.facts.photo_revealed).toBe(true);
+    expect(session.story.revealed.includes('menu')).toBe(true);
     expect(session.generation).toBe(3);
     manager.close();
   });
   it('rejects late success after an explicit cancel snapshot', () => {
     const { manager, session, receipt } = setup();
     manager.cancelRequest(session, 'turn-1', 1, [receipt('seg-1')]);
-    expect(() => manager.receipts(session, [receipt('photo-1', 'photo')])).toThrowError('不能追加');
+    expect(() => manager.receipts(session, [receipt('menu-1', 'prop')])).toThrowError('不能追加');
     expect(() =>
-      manager.cancelRequest(session, 'turn-1', 1, [receipt('photo-1', 'photo')]),
+      manager.cancelRequest(session, 'turn-1', 1, [receipt('menu-1', 'prop')]),
     ).toThrowError('不能追加');
-    expect(session.facts.photo_revealed).toBe(false);
+    expect(session.story.revealed.includes('menu')).toBe(false);
     manager.close();
   });
   it('accepts the first explicit frozen snapshot after disconnect, but never a later expansion', () => {
     const { manager, session, turn, receipt } = setup();
     manager.fail(turn, new AppError('STREAM_INTERRUPTED', 499, '断流'));
-    const photo = receipt('photo-1', 'photo');
+    const photo = receipt('menu-1', 'prop');
     expect(() => manager.receipts(session, [photo])).toThrowError('不能追加');
     manager.begin(session, {
       generation: 2,
@@ -217,7 +219,7 @@ describe('single owner and presented facts', () => {
       receipts: [photo],
       frozenTurns: [{ generation: 1, turnId: 'turn-1', receipts: [photo] }],
     });
-    expect(session.facts.photo_revealed).toBe(true);
+    expect(session.story.revealed.includes('menu')).toBe(true);
     expect(() =>
       manager.cancelRequest(session, 'turn-1', 1, [receipt('rain-1', 'environment')]),
     ).toThrowError('不能追加');
@@ -240,9 +242,9 @@ describe('single owner and presented facts', () => {
     const { manager, session, receipt } = setup();
     manager.begin(session, { generation: 2, turnId: 'turn-2', receipts: [], frozenTurns: [] });
     expect(() =>
-      manager.cancelRequest(session, 'turn-2', 2, [receipt('photo-1', 'photo')]),
+      manager.cancelRequest(session, 'turn-2', 2, [receipt('menu-1', 'prop')]),
     ).toThrow();
-    expect(session.facts.photo_revealed).toBe(false);
+    expect(session.story.revealed.includes('menu')).toBe(false);
     manager.close();
   });
   it('releases the first audio deadline independently and retains a whole-turn bound', () => {
@@ -262,10 +264,10 @@ describe('single owner and presented facts', () => {
   });
   it('does not let failed or invented receipts commit facts', () => {
     const { manager, session, receipt } = setup();
-    manager.receipts(session, [receipt('photo-1', 'photo', 'failed')]);
-    expect(session.facts.photo_revealed).toBe(false);
+    manager.receipts(session, [receipt('menu-1', 'prop', 'failed')]);
+    expect(session.story.revealed.includes('menu')).toBe(false);
     expect(() =>
-      manager.receipts(session, [{ ...receipt('photo-1', 'photo'), targetId: 'invented' }]),
+      manager.receipts(session, [{ ...receipt('menu-1', 'prop'), targetId: 'invented' }]),
     ).toThrow();
     manager.close();
   });

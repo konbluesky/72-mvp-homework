@@ -6,6 +6,7 @@ import {
   cafeLocation,
   cafeConversationAvailable,
   cafeAdvanceAction,
+  cafeImageGeneration,
 } from './definition.js';
 import metadata from './manifest.generated.json';
 import { isCharacterId, type CharacterId } from '../../characters/profiles/index.js';
@@ -43,6 +44,7 @@ export const cafeSceneModule: SceneModule = {
   location: cafeLocation,
   conversationAvailable: cafeConversationAvailable,
   advanceAction: cafeAdvanceAction,
+  imageGeneration: cafeImageGeneration,
   createPresentation: (lease, actor, state) => new CafePresentation(lease, actor, state),
   environmentPreviews: metadata.environment.variants.map((variant) => ({
     label: '环境预览',

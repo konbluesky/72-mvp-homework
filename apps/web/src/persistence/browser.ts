@@ -23,6 +23,7 @@ export const BrowserPreferencesSchema = z
     inputMode: z.enum(['text', 'voice']).default('text'),
     suggestionsExpanded: z.boolean().default(true),
     characterId: z.string().max(80).optional(),
+    voicePlayback: z.boolean().default(true),
   })
   .strict();
 export const DraftSchema = z.string().max(16000);

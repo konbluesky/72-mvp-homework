@@ -15,6 +15,35 @@ const session = {
 };
 afterEach(() => vi.unstubAllGlobals());
 describe('browser API boundary', () => {
+  it('sends the saved voice preference with an explicit image request', async () => {
+    const expected = { id: 'output-controls', version: '1' };
+    const bodies: unknown[] = [];
+    const api = new ApiClient(
+      'http://localhost:3000',
+      async (_url, init) => {
+        bodies.push(JSON.parse(String(init?.body)));
+        return new Response(
+          JSON.stringify({ ...session, scene: { ...session.scene, scenario: expected } }),
+        );
+      },
+      'story',
+      expected,
+    );
+    await api.createSession();
+    api.persistence!.updatePreferences({ voicePlayback: false });
+    await api.input(
+      { sessionId: 's', generation: 1, turnId: 'turn' },
+      { interaction: { kind: 'image', revision: 2 } },
+      'input',
+      new AbortController().signal,
+    );
+    expect(bodies.at(-1)).toEqual({
+      generation: 1,
+      inputId: 'input',
+      interaction: { kind: 'image', revision: 2 },
+      voicePlayback: false,
+    });
+  });
   it('sends the old session identity and bearer only for an explicit restart', async () => {
     const requests: Array<{ headers: Headers; body: unknown }> = [];
     const api = new ApiClient('http://localhost:3000', async (_input, init) => {

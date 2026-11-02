@@ -19,7 +19,6 @@ VAR appointment = false
 VAR second_date = false
 VAR date_finished = false
 VAR handheld = false
-VAR photo_seen = false
 VAR rain_softened = false
 VAR notice_read = false
 VAR wall_art_seen = false
@@ -72,8 +71,6 @@ INCLUDE endings.ink
     -> enter_counter
 + {view_mode == "story" && shot_mode == "shared" && second_date && location != "street-walk" && not date_finished} [沿街走走 # action:move-street-walk # explicit]
     -> enter_street_walk
-+ {met && shot_mode == "shared" && ending == "" && not second_date && (location == "window-seat" || location == "photo-corridor")} [看看她愿意分享的海岸照片 # action:view-photo # explicit]
-    -> view_photo
 + {view_mode == "story" && shot_mode == "shared" && not second_date && ending == "" && (location == "lobby" || location == "cafe-front")} [看营业提示 # action:inspect-notice]
     -> inspect_notice
 + {view_mode == "story" && shot_mode == "shared" && not second_date && ending == "" && location == "photo-corridor"} [看墙上的风景画 # action:inspect-wall-art]

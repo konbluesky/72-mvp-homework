@@ -1,5 +1,5 @@
 import type { ReplyPlan, PlannerOutput } from '@mira/protocol';
-export const transcriptResponse = (text = '能看看照片吗？') => ({
+export const transcriptResponse = (text = '你刚下班吗？') => ({
   metadata: { request_id: 'stt-request', duration: 0.5, channels: 1, models: ['fixture-model'] },
   results: { channels: [{ alternatives: [{ transcript: text, confidence: 0.99, words: [] }] }] },
 });

@@ -47,7 +47,7 @@ try {
     timeout: 20000,
   });
   await note(
-    '角色互动平台 · 自动化演示\nMock 后端 / 本地合成语音 / Live2D / Haru 官方技术替身\n录像不含系统声音，麦克风使用测试设备。',
+    '角色互动平台 · 自动化演示\nLive2D / Haru 官方技术替身 / 语音能力以服务端配置为准\n录像不含系统声音，麦克风使用测试设备。',
   );
   await at(8);
   await page.getByRole('button', { name: '更多：场景、使用说明与素材来源' }).click();
@@ -66,13 +66,12 @@ try {
   await send('谢谢你，我陪你坐一会儿');
   await idle();
   await at(63);
-  await note('03 对话触发的多模态\n请求照片 → 分享照片 → 图片可见回执\n照片确认后雨势才减弱。');
-  await send('能看看照片吗？');
-  await expect(page.locator('[data-photo]')).toBeVisible();
+  await note('03 自然接话\n从刚下班的话题继续交流，不展示旧剧情道具。');
+  await send('你刚下班吗？');
   await idle();
   await at(84);
-  await note('04 连续剧情与拒绝\n“不要看照片”不会再触发照片。\n已确认的雨势与剧情保留。');
-  await send('不要看照片');
+  await note('04 换话题\n从工作换到咖啡，角色承接玩家实际发言。');
+  await send('先不聊工作，说说咖啡吧。');
   await idle();
   await at(99);
   await note(
@@ -105,14 +104,10 @@ try {
   await idle();
   await page.unroute('**/api/media/*');
   await at(145);
-  await note('07 照片失败恢复（测试注入）\n图片无法加载仍可继续对话。\n失败事件不伪装成成功呈现。');
-  await page.route('**/assets/travel-photo.svg', (route) => route.abort());
-  await send('能看看照片吗？');
-  await expect(page.getByRole('alert')).toContainText('场景呈现未完成');
+  await note('07 继续闲聊\n不依赖旧图片道具，也可以继续认识彼此。');
+  await send('你平时怎么放松？');
   await idle();
   await at(164);
-  await page.unroute('**/assets/travel-photo.svg');
-  await page.getByRole('button', { name: '关闭提示', exact: true }).click();
   await note(
     '08 恢复并继续\n新一轮仍然可用，旧轮不会复活。\nLive 凭证、专属角色模型与真机听感待验证。',
   );

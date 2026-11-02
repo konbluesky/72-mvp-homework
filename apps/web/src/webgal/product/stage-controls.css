@@ -1,0 +1,53 @@
+.webgal-stage-controls {
+  inset: auto 12px 10px auto;
+  z-index: 5;
+  max-width: calc(100% - 24px);
+  height: auto;
+  gap: 3px;
+  padding: 3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  background: transparent;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+.webgal-stage-controls .webgal-stage-control {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 40px;
+  height: auto;
+  padding: 6px 9px;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.webgal-stage-controls .webgal-stage-control:hover,
+.webgal-stage-controls .webgal-stage-control[aria-pressed='true'] {
+  background: #ffffff1a;
+}
+.webgal-stage-controls .webgal-stage-control > span {
+  inset: auto;
+  padding: 0;
+}
+.webgal-stage-controls .webgal-stage-control svg {
+  top: 0;
+  width: 19px;
+  height: 19px;
+}
+.story-stage:has(.webgal-stage-controls) .stage-character-identity { bottom: 64px; }
+.story-stage:has(.webgal-stage-controls) .stage-narrative:not(.is-solitary) { bottom: 66px; }
+@media (max-width: 680px) {
+  .webgal-stage-controls { right: 8px; bottom: 7px; max-width: calc(100% - 16px); }
+  .webgal-stage-controls .webgal-stage-control { padding-inline: 7px; font-size: 11px; }
+  .story-stage:has(.webgal-stage-controls) .stage-narrative[data-side],
+  .story-stage:has(.webgal-stage-controls) .stage-narrative.is-solitary {
+    bottom: 60px;
+    max-height: calc(100% - 128px);
+  }
+}

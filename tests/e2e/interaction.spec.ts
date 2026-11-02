@@ -42,7 +42,7 @@ test('advertised speech capability controls microphone independently of mode', a
   await expect(page.locator('main')).toHaveAttribute('data-state', 'idle');
 });
 
-test('real backend audio, photo receipts, interruption and continuous context', async ({
+test('real backend audio, interruption and continuous context without retired props', async ({
   page,
 }) => {
   const external: string[] = [];
@@ -66,19 +66,10 @@ test('real backend audio, photo receipts, interruption and continuous context', 
   expect(
     (await snapshot(page, session)).history.filter((x) => x.role === 'assistant'),
   ).toHaveLength(0);
-  await send(page, '能看看照片吗？');
-  await expect(page.locator('[data-photo]')).toBeVisible();
-  await expect
-    .poll(async () => (await snapshot(page, session)).scene.facts.photo_revealed)
-    .toBe(true);
-  await expect(page.locator('main')).toHaveAttribute('data-weather', 'rain', {
-    timeout: 20000,
-  });
-  await send(page, '不要看照片');
+  await send(page, '你刚下班吗？');
+  await expect(page.locator('main')).toHaveAttribute('data-state', 'speaking');
   await expect(page.locator('[data-photo]')).toHaveCount(0);
-  await expect(page.locator('main')).toHaveAttribute('data-emotion', 'guarded');
-  await expect(page.locator('.subtitle')).toContainText('不看照片');
-  expect((await snapshot(page, session)).scene.facts.photo_revealed).toBe(true);
+  expect((await snapshot(page, session)).scene.story.actions.some((action) => action.id === 'view-photo')).toBe(false);
   expect(external).toEqual([]);
 });
 
@@ -90,7 +81,7 @@ test('rapid three inputs cannot resurrect stale playback or block the newest beg
     const input = document.querySelector<HTMLTextAreaElement>('#text-input');
     const form = input?.closest('form');
     if (!input || !form) throw new Error('input missing');
-    for (const text of ['你在等谁？', '能看看照片吗？', '我喜欢旅行']) {
+    for (const text of ['你在等谁？', '你刚下班吗？', '我喜欢旅行']) {
       input.value = text;
       input.dispatchEvent(new Event('input', { bubbles: true }));
       form.requestSubmit();
@@ -126,17 +117,6 @@ test('audio download failure uses explicit text acknowledgements', async ({ page
     .toBe(2);
 });
 
-test('failed image never commits photo or unrelated weather', async ({ page }) => {
-  const session = await enter(page);
-  await page.route('**/assets/travel-photo.svg', (route) => route.abort());
-  await send(page, '能看看照片吗？');
-  await expect(page.getByRole('alert')).toContainText('照片暂时打不开');
-  await expect(page.locator('main')).toHaveAttribute('data-state', 'idle', { timeout: 25000 });
-  const state = await snapshot(page, session);
-  expect(state.scene.facts).toEqual({ photo_revealed: false, rain_softened: false });
-  await expect(page.locator('main')).toHaveAttribute('data-weather', 'rain');
-});
-
 test('actual MediaRecorder upload with fake microphone is explicitly simulated transcription', async ({
   page,
 }) => {
@@ -150,11 +130,11 @@ test('actual MediaRecorder upload with fake microphone is explicitly simulated t
   await page.waitForTimeout(650);
   await page.keyboard.up('Space');
   await expect(page.locator('.voice-preview-bar')).toContainText('模拟识别草稿');
-  await expect(page.getByRole('textbox', { name: '编辑语音消息' })).toHaveValue('能看看照片吗？');
+  await expect(page.getByRole('textbox', { name: '编辑语音消息' })).toHaveValue('你刚下班吗？');
   await expect(page.locator('.recent-user')).toHaveCount(0);
   await page.getByRole('button', { name: '确认发送', exact: true }).click();
   await expect(page.locator('.recent-user').last()).toContainText('语音示例', { timeout: 15000 });
-  await expect(page.locator('[data-photo]')).toBeVisible();
+  await expect(page.locator('[data-photo]')).toHaveCount(0);
 });
 
 test('offline interruption stops playback and reconnects without replay', async ({

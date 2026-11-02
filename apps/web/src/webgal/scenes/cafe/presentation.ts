@@ -1,13 +1,11 @@
 import { drawCafeAmbience } from './locations/foreground.js';
-import { abortable } from '../../../playback/abortable.js';
-import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Graphics, Text, Texture } from 'pixi.js';
 import { projectStory, type PresentationEvent, type StoryState } from '@mira/protocol';
 import type { PresentationPort } from '../../../playback/scheduler.js';
 import type { InteractiveState } from '../../../interaction/state.js';
 import type { VisualEngineLease } from '../../runtime/engine-adapter';
 import { CharacterDriver } from '../../characters/driver';
 import { cafeLocation, stageScene } from './definition';
-import { cafeResource, CAFE_PHOTO_DESCRIPTION } from './resources';
 
 type Scope = { revision: number; abort: AbortController };
 export class CafePresentation implements PresentationPort {
@@ -241,28 +239,9 @@ export class CafePresentation implements PresentationPort {
     this.documentOpen = true;
     this.furniture(this.story);
   }
-  async photo(event: Extract<PresentationEvent, { type: 'photo' }>, ownerSignal: AbortSignal) {
-    const { scope, signal } = this.begin(ownerSignal);
-    this.dismiss();
-    const texture = await abortable(
-      this.lease.stage.assets.ensureReady<Texture>({
-        url: cafeResource(event.resourceId).url,
-        kind: 'texture',
-      }),
-      signal,
-    );
-    this.valid(scope, signal);
-    const sprite = new Sprite(texture);
-    sprite.position.set(300, 300);
-    sprite.width = 1250;
-    sprite.height = 890;
-    this.paper.addChild(sprite);
-    this.documentOpen = true;
-    this.furniture(this.story);
-    await this.painted(scope, signal);
-    this.store.photo = 'visible';
-    this.store.documentTitle = CAFE_PHOTO_DESCRIPTION.title;
-    this.store.documentText = CAFE_PHOTO_DESCRIPTION.text;
+  async photo(_event: Extract<PresentationEvent, { type: 'photo' }>, signal: AbortSignal) {
+    signal.throwIfAborted();
+    throw new Error('SCENE_PHOTO_NOT_AVAILABLE');
   }
   environment(event: Extract<PresentationEvent, { type: 'environment' }>, signal: AbortSignal) {
     return this.transition(this.story, event.environment, signal);

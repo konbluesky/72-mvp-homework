@@ -34,6 +34,18 @@ export function cafeAdvanceAction(story: StoryState) {
     story.actions.find((action) => action.id === 'choose-reunion')
   );
 }
+export function cafeImageGeneration(story: StoryState) {
+  const available =
+    story.location === 'window-seat' &&
+    story.milestones.includes('companionship') &&
+    !story.ending &&
+    (!story.shot || story.shot.mode === 'shared');
+  return {
+    label: '生成纪念照',
+    available,
+    hint: available ? '点击后开始准备，留在窗边可自动展示。' : '在窗边落座后可生成。',
+  };
+}
 export function cafeLocation(id: string, story?: StoryState): LocationDefinition {
   const location = Object.hasOwn(LOCATIONS, id) ? LOCATIONS[id] : undefined;
   if (!location) throw new Error('CAFE_LOCATION_NOT_REGISTERED');

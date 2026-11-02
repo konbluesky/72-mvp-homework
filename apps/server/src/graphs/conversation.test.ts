@@ -64,12 +64,12 @@ async function acknowledge(
           targetId: item.eventId,
           kind: item.type,
         }))
-      : event.type === 'audio.ready'
+      : event.type === 'audio.ready' || event.type === 'text.ready'
         ? [
             {
               targetId: (event.payload as import('@mira/protocol').AudioReadyPayload).segmentId,
               kind: 'segment' as const,
-              mode: 'audio' as const,
+              mode: event.type === 'text.ready' ? ('text' as const) : ('audio' as const),
             },
           ]
         : [];
@@ -84,6 +84,138 @@ async function acknowledge(
   );
 }
 afterEach(() => vi.useRealTimers());
+
+describe('voice-off output and explicit image preparation', () => {
+  it('advances a scene with visible captions and no TTS when voice is disabled', async () => {
+    const synthesize = vi.fn(async () => ({ bytes: wav(), mimeType: 'audio/wav' }));
+    const plan = vi.fn(async () => ({
+      ...oneSegment,
+      actionId: null,
+      actionRequest: null,
+      mediaDecision: null,
+    }));
+    const ctx = setup(testProviders({ synthesize, plan }));
+    try {
+      await runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        {
+          kind: 'interaction',
+          interaction: {
+            kind: 'action',
+            actionId: 'talk-next-scene',
+            revision: ctx.session.narrative.revision,
+          },
+          voicePlayback: false,
+        },
+        (event) => acknowledge(ctx, event),
+      );
+      expect(ctx.session.story.beat).toBe('first-coffee');
+      expect(synthesize).not.toHaveBeenCalled();
+      expect(ctx.events.some((event) => event.type === 'audio.ready')).toBe(false);
+      expect(ctx.events.find((event) => event.type === 'text.ready')).toMatchObject({
+        payload: { autoAdvance: true },
+      });
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+  it('does not synthesize speech for a voice-off request', async () => {
+    const synthesize = vi.fn(async () => ({ bytes: wav(), mimeType: 'audio/wav' }));
+    const ctx = setup(testProviders({ synthesize }));
+    try {
+      await runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        { kind: 'text', text: '你好', voicePlayback: false },
+        ctx.publish,
+      );
+      expect(synthesize).not.toHaveBeenCalled();
+      expect(ctx.events.find((event) => event.type === 'text.ready')).toMatchObject({
+        payload: { captionOnly: true, autoAdvance: true },
+      });
+      expect(ctx.events.some((event) => event.type === 'audio.ready')).toBe(false);
+      expect(ctx.session.history).toEqual([]);
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+  it('can explicitly prepare an image after seating without a chat gate or planner call', async () => {
+    const plan = vi.fn(async () => oneSegment);
+    const synthesize = vi.fn(async () => ({ bytes: wav(), mimeType: 'audio/wav' }));
+    const ctx = setup(testProviders({ plan, synthesize }));
+    const start = vi.fn();
+    ctx.dependencies.providers.image = {
+      simulated: false,
+      generate: vi.fn(async () => {
+        throw new Error('not called before the slot receipt');
+      }),
+    };
+    ctx.dependencies.sessions.imageLifecycle = {
+      start,
+      removed: vi.fn(),
+      discard: vi.fn(),
+      assetAvailable: () => false,
+    };
+    try {
+      expect(ctx.session.confirmedConversation).toBeUndefined();
+      await runConversation(
+        ctx.dependencies,
+        ctx.session,
+        ctx.turn,
+        {
+          kind: 'interaction',
+          interaction: { kind: 'image', revision: ctx.session.narrative.revision },
+          voicePlayback: false,
+        },
+        ctx.publish,
+      );
+      expect(plan).not.toHaveBeenCalled();
+      expect(synthesize).not.toHaveBeenCalled();
+      expect(start).not.toHaveBeenCalled();
+      const work = [...ctx.session.imageShares.values()][0]!;
+      expect(work.slotConfirmed).toBe(false);
+      expect(ctx.events.some((event) => event.type === 'image.pending')).toBe(true);
+      ctx.dependencies.sessions.receipts(ctx.session, [
+        {
+          ...ctx.turn.identity,
+          receiptId: 'visible-slot',
+          targetId: work.slotEventId,
+          kind: 'image-slot',
+          status: 'presented',
+        },
+      ]);
+      expect(start).toHaveBeenCalledOnce();
+      expect(ctx.session.history).toEqual([]);
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+  it('rejects an old image request before reserving or calling providers', async () => {
+    const plan = vi.fn(async () => oneSegment);
+    const ctx = setup(testProviders({ plan }));
+    try {
+      await expect(
+        runConversation(
+          ctx.dependencies,
+          ctx.session,
+          ctx.turn,
+          {
+            kind: 'interaction',
+            interaction: { kind: 'image', revision: ctx.session.narrative.revision - 1 },
+          },
+          ctx.publish,
+        ),
+      ).rejects.toMatchObject({ code: 'STALE_TURN' });
+      expect(ctx.session.imageShares.size).toBe(0);
+      expect(plan).not.toHaveBeenCalled();
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+});
 
 describe('real LangGraph orchestration', () => {
   it('does not call a planner or voice provider before the player has met the character', async () => {
@@ -116,7 +248,7 @@ describe('real LangGraph orchestration', () => {
     }));
     const ctx = setup(testProviders({ plan }));
     ctx.session.history.push({ role: 'assistant', text: '我在等一位老朋友。', mode: 'audio' });
-    ctx.session.facts.photo_revealed = true;
+    ctx.session.facts.rain_softened = true;
     try {
       await runConversation(
         ctx.dependencies,
@@ -128,7 +260,7 @@ describe('real LangGraph orchestration', () => {
       expect(plan).toHaveBeenCalledOnce();
       expect(plan.mock.calls[0]?.[0]).toMatchObject({
         text: '你们认识多久了？',
-        facts: ['photo_revealed'],
+        facts: ['rain_softened'],
         history: [{ role: 'assistant', text: '我在等一位老朋友。' }],
       });
       expect(ctx.events.at(-1)).toEqual({
@@ -372,7 +504,7 @@ describe('real LangGraph orchestration', () => {
     const invalid = vi.fn(async () => ({
       ...(oneSegment as ReplyPlan),
       segments: [
-        { ...oneSegment.segments[0], events: [{ type: 'photo', resourceId: 'travel_photo_01' }] },
+        { ...oneSegment.segments[0], events: [{ type: 'photo', resourceId: 'fixture-photo' }] },
       ],
     }));
     const bad = setup(testProviders({ plan: invalid }));

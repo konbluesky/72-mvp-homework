@@ -27,6 +27,13 @@ beforeEach(() => {
 });
 
 describe('browser records', () => {
+  it('remembers voice-off independently for the story entry', () => {
+    const first = storage();
+    expect(first.preferences().voicePlayback).toBe(true);
+    first.updatePreferences({ voicePlayback: false });
+    expect(storage().preferences().voicePlayback).toBe(false);
+    expect(storage('conversation').preferences().voicePlayback).toBe(true);
+  });
   it('keeps drafts, reading history and preferences separate from credentials and other entries', async () => {
     const first = storage();
     first.claimRecovery();

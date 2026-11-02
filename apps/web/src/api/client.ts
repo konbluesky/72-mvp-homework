@@ -177,21 +177,33 @@ export class ApiClient {
     signal: AbortSignal,
   ): Promise<Response> {
     let body: FormData | string;
+    const voicePlayback = this.persistence?.preferences().voicePlayback ?? true;
     if (typeof input === 'string')
-      body = JSON.stringify({ generation: turn.generation, inputId, text: input });
+      body = JSON.stringify({ generation: turn.generation, inputId, text: input, voicePlayback });
     else if ('interaction' in input)
       body = JSON.stringify({
         generation: turn.generation,
         inputId,
         interaction: input.interaction,
+        voicePlayback,
       });
     else if ('media' in input)
-      body = JSON.stringify({ generation: turn.generation, inputId, media: input.media });
+      body = JSON.stringify({
+        generation: turn.generation,
+        inputId,
+        media: input.media,
+        voicePlayback,
+      });
     else {
       body = new FormData();
       body.append(
         'metadata',
-        JSON.stringify({ generation: turn.generation, inputId, durationMs: input.durationMs }),
+        JSON.stringify({
+          generation: turn.generation,
+          inputId,
+          durationMs: input.durationMs,
+          voicePlayback,
+        }),
       );
       body.append('audio', input.blob, 'recording');
     }

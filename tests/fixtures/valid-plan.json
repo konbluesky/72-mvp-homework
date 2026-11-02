@@ -1,13 +1,13 @@
 {
   "segments": [
     {
-      "text": "这是那次旅行留下的照片。",
+      "text": "这是一张呈现契约的测试图片。",
       "emotion": "relieved",
       "action": "offerPhoto",
       "events": [
         {
           "type": "photo",
-          "resourceId": "travel_photo_01"
+          "resourceId": "fixture-photo"
         },
         {
           "type": "environment",

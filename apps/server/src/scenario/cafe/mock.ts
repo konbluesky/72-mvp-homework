@@ -15,16 +15,12 @@ export const MOCK_LINES = {
   waiting: '没有等人，我刚下班，在这里坐一会儿。',
   travel: '休息的时候，我喜欢慢慢走走。',
   comfort: '好，我们慢慢聊。',
-  photo: '这张是无人海岸，休息时留下的纪念。',
   rain: '雨小了一点。',
-  refuse: '好，那就不看。',
-  after: '照片里是海岸、浪花和天空。',
 } as const;
 export const MOCK_TRANSCRIPT = manifest.mock.transcript;
 export const MOCK_ACTION_UTTERANCES: Readonly<Record<string, string>> = {
   'talk-sit': '那我就在这边坐下。',
   'talk-companionship': '我愿意坐下聊聊。',
-  'view-photo': '可以给我看看那张照片吗？',
   'inspect-menu': '我想看看饮品单。',
   'choose-letter': '今晚就在这里告别吧。',
   'choose-depart': '我们一起出去走走，再道别。',
@@ -38,13 +34,11 @@ function segment(text: string, emotion: PlanSegment['emotion'] = 'curious'): Pla
 }
 export function mockPlan(text: string, facts: string[]): ReplyPlan {
   let reply: string = MOCK_LINES.hello;
-  if (/(不要|不想|不看|别).{0,8}(照片|相片)/u.test(text)) reply = MOCK_LINES.refuse;
-  else if (/谢谢|陪/u.test(text)) reply = MOCK_LINES.comfort;
+  if (/谢谢|陪/u.test(text)) reply = MOCK_LINES.comfort;
   else if (/等谁|等人/u.test(text)) reply = MOCK_LINES.waiting;
   else if (/旅行|海边|工作|下班/u.test(text)) reply = MOCK_LINES.travel;
   else if (/天气|雨/u.test(text))
     reply = facts.includes('rain_softened') ? MOCK_LINES.rain : MOCK_LINES.hello;
-  else if (facts.includes('photo_revealed')) reply = MOCK_LINES.after;
   return {
     segments: [{ ...segment(reply), action: /天气|雨/u.test(text) ? 'lookWindow' : 'none' }],
     suggestions: [],

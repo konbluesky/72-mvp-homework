@@ -258,6 +258,8 @@ export class InkScenario {
   }
 
   propose(input: StoryInteraction | string, checkpoint: StoryCheckpoint): StoryBeat[] {
+    if (typeof input !== 'string' && input.kind === 'image')
+      throw new AppError('INVALID_REQUEST', 400, '图片准备由媒体流程处理。');
     if (
       typeof input !== 'string' &&
       input.kind === 'action' &&

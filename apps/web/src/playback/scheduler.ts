@@ -420,8 +420,8 @@ export class PlaybackScheduler {
     if (!('audioUrl' in segment)) {
       this.options.started?.(turn);
       this.options.view({
-        interaction: 'idle',
-        playback: 'text',
+        interaction: segment.autoAdvance ? 'thinking' : 'idle',
+        playback: segment.autoAdvance ? 'buffering' : 'text',
         subtitle: segment.text,
         emotion: segment.emotion,
         action: segment.action,
@@ -430,23 +430,27 @@ export class PlaybackScheduler {
       const signal = this.cancellation.signal;
       const visual = this.present(segment.events, turn, signal);
       try {
-        await abortable(
-          new Promise<void>((resolve) => {
-            const timer = setTimeout(
-              resolve,
-              Math.max(1400, Math.min(6500, segment.text.length * 130)),
-            );
-            signal.addEventListener(
-              'abort',
-              () => {
-                clearTimeout(timer);
-                resolve();
-              },
-              { once: true },
-            );
-          }),
-          signal,
-        );
+        if (segment.autoAdvance) {
+          await this.captionPainted(signal);
+        } else {
+          await abortable(
+            new Promise<void>((resolve) => {
+              const timer = setTimeout(
+                resolve,
+                Math.max(1400, Math.min(6500, segment.text.length * 130)),
+              );
+              signal.addEventListener(
+                'abort',
+                () => {
+                  clearTimeout(timer);
+                  resolve();
+                },
+                { once: true },
+              );
+            }),
+            signal,
+          );
+        }
         await visual;
       } catch {
         return;
@@ -527,6 +531,25 @@ export class PlaybackScheduler {
     } finally {
       signal.removeEventListener('abort', finish);
     }
+  }
+  private captionPainted(signal: AbortSignal): Promise<void> {
+    signal.throwIfAborted();
+    return new Promise<void>((resolve, reject) => {
+      let frame = requestAnimationFrame(() => {
+        if (signal.aborted) return;
+        frame = requestAnimationFrame(() => {
+          if (signal.aborted) return;
+          signal.removeEventListener('abort', abort);
+          if (document.hidden) reject(new Error('CAPTION_NOT_VISIBLE'));
+          else resolve();
+        });
+      });
+      const abort = () => {
+        cancelAnimationFrame(frame);
+        reject(signal.reason);
+      };
+      signal.addEventListener('abort', abort, { once: true });
+    });
   }
   private audioFailed(segment: SpeechReadyPayload, owner: number): void {
     if (this.draining !== owner) return;

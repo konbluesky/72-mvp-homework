@@ -22,11 +22,15 @@ import { StoryPanels, type StoryLogEntry, type StoryPanel } from './StoryPanels'
 import { DraftSchema } from '../../persistence/browser.js';
 import { MessageStatus } from './MessageStatus';
 import { StageNarrative } from './StageNarrative';
+import { StageControls } from './StageControls';
 import '../../interaction/messages.css';
 
 export function StoryApp({ scene }: { scene: import('../scenes/module.js').SceneModule }) {
   const [host, setHost] = useState(() => new InteractiveHost(scene));
   const state = useSyncExternalStore(host.subscribe, host.getSnapshot);
+  const [voicePlayback, setVoicePlayback] = useState(
+    () => host.api.persistence?.preferences().voicePlayback ?? true,
+  );
   const [draft, setDraft] = useState(() => host.api.persistence?.read('draft', DraftSchema) ?? '');
   const draftText = useRef(draft);
   const [panel, setPanel] = useState<StoryPanel>(null);
@@ -288,6 +292,8 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
   const canAct = canUseStoryActions(state);
   const privateView = !!state.story.shot && state.story.shot.mode !== 'shared';
   const advanceAction = scene.advanceAction?.(state.story);
+  const imageOpportunity = scene.imageGeneration?.(state.story);
+  const existingImage = Object.values(state.imageShares)[0];
   const conversationAvailable = scene.conversationAvailable?.(state.story) ?? true;
   const canChat = canSubmitConversation(state) && !privateView && conversationAvailable;
   // Keep the active pointer target enabled through permission and recording phases.
@@ -375,6 +381,26 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     draftText.current = value;
     host.api.persistence?.write('draft', value);
     setDraft(value);
+  }
+  function generateImage() {
+    const current = host.getSnapshot();
+    if (host.isDisposed || !canUseStoryActions(current)) return;
+    if (Object.values(current.imageShares).length) {
+      setPanel('image');
+      return;
+    }
+    if (!current.imageGeneration || !scene.imageGeneration?.(current.story).available) return;
+    setPanel(null);
+    setExploring(false);
+    userTurnSeen.current = true;
+    host.controller.interact({ kind: 'image', revision: current.story.revision });
+  }
+  function toggleVoicePlayback() {
+    const enabled = !voicePlayback;
+    host.api.persistence?.updatePreferences({ voicePlayback: enabled });
+    setVoicePlayback(enabled);
+    const current = host.getSnapshot();
+    if (!enabled && (current.interaction !== 'idle' || current.playback !== 'idle')) stop();
   }
   function send(value = draftText.current) {
     const current = host.getSnapshot();
@@ -524,22 +550,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
               {state.story.shot?.mode === 'character' ? `${scene.speaker} · 独处中` : '剧情留白'}
             </span>
           )}
-          {(progressActions.length > 0 || groups.observations.length > 0) &&
-            !state.documentTitle && (
-              <button
-                className={`observe-control ${exploring ? 'is-active' : ''}`}
-                aria-label="当前剧情的下一步"
-                aria-expanded={exploring}
-                disabled={!canAct}
-                onClick={() => {
-                  setExploring((value) => !value);
-                }}
-              >
-                <StoryIcon name={exploring ? 'close' : 'observe'} />
-                <span>{exploring ? '收起' : '下一步'}</span>
-                {!exploring && <small>{progressActions.length}</small>}
-              </button>
-            )}
+
         </div>
         {exploring && canAct && !state.documentTitle && (
           <div className="scene-observations" aria-label="当前剧情机会与可选物件">
@@ -625,27 +636,25 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
             )}
           </div>
         )}
+        {!state.documentTitle && <StageControls
+          canAdvance={!!advanceAction || groups.decisions.length > 0}
+          advanceLabel={advanceAction?.label ?? '选择接下来怎么做'}
+          advanceDisabled={!canAct}
+          choosing={!advanceAction}
+          voicePlayback={voicePlayback}
+          voiceDisabled={voicePending}
+          imageLabel={imageOpportunity ? (existingImage ? '查看图片' : imageOpportunity.label) : undefined}
+          imageTitle={existingImage ? '打开已生成图片的查看面板' : !state.imageGeneration ? '当前服务未开启图片生成' : imageOpportunity?.hint}
+          imageDisabled={!canAct || (!existingImage && (!state.imageGeneration || !imageOpportunity?.available))}
+          moreDisabled={!canAct || !(progressActions.length || groups.observations.length)}
+          moreOpen={exploring}
+          onAdvance={() => advanceAction ? perform(advanceAction) : setExploring(true)}
+          onVoice={toggleVoicePlayback}
+          onImage={generateImage}
+          onMore={() => setExploring((value) => !value)}
+        />}
       </section>
       <section className="story-content" aria-label="持续对话">
-        {(advanceAction || groups.decisions.length > 0) && !state.documentTitle && (
-          <div className="story-progression" aria-label="剧情推进">
-            <div>
-              <span>{advanceAction ? '可选的下一步' : '接下来的选择'}</span>
-              <p>{advanceAction?.label ?? '选择接下来怎么做'}</p>
-              {conversationAvailable && !privateView && (
-                <small>可以留在这里继续聊，也可以选择下一步。</small>
-              )}
-            </div>
-            <button
-              type="button"
-              className="story-primary"
-              disabled={!canAct}
-              onClick={() => (advanceAction ? perform(advanceAction) : setExploring(true))}
-            >
-              {advanceAction ? '推进剧情' : '剧情选择'} <StoryIcon name="arrow" />
-            </button>
-          </div>
-        )}
         {state.historyLoading && (
           <p className="browser-storage-note" role="status">
             正在恢复聊天记录…
@@ -807,7 +816,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
                 key={item.shareId}
                 type="button"
                 className="image-share-shortcut"
-                onClick={() => setPanel('history')}
+                onClick={() => setPanel('image')}
               >
                 纪念照状态 · 查看原卡
               </button>

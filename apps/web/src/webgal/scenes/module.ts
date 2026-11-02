@@ -34,6 +34,7 @@ export interface SceneModule {
   location(id: string, story?: StoryState): LocationDefinition;
   conversationAvailable?(story: StoryState): boolean;
   advanceAction?(story: StoryState): StoryAction | undefined;
+  imageGeneration?(story: StoryState): { label: string; available: boolean; hint: string };
   createPresentation(
     lease: VisualEngineLease,
     actor: CharacterDriver,

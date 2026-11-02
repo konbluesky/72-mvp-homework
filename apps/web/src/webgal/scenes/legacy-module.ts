@@ -12,7 +12,7 @@ export interface LegacySceneModule {
   opening: string;
   locationLabel: string;
   environmentLabel(environment: string): string;
-  photo: { url: string; alt: string; caption: string };
+  photo?: { url: string; alt: string; caption: string };
   about: { title: string; description: string; attribution: string };
   backdrop: Component;
   createPresentation(store: SceneStore): PresentationPort;
