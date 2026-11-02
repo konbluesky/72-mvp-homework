@@ -231,9 +231,19 @@ export function StoryPanels({
                 <button
                   className="story-secondary"
                   disabled={state.connecting}
-                  onClick={() => (state.sessionExpired ? onRestart() : host.reconnect())}
+                  onClick={() =>
+                    state.reloadRequired
+                      ? window.location.reload()
+                      : state.sessionExpired
+                        ? onRestart()
+                        : host.reconnect()
+                  }
                 >
-                  {state.sessionExpired ? '重新开始' : '重新连接'}
+                  {state.reloadRequired
+                    ? '刷新页面'
+                    : state.sessionExpired
+                      ? '重新开始'
+                      : '重新连接'}
                 </button>
               )}
               <p>

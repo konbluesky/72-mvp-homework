@@ -362,7 +362,11 @@ export async function createApp(options: AppOptions = {}) {
           if (!(error instanceof AppError && error.code === 'SESSION_EXPIRED')) throw error;
         }
       }
-      const created = sessions.create(request.body?.entry ?? 'story', previous);
+      const created = sessions.create(
+        request.body?.entry ?? 'story',
+        previous,
+        request.body?.expectedScenario,
+      );
       if (config.RATE_LIMIT_ENABLED) creationTimes.set(request.ip, [...times, now]);
       return reply.status(201).send({
         ...created,

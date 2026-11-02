@@ -79,6 +79,8 @@ sudo nginx -t && sudo systemctl reload nginx
 
 专用公钥通过 OpenSSH `restrict,command="/usr/local/libexec/72-mvp-deploy"` 限制，只能发布此项目或查询版本，不能获取普通 SSH shell、PTY 或端口转发。服务器入口由 root 持有，源码见 [receive-server.sh](../../infra/deploy/receive-server.sh)；首次配置及修改入口时，由管理员用现有 SSH 连接安装该脚本，CI 本身不能替换它。
 
+接收端白名单与打包内容必须一起更新。当前图片分享包包含 `assets/images/window-keepsake-mock.webp` 与 `assets/images/SOURCES.json`；接收端只精确允许这两个图片文件及父目录，不放开整个 assets 目录。更新仓库脚本后，还需将同一版本安装到服务器 `/usr/local/libexec/72-mvp-deploy`，然后发布后端。前后端发布后核对两端场景 ID/version；仅存活检查成功不能证明模块兼容。
+
 每次发布验证压缩包的 SHA-256、路径白名单、大小上限和提交/运行标识，再在新版本目录用锁文件安装生产依赖。准备完成后，原子切换 `current` 并重启单个服务；检查进程工作目录属于新版本、存活/就绪状态和本机 Nginx HTTPS。切换后的任何失败都会恢复上一版本并重启；若管理员已将 `current` 切到别处，旧任务不会覆盖新的指向。
 
 Actions 对同一分支串行执行发布，服务器另有 `flock` 锁防止交叉切换。发布前再次确认提交仍是 `main` 最新版本；落后的运行会跳过，由新提交的运行接替。旧版本保留在 `releases/`，支持手动回滚；后端重启会使内存会话失效。

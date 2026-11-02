@@ -2,7 +2,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initialStory, type Receipt } from '@mira/protocol';
 import { ApiClient } from '../api/client.js';
-import { BrowserPersistence, DraftSchema, type ActiveRecovery } from '../persistence/browser.js';
+import {
+  BrowserPersistence,
+  DraftSchema,
+  ReadingHistorySchema,
+  type ActiveRecovery,
+} from '../persistence/browser.js';
 import { PlaybackScheduler } from '../playback/scheduler.js';
 import { initialInteractiveState } from './state.js';
 import { TurnController } from './turn-controller.js';
@@ -125,8 +130,8 @@ describe.each(['story', 'conversation'] as const)(
       expect(h.state.connected).toBe(true);
       const replacements = h.requests.filter((request) => request.path === '/api/sessions');
       expect(replacements.map((request) => request.body)).toEqual([
-        { entry, replaceSessionId: 'session' },
-        { entry, replaceSessionId: 'session' },
+        { entry, expectedScenario: scenario, replaceSessionId: 'session' },
+        { entry, expectedScenario: scenario, replaceSessionId: 'session' },
       ]);
       await h.controller.dispose();
     });
@@ -155,9 +160,47 @@ describe.each(['story', 'conversation'] as const)(
       expect(reopened.state.connected).toBe(true);
       expect(reopened.state.sessionExpired).toBe(false);
       expect(reopened.requests).toEqual([
-        { path: '/api/sessions', body: { entry, replaceSessionId: 'session' } },
+        {
+          path: '/api/sessions',
+          body: { entry, expectedScenario: scenario, replaceSessionId: 'session' },
+        },
       ]);
       await reopened.controller.dispose();
+    });
+    it('requires a page refresh for a module mismatch while preserving the recoverable session', async () => {
+      const old = save(recovery(), entry);
+      old.write('draft', '刷新后继续说');
+      const history = [{ id: 1, kind: 'user' as const, text: '保留已经读过的内容', paused: false }];
+      old.write('history', history);
+      const h = harness(
+        (path) =>
+          path === '/api/sessions/session'
+            ? json({
+                ...snapshot(),
+                scene: { ...session().scene, scenario: { ...scenario, version: 'other-version' } },
+              })
+            : undefined,
+        entry,
+      );
+      await h.controller.connect();
+      expect(h.state.reloadRequired).toBe(true);
+      expect(h.state.sessionExpired).toBe(false);
+      expect(h.state.connected).toBe(false);
+      await h.controller.connect(true);
+      await h.controller.recoverConnection(true);
+      expect(h.requests.map((request) => request.path)).toEqual(['/api/sessions/session']);
+      const saved = h.api.persistence?.claimRecovery();
+      expect(saved?.status === 'active' && saved.session.sessionId).toBe('session');
+      expect(h.api.credentials()?.sessionId).toBe('session');
+      expect(h.api.persistence?.read('draft', DraftSchema)).toBe('刷新后继续说');
+      expect(h.api.persistence?.read('history', ReadingHistorySchema)).toEqual(history);
+      await h.controller.dispose();
+      const refreshed = harness(undefined, entry);
+      await refreshed.controller.connect();
+      expect(refreshed.state.connected).toBe(true);
+      expect(refreshed.state.reloadRequired).toBe(false);
+      expect(refreshed.requests.map((request) => request.path)).toEqual(['/api/sessions/session']);
+      await refreshed.controller.dispose();
     });
     it.each(['offline', 'bad-gateway', 'unavailable'] as const)(
       'keeps the same session, draft and progress recoverable after %s',

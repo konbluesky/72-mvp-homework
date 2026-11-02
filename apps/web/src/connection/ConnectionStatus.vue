@@ -6,8 +6,9 @@ const props = defineProps<{
   sessionConnected: boolean;
   sessionConnecting: boolean;
   sessionExpired: boolean;
+  reloadRequired?: boolean;
 }>();
-const emit = defineEmits<{ retry: []; restart: [] }>();
+const emit = defineEmits<{ retry: []; restart: []; reload: [] }>();
 const serviceLabel = computed(
   () =>
     ({
@@ -20,13 +21,16 @@ const serviceLabel = computed(
     })[props.value.state],
 );
 const label = computed(() => {
+  if (props.reloadRequired) return '页面需要刷新';
   if (props.sessionExpired) return '会话已结束';
   if (props.value.state === 'connected' && !props.sessionConnected)
     return props.sessionConnecting ? '连接会话' : '会话未连接';
   return serviceLabel.value;
 });
 const tone = computed(() =>
-  props.sessionExpired || (!props.sessionConnected && props.value.state === 'connected')
+  props.reloadRequired ||
+  props.sessionExpired ||
+  (!props.sessionConnected && props.value.state === 'connected')
     ? 'degraded'
     : props.value.state,
 );
@@ -58,13 +62,15 @@ const time = computed(() =>
           <dt>当前会话</dt>
           <dd>
             {{
-              sessionExpired
-                ? '已过期'
-                : sessionConnected
-                  ? '可用'
-                  : sessionConnecting
-                    ? '正在恢复'
-                    : '未连接'
+              reloadRequired
+                ? '版本不一致'
+                : sessionExpired
+                  ? '已过期'
+                  : sessionConnected
+                    ? '可用'
+                    : sessionConnecting
+                      ? '正在恢复'
+                      : '未连接'
             }}
           </dd>
         </div>
@@ -85,7 +91,10 @@ const time = computed(() =>
       <p>
         延时为浏览器到服务端的 HTTP 往返采样，不含模型响应时间。连接恢复不会重发消息或重播回复。
       </p>
-      <button v-if="sessionExpired" type="button" @click="emit('restart')">重新开始会话</button>
+      <button v-if="reloadRequired" type="button" @click="emit('reload')">刷新页面</button>
+      <button v-else-if="sessionExpired" type="button" @click="emit('restart')">
+        重新开始会话
+      </button>
       <button v-else type="button" :disabled="sessionConnecting" @click="emit('retry')">
         立即重连
       </button>

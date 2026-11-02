@@ -82,14 +82,16 @@ export const FactsSchema = z
 
 export type Facts = z.infer<typeof FactsSchema>;
 
+export const ScenarioIdentitySchema = z
+  .object({ id: ContentIdSchema, version: z.string().min(1).max(80) })
+  .strict();
+export type ScenarioIdentity = z.infer<typeof ScenarioIdentitySchema>;
+
 /** 单角色场景快照：身份、环境和事实，不携带播放器或渲染实例。 */
 export const SceneSchema = z
   .object({
     character: ContentIdSchema,
-    scenario: z
-      .object({ id: ContentIdSchema, version: z.string().min(1).max(80) })
-      .strict()
-      .optional(),
+    scenario: ScenarioIdentitySchema.optional(),
     environment: EnvironmentSchema,
     facts: FactsSchema,
     story: StoryStateSchema.optional(),
@@ -102,6 +104,7 @@ export const CapabilitiesSchema = z.object({ voiceInput: z.boolean() }).strict()
 export const CreateSessionSchema = z
   .object({
     entry: z.enum(['story', 'conversation']).default('story'),
+    expectedScenario: ScenarioIdentitySchema.optional(),
     // Explicit restart: authenticate this existing session before replacing it.
     replaceSessionId: IdSchema.optional(),
   })
@@ -532,6 +535,7 @@ export const ErrorCodeSchema = z.enum([
   'NO_SPEECH',
   'UNAUTHORIZED',
   'SESSION_EXPIRED',
+  'SCENE_MODULE_VERSION_MISMATCH',
   'TURN_CONFLICT',
   'STALE_TURN',
   'INPUT_CONFLICT',

@@ -8,6 +8,7 @@ import type {
   FrozenTurn,
   Receipt,
   SessionCreated,
+  ScenarioIdentity,
   TurnIdentity,
   MessageAttempt,
   MediaVisualIntent,
@@ -107,7 +108,18 @@ export class SessionManager {
   create(
     entry: 'story' | 'conversation' = 'story',
     replace?: Session,
+    expectedScenario?: ScenarioIdentity,
   ): Omit<SessionCreated, 'capabilities'> {
+    const narrative = this.scenario.initial(entry);
+    if (
+      expectedScenario &&
+      (expectedScenario.id !== narrative.storyId || expectedScenario.version !== narrative.version)
+    )
+      throw new AppError(
+        'SCENE_MODULE_VERSION_MISMATCH',
+        409,
+        '场景版本与服务端不一致，请刷新页面后重试。',
+      );
     this.sweep();
     const replacing = replace && this.sessions.get(replace.id) === replace ? replace : undefined;
     if (this.closing || this.sessions.size - (replacing ? 1 : 0) >= this.config.MAX_SESSIONS) {
@@ -115,7 +127,6 @@ export class SessionManager {
     }
     const id = this.id();
     const token = randomBytes(32).toString('base64url');
-    const narrative = this.scenario.initial(entry);
     const frame = this.scenario.frame(narrative);
     const session: Session = {
       id,

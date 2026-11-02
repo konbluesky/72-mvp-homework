@@ -68,7 +68,7 @@ export class TurnController {
   checkpointBrowser(): void {
     if (this.disposed || !this.api.persistence?.ownsSession()) return;
     const session = this.api.credentials();
-    if (!session || this.store.sessionExpired) return;
+    if (!session || this.store.sessionExpired || this.store.reloadRequired) return;
     if (
       this.store.connected &&
       this.store.playback === 'idle' &&
@@ -115,7 +115,12 @@ export class TurnController {
   }
 
   async connect(reset = false): Promise<void> {
-    if (this.disposed || (!reset && this.store.connecting) || Date.now() < this.rateLimitedUntil)
+    if (
+      this.disposed ||
+      this.store.reloadRequired ||
+      (!reset && this.store.connecting) ||
+      Date.now() < this.rateLimitedUntil
+    )
       return;
     if (reset) this.store.sessionExpired = false;
     if (this.store.sessionExpired && !reset) return;
@@ -265,9 +270,11 @@ export class TurnController {
       }
       if (error instanceof ApiError && error.code === 'STALE_TURN')
         void this.recoverConnection(true, true);
-      if (
+      if (error instanceof ApiError && error.code === 'SCENE_MODULE_VERSION_MISMATCH') {
+        this.store.reloadRequired = true;
+      } else if (
         error instanceof ApiError &&
-        ['SESSION_EXPIRED', 'UNAUTHORIZED', 'SCENE_MODULE_VERSION_MISMATCH'].includes(error.code)
+        ['SESSION_EXPIRED', 'UNAUTHORIZED'].includes(error.code)
       ) {
         this.expireBrowserSession();
       }

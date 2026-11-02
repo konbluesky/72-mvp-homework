@@ -62,6 +62,7 @@ export class ApiClient {
         method: 'POST',
         body: JSON.stringify({
           entry: this.sessionEntry,
+          ...(this.expectedScenario ? { expectedScenario: this.expectedScenario } : {}),
           ...(replaceCurrent && this.session ? { replaceSessionId: this.session.sessionId } : {}),
         }),
         signal,

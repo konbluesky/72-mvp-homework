@@ -42,6 +42,49 @@ function events(payload: string) {
 }
 
 describe('Fastify API boundaries', () => {
+  it.each(['story', 'conversation'] as const)(
+    'rejects an incompatible %s module before allocating or replacing a session',
+    async (entry) => {
+      const { app, created, base, headers } = await setup({ MAX_SESSIONS: '1' });
+      const current = cafeScenario.initial(entry);
+      const expectedScenario = { id: current.storyId, version: current.version };
+      for (const incompatible of [
+        { ...expectedScenario, id: 'other-story' },
+        { ...expectedScenario, version: 'older-version' },
+      ]) {
+        for (const replaceSessionId of [undefined, created.sessionId]) {
+          const response = await app.inject({
+            method: 'POST',
+            url: '/api/sessions',
+            headers,
+            payload: {
+              entry,
+              expectedScenario: incompatible,
+              ...(replaceSessionId ? { replaceSessionId } : {}),
+            },
+          });
+          expect(response.statusCode).toBe(409);
+          expect(response.json()).toMatchObject({
+            error: { code: 'SCENE_MODULE_VERSION_MISMATCH', retryable: false },
+          });
+          expect(app.services.sessions.sessions.size).toBe(1);
+          expect(
+            app.services.sessions.sessions.get(created.sessionId)?.turns.get('turn')?.status,
+          ).toBe('begun');
+          expect((await app.inject({ url: base, headers })).statusCode).toBe(200);
+        }
+      }
+      const accepted = await app.inject({
+        method: 'POST',
+        url: '/api/sessions',
+        headers,
+        payload: { entry, expectedScenario, replaceSessionId: created.sessionId },
+      });
+      expect(accepted.statusCode).toBe(201);
+      expect(accepted.json().scene.scenario).toEqual(expectedScenario);
+      expect(app.services.sessions.sessions.size).toBe(1);
+    },
+  );
   it('replaces only the authenticated session and frees its slot on explicit restart', async () => {
     const { app, created, base, headers } = await setup({ MAX_SESSIONS: '1' });
     const response = await app.inject({

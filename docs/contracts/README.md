@@ -103,6 +103,8 @@ SessionCreated 可选 opening 为故事包提供的 {text,revision,suggestions}�
 
 ## 场景模块ID与公开投影
 
+创建会话支持可选的 `expectedScenario: {id,version}`。两个前端入口始终传入所装配的模块身份；服务端在分配容量或替换旧会话前比较当前故事身份，不一致返回 HTTP 409 / `SCENE_MODULE_VERSION_MISMATCH`，不创建新会话、不删除原会话。客户端仍校验创建响应与恢复快照；版本不一致单独显示“刷新页面”，保留恢复凭证、草稿和回看，不触发重新开始或自动重复创建。
+
 地点、道具、结局、阶段、角色、环境预设与公开事实不再由共享协议枚举咖啡馆内容。共享层校验有界ID、DTO与数量；活动故事包在编译及Ink适配时进一步校验已声明的地点、道具、结局和资源。不能因为ID格式正确就执行未注册内容，也不接收任意URL或代码。
 
 场景快照可附带 `scenario: {id,version}`，当前服务端始终提供，用于前端与所装配模块匹配。`presentation.ready.payload.environmentAfter`由服务端故事投影提供；Scheduler不再从具体的照片/雨势事实推导环境，只在实际呈现成功后投影随事件返回的状态。

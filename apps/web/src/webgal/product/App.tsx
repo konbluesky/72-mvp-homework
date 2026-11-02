@@ -322,6 +322,10 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     host.controller.interrupt();
   }
   function newStory() {
+    if (host.getSnapshot().reloadRequired) {
+      window.location.reload();
+      return;
+    }
     finishRecordingGesture();
     setPanel(null);
     setExploring(false);
@@ -522,16 +526,30 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
         )}
       </section>
       <section className="story-content" aria-label="持续对话">
-        {(state.sessionExpired ||
+        {(state.reloadRequired ||
+          state.sessionExpired ||
           (state.failure && state.playback !== 'audio-error' && state.animation === 'live2d')) && (
           <div className="story-error" role="alert">
-            <p>{state.failure || '会话已结束，请重新开始。'}</p>
+            <p>
+              {state.failure ||
+                (state.reloadRequired
+                  ? '场景版本与服务端不一致，请刷新页面后重试。'
+                  : '会话已结束，请重新开始。')}
+            </p>
             <button
-              className={state.sessionExpired ? 'story-primary' : 'story-text-button'}
+              className={
+                state.reloadRequired || state.sessionExpired ? 'story-primary' : 'story-text-button'
+              }
               disabled={state.connecting}
-              onClick={() => (state.sessionExpired ? newStory() : host.reconnect())}
+              onClick={() =>
+                state.reloadRequired
+                  ? window.location.reload()
+                  : state.sessionExpired
+                    ? newStory()
+                    : host.reconnect()
+              }
             >
-              {state.sessionExpired ? '重新开始' : '重新连接'}
+              {state.reloadRequired ? '刷新页面' : state.sessionExpired ? '重新开始' : '重新连接'}
             </button>
           </div>
         )}

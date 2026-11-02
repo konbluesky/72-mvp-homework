@@ -19,6 +19,7 @@ export function initialInteractiveState() {
     imageItems: [] as import('./conversation-items.js').ImageShareItem[],
     connected: false,
     sessionExpired: false,
+    reloadRequired: false,
     connection: initialConnectionView(),
     connecting: false,
     mode: 'mock' as 'mock' | 'live',

@@ -111,6 +111,44 @@ describe('scene module compatibility before applying server projections', () => 
   const compatible = { ...session, scene: { ...session.scene, scenario: expected } };
   const response = (body: unknown) => new Response(JSON.stringify(body));
 
+  it('sends the expected module on both creation and authenticated replacement', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => response(compatible));
+    const api = new ApiClient('http://localhost:3000', fetcher, 'conversation', expected);
+    await api.createSession();
+    await api.createSession(undefined, true);
+    expect(fetcher.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))).toEqual([
+      { entry: 'conversation', expectedScenario: expected },
+      { entry: 'conversation', expectedScenario: expected, replaceSessionId: session.sessionId },
+    ]);
+  });
+
+  it('preserves the original credentials when the server rejects an incompatible replacement', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(response(compatible))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              code: 'SCENE_MODULE_VERSION_MISMATCH',
+              message: '场景版本与服务端不一致，请刷新页面后重试。',
+              retryable: false,
+            },
+            requestId: 'mismatch',
+          }),
+          { status: 409 },
+        ),
+      );
+    const api = new ApiClient('http://localhost:3000', fetcher, 'story', expected);
+    await api.createSession();
+    await expect(api.createSession(undefined, true)).rejects.toMatchObject({
+      code: 'SCENE_MODULE_VERSION_MISMATCH',
+      retryable: false,
+      httpStatus: 409,
+    });
+    expect(api.credentials()?.sessionId).toBe(session.sessionId);
+  });
+
   it('rejects incompatible or unversioned sessions before binding their token', async () => {
     for (const scenario of [
       undefined,

@@ -95,10 +95,11 @@ files = {
     'package.json', 'package-lock.json', 'release.json',
     'apps/server/package.json', 'apps/web/package.json',
     'packages/protocol/package.json', 'packages/webgal-parser/package.json',
+    'assets/images/window-keepsake-mock.webp', 'assets/images/SOURCES.json',
 }
 prefixes = ('apps/server/dist/', 'packages/protocol/dist/')
 parents = {'.', 'apps', 'apps/server', 'apps/web', 'packages', 'packages/protocol',
-           'packages/webgal-parser', *(p.rstrip('/') for p in prefixes)}
+           'packages/webgal-parser', 'assets', 'assets/images', *(p.rstrip('/') for p in prefixes)}
 with tarfile.open(archive, 'r:gz') as bundle:
     members = bundle.getmembers()
     if len(members) > 5000 or sum(m.size for m in members) > 268435456:

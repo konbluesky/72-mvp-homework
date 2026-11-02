@@ -14,6 +14,20 @@ import {
 } from './index.js';
 
 describe('network schemas', () => {
+  it('accepts a bounded expected scenario and rejects extra or malformed identity fields', () => {
+    const expectedScenario = { id: 'sample-story', version: '1' };
+    expect(CreateSessionSchema.parse({ expectedScenario })).toEqual({
+      entry: 'story',
+      expectedScenario,
+    });
+    for (const value of [
+      { ...expectedScenario, version: '' },
+      { ...expectedScenario, version: 'v'.repeat(81) },
+      { ...expectedScenario, id: '../story' },
+      { ...expectedScenario, url: 'https://example.com/story' },
+    ])
+      expect(CreateSessionSchema.safeParse({ expectedScenario: value }).success).toBe(false);
+  });
   it('represents unlimited retention explicitly and validates restart session identifiers', () => {
     expect(SessionExpirySchema.parse(null)).toBeNull();
     expect(SessionExpirySchema.parse(1_800_000_000_000)).toBe(1_800_000_000_000);

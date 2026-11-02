@@ -343,6 +343,10 @@ function interrupt() {
   controller.interrupt();
 }
 function restart() {
+  if (scene.reloadRequired) {
+    reloadPage();
+    return;
+  }
   editEpoch += 1;
   cancel();
   api.persistence?.clearReading();
@@ -354,6 +358,9 @@ function restart() {
   menu.value?.close();
   history.value?.close();
   void controller.connect(true);
+}
+function reloadPage() {
+  window.location.reload();
 }
 function startRecording() {
   editEpoch += 1;
@@ -517,8 +524,10 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
           :session-connected="scene.connected"
           :session-connecting="scene.connecting"
           :session-expired="scene.sessionExpired"
+          :reload-required="scene.reloadRequired"
           @retry="retryConnection"
           @restart="restart"
+          @reload="reloadPage"
         />
       </div>
       <nav class="header-actions" aria-label="对话选项">
@@ -657,10 +666,24 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
         >
           纪念照状态 · 查看原卡
         </button>
-        <div v-if="scene.failure || scene.sessionExpired" class="recovery" role="alert">
-          <p>{{ scene.failure || '会话已结束，请重新开始。' }}</p>
+        <div
+          v-if="scene.failure || scene.sessionExpired || scene.reloadRequired"
+          class="recovery"
+          role="alert"
+        >
+          <p>
+            {{
+              scene.failure ||
+              (scene.reloadRequired
+                ? '场景版本与服务端不一致，请刷新页面后重试。'
+                : '会话已结束，请重新开始。')
+            }}
+          </p>
           <div class="recovery-actions">
-            <template v-if="scene.sessionExpired">
+            <template v-if="scene.reloadRequired">
+              <button type="button" @click="reloadPage">刷新页面</button>
+            </template>
+            <template v-else-if="scene.sessionExpired">
               <button type="button" :disabled="scene.connecting" @click="restart">重新开始</button>
             </template>
             <template v-else-if="scene.playback === 'audio-error'"
