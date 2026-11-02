@@ -25,7 +25,7 @@ Cloudflare Pages 项目 `72-mvp` 连接 `konbluesky/72-mvp-homework`，生产分
 
 推送到 `main` 后由 Pages Git 集成自动构建和发布；其他分支用于预览。GitHub Actions 的独立 Frontend build job 也会构建前端并保留 7 天的 `frontend-dist` 构建产物，原有完整验证 job 继续执行。Pages 构建不依赖 GitHub Actions 的完成状态。
 
-前端已发布，后端已于 2026-11-01 部署到 `my-xin-2`，见下节。正式 API origin 为 `https://api-72-mvp.telegrow.app`，Pages 生产变量 `VITE_API_BASE_URL` 已设为该地址；修改构建变量后需重新部署才会进入浏览器产物。后端 CORS 允许 `https://72-mvp.telegrow.app`。原版入口为 `/`，WebGAL 入口为 `/webgal.html`。
+前端已发布，后端已于 2026-11-01 部署到 `my-xin-2`，见下节。正式 API origin 为 `https://api-72-mvp.telegrow.app`，Pages 生产变量 `VITE_API_BASE_URL` 已设为该地址；修改构建变量后需重新部署才会进入浏览器产物。后端 CORS 允许 `https://72-mvp.telegrow.app`。默认首页 `/` 与 `/webgal.html` 为 WebGAL 故事，原版对话入口为 `/legacy.html`。
 
 本次通过 Pages 重试生产构建，使 API 地址生效；部署 `885594f8-12ef-48c0-a0b1-2bb765eed96a` 已成功，源码为 `main` 的 `66de54b0`。此操作没有提交或发布本地尚未提交的前端改动。
 

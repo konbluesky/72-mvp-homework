@@ -1,6 +1,6 @@
 # WebGAL 路线 B 开发入口
 
-> 两页并存：`/`、`/legacy.html` 为原版 Vue/Haru 页面，`/webgal.html` 为 WebGAL 故事页。两页均默认 Haru，WebGAL 保留 Miara 显式切换。页面版本不决定 Provider；都使用当前后端 APP_MODE。以下 B0 内容保留为历史阶段记录，当前实现见[八场景实施记录](../acceptance/miara-webgal-story.md)。
+> 两页并存：默认 `/` 与 `/webgal.html` 为 WebGAL 故事页，`/legacy.html` 为原版 Vue/Haru 页面。两页均默认 Haru，WebGAL 保留 Miara 显式切换。页面版本不决定 Provider；都使用当前后端 APP_MODE。以下 B0 内容保留为历史阶段记录，当前实现见[八场景实施记录](../acceptance/miara-webgal-story.md)。
 
 本次选择完整 WebGAL/React 宿主，保留 Backend、TurnController 与 PlaybackScheduler 的编排核心。引擎负责舞台执行；Scheduler 保持声音、字幕、演出启动及呈现结果的唯一调度权。场景与角色通过端口注入，基础层不导入具体咖啡馆/Haru 实现。
 

@@ -6,8 +6,8 @@
 
 程序有两套浏览器宿主，共享一个独立 Node/Fastify 后端：
 
-- `/`：Vue 原版对话页，`entry=conversation`，通过原版 Live2D 渲染器展示 Haru。
-- `/webgal.html`：React + WebGAL 故事页，`entry=story`，默认 Haru，Miara 可显式选择。`?preview` 是本地引擎工作台，不是另一套后端故事系统。
+- `/legacy.html`：Vue 原版对话页，`entry=conversation`，通过原版 Live2D 渲染器展示 Haru。
+- `/`（默认）与 `/webgal.html`：React + WebGAL 故事页，`entry=story`，默认 Haru，Miara 可显式选择。`?preview` 是本地引擎工作台，不是另一套后端故事系统。
 - 两套宿主复用 `TurnController`、`PlaybackScheduler`、API、SSE 和回执协议，但拥有各自的页面状态与渲染适配。
 - Live：Deepgram STT → GPT 兼容接口规划 → Deepgram TTS。Mock：替换这三个 Provider；后端会话、Graph、HTTP、媒体、播放和回执链路继续复用。
 

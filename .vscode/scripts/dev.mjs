@@ -75,7 +75,7 @@ async function waitForReady() {
           .fetch(`http://127.0.0.1:${webPort}/`, {
             signal: globalThis.AbortSignal.timeout(1500),
           })
-          .then(async (page) => page.ok && (await page.text()).includes('/src/app/main.ts')),
+          .then(async (page) => page.ok && (await page.text()).includes('/src/webgal/main.tsx')),
         ready(`http://127.0.0.1:${apiPort}/readyz`),
         ready(`http://127.0.0.1:${webPort}/readyz`),
       ]);

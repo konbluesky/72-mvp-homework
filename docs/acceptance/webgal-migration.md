@@ -1,6 +1,6 @@
 # WebGAL 路线 B 实施记录
 
-> 原版 `/` 与 WebGAL `/webgal.html` 按用户要求并存，原版仍为默认首页；以下 B0/Vue 描述保留为历史阶段记录。最新范围与验证边界见[八场景实施记录](miara-webgal-story.md)。
+> 默认 `/` 与 `/webgal.html` 为 WebGAL 故事，原版保留在 `/legacy.html`；以下 B0/Vue 描述保留为历史阶段记录。最新范围与验证边界见[八场景实施记录](miara-webgal-story.md)。
 
 日期：2026-10-31。分支：`codex/webgal-host`。本轮是完整宿主迁移的 B0 构建基座，产品默认入口仍是既有 Vue/Live2D 版本。
 

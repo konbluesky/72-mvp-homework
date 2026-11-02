@@ -41,7 +41,7 @@ const send = async (text: string) => {
 const idle = () =>
   expect(page.locator('main')).toHaveAttribute('data-playback', 'idle', { timeout: 20000 });
 try {
-  await page.goto(process.env.DEMO_URL || 'http://127.0.0.1:5173');
+  await page.goto(process.env.DEMO_URL || 'http://127.0.0.1:5173/legacy.html');
   await expect(page.locator('#text-input')).toBeEnabled();
   await expect(page.locator('.character-stage')).toHaveAttribute('data-renderer', 'live2d', {
     timeout: 20000,

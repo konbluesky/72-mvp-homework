@@ -40,7 +40,7 @@ npm run dev
 
 Ink选择tag写在选择方括号内部；每个呈现beat的变量更新放在输出行之前，必须有一个白名单cue。包含台词的beat先等台词实际播放/字幕确认，再等主要视觉回执；跨beat不依靠全局setTimeout推进。会话固定artifact hash；dev内容改动或后端重载后旧会话可能失效，须明确重开。
 
-默认原版聊天与WebGAL故事入口同时保留，分别使用conversation/story初始条件。调试复用用户已启动的dev服务；未经要求不要另起进程或切换运行模式。
+默认 `/` 打开 WebGAL 故事，`/webgal.html` 保留同一入口；原版聊天保留在 `/legacy.html`，分别使用 story/conversation 初始条件。调试复用用户已启动的dev服务；未经要求不要另起进程或切换运行模式。
 
 ## 演示限流
 

@@ -11,7 +11,7 @@ async function location(page: Page, label: string) {
   await destination.click();
 }
 async function enter(page: Page) {
-  await page.goto('/webgal.html');
+  await page.goto('/');
   await expect(page.locator('.stage-loading')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '入口大堂', exact: true })).toBeVisible();
   await expect(page.getByRole('textbox', { name: '和米拉说话', exact: true })).toBeVisible();

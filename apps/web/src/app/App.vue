@@ -533,7 +533,7 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
       <nav class="header-actions" aria-label="对话选项">
         <nav class="experience-switch" aria-label="页面版本切换">
           <span aria-current="page">原版对话</span>
-          <a href="/webgal.html">WebGAL 故事</a>
+          <a href="/">WebGAL 故事</a>
         </nav>
         <button class="icon-button" aria-label="更多操作" @click="menu?.showModal()">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -996,7 +996,7 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
       <a class="asset-credits" href="/assets/live2d/NOTICE.md" target="_blank" rel="noreferrer"
         >素材与运行库来源 ↗</a
       >
-      <a class="asset-credits" href="/webgal.html">切换到 WebGAL 故事 ↗</a>
+      <a class="asset-credits" href="/">切换到 WebGAL 故事 ↗</a>
     </div>
     <button class="restart-button" :disabled="scene.connecting" @click="restart">
       重新开始这段相遇 <span aria-hidden="true">↺</span>

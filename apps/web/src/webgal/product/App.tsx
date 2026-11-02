@@ -373,7 +373,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
         </div>
         <div className="story-header-actions">
           <nav className="experience-switch" aria-label="页面版本切换">
-            <a href="/">原版对话</a>
+            <a href="/legacy.html">原版对话</a>
             <span aria-current="page">WebGAL 故事</span>
           </nav>
           <button

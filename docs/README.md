@@ -1,6 +1,6 @@
 # 角色互动平台 · 工程文档导航
 
-当前保留两个并存入口：默认 `/` 为原版 Vue/Haru 对话页，`/webgal.html` 为 React/WebGAL 故事页（Haru 默认、Miara 显式可选）。二者共用独立 Node/Fastify + LangGraph。Live 继续 Deepgram STT/TTS，样例角色均明确归属。
+默认 `/` 打开 React/WebGAL 故事页，`/webgal.html` 保留同一故事入口；原版 Vue/Haru 对话页位于 `/legacy.html`。两页均默认 Haru，WebGAL 保留 Miara 显式可选。二者共用独立 Node/Fastify + LangGraph。Live 继续 Deepgram STT/TTS，样例角色均明确归属。
 
 ## 开发与运行
 

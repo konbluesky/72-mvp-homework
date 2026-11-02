@@ -70,7 +70,7 @@ export function App() {
         <a className="workbench-brand" href="/">
           ✳ {PLATFORM_NAME}
         </a>
-        <a href="/">
+        <a href="/legacy.html">
           返回现有对话 <span aria-hidden="true">↗</span>
         </a>
       </nav>
@@ -197,7 +197,7 @@ export function App() {
         </aside>
       </div>
       <footer>
-        {PLATFORM_NAME} · 本页用于预览引擎能力。<a href="/webgal.html">打开互动场景</a>
+        {PLATFORM_NAME} · 本页用于预览引擎能力。<a href="/">打开互动场景</a>
       </footer>
     </main>
   );

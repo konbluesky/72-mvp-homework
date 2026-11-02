@@ -110,7 +110,7 @@ test('default character draws real local Live2D textures, changes expressions an
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
-  await page.goto('/');
+  await page.goto('/legacy.html');
   await ready(page);
   await drawnPixels(page);
   await expect(page.locator('svg.scene-art, canvas.rive-canvas')).toHaveCount(0);
@@ -158,7 +158,7 @@ test('model download failure and actual WebGL context loss recover without the r
 }) => {
   await observeNativeRendering(page);
   await page.route('**/assets/live2d/haru/Haru.moc3', (route) => route.abort());
-  await page.goto('/');
+  await page.goto('/legacy.html');
   await expect(character(page)).toHaveAttribute('data-renderer', 'failed', { timeout: 20_000 });
   await expect(page.locator('#text-input')).toBeEnabled();
   await expect(page.locator('svg.scene-art, canvas.rive-canvas')).toHaveCount(0);
@@ -214,7 +214,7 @@ test('a hidden page cancels an unfinished model load, then restores only the new
     } else await route.continue();
   });
   try {
-    await page.goto('/');
+    await page.goto('/legacy.html');
     await observed;
     await page.evaluate(() => {
       Object.defineProperty(document, 'hidden', { configurable: true, value: true });
@@ -258,7 +258,7 @@ test.describe('bounded high-DPR rendering', () => {
   }) => {
     await observeNativeRendering(page);
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/legacy.html');
     await ready(page);
     for (const size of [
       { width: 320, height: 740 },
