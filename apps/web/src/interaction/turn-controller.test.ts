@@ -33,7 +33,7 @@ const session = {
 };
 const event = (turn: TurnIdentity, seq: number): ServerEvent => ({
   ...turn,
-  schemaVersion: 3,
+  schemaVersion: 4,
   eventId: `event${seq}`,
   seq,
   type: 'ready',

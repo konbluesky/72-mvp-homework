@@ -34,14 +34,18 @@ export async function readInput(request: FastifyRequest, config: Config): Promis
           JSON.stringify(
             'interaction' in parsed.data
               ? { interaction: parsed.data.interaction }
-              : { text: parsed.data.text },
+              : 'media' in parsed.data
+                ? { media: parsed.data.media }
+                : { text: parsed.data.text },
           ),
         )
         .digest('hex'),
       input:
         'interaction' in parsed.data
           ? { kind: 'interaction', interaction: parsed.data.interaction }
-          : { kind: 'text', text: parsed.data.text },
+          : 'media' in parsed.data
+            ? { kind: 'media', media: parsed.data.media }
+            : { kind: 'text', text: parsed.data.text },
     };
   }
   let metadata: unknown;

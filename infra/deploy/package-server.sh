@@ -25,6 +25,8 @@ cp packages/protocol/package.json "$stage/packages/protocol/"
 cp packages/webgal-parser/package.json "$stage/packages/webgal-parser/"
 cp -R apps/server/dist "$stage/apps/server/"
 cp -R packages/protocol/dist "$stage/packages/protocol/"
+mkdir -p "$stage/assets/images"
+cp assets/images/window-keepsake-mock.webp assets/images/SOURCES.json "$stage/assets/images/"
 node --input-type=module - "$sha" "$run" > "$stage/release.json" <<'JS'
 const [, , commit, run] = process.argv;
 process.stdout.write(JSON.stringify({ commit, run, node: '26.13.0', npm: '11.20.0' }) + '\n');

@@ -1,3 +1,5 @@
+import { retainReading } from '../../interaction/conversation-items.js';
+import { ImageShareCard } from '../../images/ImageShareCard';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { ReplySuggestion, StoryAction } from '@mira/protocol';
 import { InteractiveHost } from './host';
@@ -19,6 +21,7 @@ import { StoryIcon } from './StoryIcon';
 import { StoryPanels, type StoryLogEntry, type StoryPanel } from './StoryPanels';
 import { DraftSchema, ReadingHistorySchema } from '../../persistence/browser.js';
 import { MessageStatus } from './MessageStatus';
+import { StageNarrative } from './StageNarrative';
 import '../../interaction/messages.css';
 
 export function StoryApp({ scene }: { scene: import('../scenes/module.js').SceneModule }) {
@@ -48,6 +51,23 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
   const pointer = useRef<number>();
   const recordingGesture = useRef<RecordingGestureGuard>();
   const pressY = useRef(0);
+  useEffect(() => {
+    host.controller.images.gate({ draft: !!draft.trim(), modal: !!panel });
+  }, [host, draft, panel]);
+  useEffect(() => {
+    if (host.isDisposed) return;
+    setLog((entries) => {
+      const added = state.imageItems
+        .filter((item) => !entries.some((line) => line.shareId === item.shareId))
+        .map((item) => ({
+          id: ++logId.current,
+          kind: 'image-share' as const,
+          shareId: item.shareId,
+          text: '',
+        }));
+      return added.length ? retainReading([...entries, ...added]) : entries;
+    });
+  }, [host, state.imageItems]);
   useEffect(() => {
     if (inputMode !== 'voice' || state.voicePreview !== 'idle') finishRecordingGesture();
   }, [inputMode, state.voicePreview]);
@@ -100,7 +120,8 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
         text: state.subtitle,
         messageId: state.activeMessageId || undefined,
       });
-    } else if (!state.subtitle && state.narration && state.narration !== previous.narration) {
+    }
+    if (state.narration && state.narration !== previous.narration) {
       additions.push({
         id: ++logId.current,
         kind: 'narration',
@@ -109,7 +130,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       });
     }
     seenText.current = { subtitle: state.subtitle, narration: state.narration };
-    if (additions.length) setLog((entries) => [...entries, ...additions].slice(-60));
+    if (additions.length) setLog((entries) => retainReading([...entries, ...additions]));
   }, [host, state.subtitle, state.narration, state.story.location, state.activeMessageId]);
   useEffect(() => {
     if (host.isDisposed || !state.opening || openingSeen.current === state.opening) return;
@@ -198,7 +219,14 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     state.voicePreview === 'idle';
   const voicePending = state.recording !== 'idle' || state.voicePreview === 'transcribing';
   const suggestions = conversationSuggestions(state, !userTurnSeen.current);
+  const progressActions = state.story.actions.filter(
+    (action) => action.kind === 'talk' || action.kind === 'choose',
+  );
   const openingText = state.opening?.text ?? host.location.description;
+  const stageLocation = scene.location(state.story.shot?.location ?? state.story.location);
+  const stageWidth = stageElement.current?.getBoundingClientRect().width ?? 0;
+  const actorX = parseFloat(host.point(stageLocation.x, 0).left);
+  const narrativeSide = stageWidth && actorX > stageWidth / 2 ? 'left' : 'right';
   const activity =
     state.recording === 'permission'
       ? '需要麦克风权限'
@@ -211,23 +239,10 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
             : busy
               ? `${scene.speaker}想了想…`
               : '';
-  const observationTargets = groups.observations.map((action) => {
-    const anchor = host.location.anchors[action.id];
-    const point = anchor ? host.point(anchor[0], anchor[1]) : undefined;
-    const bounds = stageElement.current?.getBoundingClientRect();
-    const visible =
-      point &&
-      bounds &&
-      bounds.width >= 680 &&
-      parseFloat(point.left) >= 28 &&
-      parseFloat(point.top) >= 80 &&
-      parseFloat(point.left) <= bounds.width - 28 &&
-      parseFloat(point.top) <= bounds.height - 28;
-    return { action, point: visible ? point : undefined };
-  });
   const chatEntries = useMemo(() => {
     const entries: StoryLogEntry[] = [];
     for (const line of log) {
+      if (line.kind === 'narration') continue;
       const previous = entries.at(-1);
       if (
         line.kind === 'speech' &&
@@ -258,13 +273,15 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     if (draft) {
       followLog.current = true;
       setLog((entries) =>
-        [...entries, { id: ++logId.current, kind: 'user' as const, text: draft, messageId }].slice(
-          -60,
-        ),
+        retainReading([
+          ...entries,
+          { id: ++logId.current, kind: 'user' as const, text: draft, messageId },
+        ]),
       );
     }
   }
   function editDraft(value: string) {
+    host.controller.images.inputChanged();
     draftText.current = value;
     host.api.persistence?.write('draft', value);
     setDraft(value);
@@ -284,7 +301,7 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
     userTurnSeen.current = true;
     followLog.current = true;
     setLog((entries) =>
-      [...entries, { id: ++logId.current, kind: 'user' as const, text, messageId }].slice(-60),
+      retainReading([...entries, { id: ++logId.current, kind: 'user' as const, text, messageId }]),
     );
     editDraft('');
   }
@@ -297,12 +314,8 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       !userTurnSeen.current,
     );
     if (!text) return;
-    const interaction = candidate.interaction;
-    if (interaction?.kind === 'action') {
-      const current = host.getSnapshot();
-      const action = currentStoryAction(current, interaction.actionId, interaction.revision);
-      if (action) perform(action, text);
-    } else send(text);
+    // LLM recommendations are speech, never pre-bound executable story commands.
+    send(text);
   }
   function stop() {
     finishRecordingGesture();
@@ -373,15 +386,15 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
       <section
         ref={stageElement}
         className="story-stage"
-        aria-label={`${host.location.label}，${CHARACTERS[host.characterId].label}`}
+        aria-label={`${stageLocation.label}，${CHARACTERS[host.characterId].label}`}
       >
         <div id="pixiContianer" data-fit="cover" />
         <div className="stage-vignette" aria-hidden="true" />
-        {host.location.visible && (
+        {stageLocation.visible && state.story.shot?.mode !== 'blackout' && (
           <div
             className="stage-character-identity"
             style={{
-              left: `clamp(90px, ${host.point(host.location.x, 0).left}, calc(100% - 90px))`,
+              left: `clamp(90px, ${host.point(stageLocation.x, 0).left}, calc(100% - 90px))`,
             }}
           >
             <span>{scene.speaker}</span>
@@ -394,60 +407,61 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
               <StoryIcon name="location" />
             </span>
             <span>
-              <h1>{host.location.label}</h1>
+              <h1>{stageLocation.label}</h1>
             </span>
           </div>
-          {groups.observations.length > 0 && !state.documentTitle && (
-            <button
-              className={`observe-control ${exploring ? 'is-active' : ''}`}
-              aria-label="观察场景"
-              aria-expanded={exploring}
-              disabled={!canAct}
-              onClick={() => {
-                setExploring((value) => !value);
-              }}
+          {privateView && (
+            <span
+              className="stage-view-notice"
+              role="status"
+              aria-label={
+                state.story.shot?.mode === 'character'
+                  ? `${scene.speaker}的独处片段，你仍在原处等候`
+                  : '剧情留白，可选择继续或结束'
+              }
             >
-              <StoryIcon name={exploring ? 'close' : 'observe'} />
-              <span>{exploring ? '结束观察' : '观察'}</span>
-              {!exploring && <small>{groups.observations.length}</small>}
-            </button>
+              {state.story.shot?.mode === 'character' ? `${scene.speaker} · 独处中` : '剧情留白'}
+            </span>
           )}
+          {(progressActions.length > 0 || groups.observations.length > 0) &&
+            !state.documentTitle && (
+              <button
+                className={`observe-control ${exploring ? 'is-active' : ''}`}
+                aria-label="当前剧情的下一步"
+                aria-expanded={exploring}
+                disabled={!canAct}
+                onClick={() => {
+                  setExploring((value) => !value);
+                }}
+              >
+                <StoryIcon name={exploring ? 'close' : 'observe'} />
+                <span>{exploring ? '收起' : '下一步'}</span>
+                {!exploring && <small>{progressActions.length}</small>}
+              </button>
+            )}
         </div>
         {exploring && canAct && !state.documentTitle && (
-          <div className="scene-observations" aria-label="可观察的物件">
-            {observationTargets
-              .filter((entry) => entry.point)
-              .map(({ action, point }, index) => (
-                <button
-                  key={action.id}
-                  className="scene-hotspot"
-                  style={point}
-                  data-side={
-                    point && parseFloat(point.left) > (stageElement.current?.clientWidth ?? 0) / 2
-                      ? 'left'
-                      : 'right'
-                  }
-                  aria-label={action.label}
-                  title={action.label}
-                  onClick={() => perform(action)}
-                >
-                  <span className="hotspot-mark">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="hotspot-label">{action.label}</span>
+          <div className="scene-observations" aria-label="当前剧情机会与可选物件">
+            <div className="observation-list story-progress-actions">
+              <p className="chat-narration">继续当前环节，也可以留在这里自由聊。</p>
+              {progressActions.map((action) => (
+                <button key={action.id} onClick={() => perform(action)}>
+                  <StoryIcon name="arrow" />
+                  <span>{action.label}</span>
                 </button>
               ))}
-            {observationTargets.some((entry) => !entry.point) && (
-              <div className="observation-list">
-                {observationTargets
-                  .filter((entry) => !entry.point)
-                  .map(({ action }) => (
+              {groups.observations.length > 0 && (
+                <>
+                  <p className="chat-narration">场景物件 · 可选</p>
+                  {groups.observations.map((action) => (
                     <button key={action.id} onClick={() => perform(action)}>
                       <StoryIcon name="observe" />
                       <span>{action.label}</span>
-                      <StoryIcon name="arrow" />
                     </button>
                   ))}
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
         )}
         {state.documentTitle && (
@@ -468,6 +482,14 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
               <StoryIcon name="close" />
             </button>
           </div>
+        )}
+        {state.animation === 'live2d' && !state.documentTitle && !exploring && (
+          <StageNarrative
+            caption={state.narration}
+            speaker={scene.speaker}
+            side={narrativeSide}
+            solitary={!stageLocation.visible || state.story.shot?.mode === 'blackout'}
+          />
         )}
         {state.animation !== 'live2d' && (
           <div className="stage-loading" role="status">
@@ -547,13 +569,8 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
         <section className="story-conversation" aria-label={`与${scene.speaker}对话`}>
           {privateView && (
             <>
-              <p className="chat-narration" role="status">
-                {state.story.shot?.mode === 'character'
-                  ? `${scene.speaker}的独处片段 · 你仍在原处等候`
-                  : '这一段留白 · 可选择继续或结束'}
-              </p>
               <div className="next-replies" aria-label="片段中的其他选择">
-                {groups.decisions
+                {progressActions
                   .filter(
                     (action) =>
                       !suggestions.some(
@@ -586,12 +603,20 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
               if (element)
                 followLog.current =
                   element.scrollHeight - element.scrollTop - element.clientHeight < 32;
+              host.controller.images.gate({ reading: !followLog.current });
             }}
           >
             {chatEntries.length ? (
               chatEntries.map((entry) => (
                 <div key={entry.id} className={`chat-line chat-${entry.kind}`}>
-                  <span>{entry.text}</span>
+                  {entry.shareId && state.imageShares[entry.shareId] ? (
+                    <ImageShareCard
+                      share={state.imageShares[entry.shareId]!}
+                      coordinator={host.controller.images}
+                    />
+                  ) : (
+                    <span>{entry.text}</span>
+                  )}
                   {entry.kind === 'user' && entry.messageId && (
                     <MessageStatus
                       message={state.outgoing.find(
@@ -623,6 +648,22 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
               </span>
             )}
           </div>
+          {state.imageItems
+            .filter(
+              (item) =>
+                state.imageShares[item.shareId] &&
+                !chatEntries.some((entry) => entry.shareId === item.shareId),
+            )
+            .map((item) => (
+              <button
+                key={item.shareId}
+                type="button"
+                className="image-share-shortcut"
+                onClick={() => setPanel('history')}
+              >
+                纪念照状态 · 查看原卡
+              </button>
+            ))}
           {suggestions.length > 0 && (!draft.trim() || privateView) && (
             <div className="next-replies" aria-label="推荐的下一句话，点击发送">
               {suggestions.map((candidate) => (
@@ -686,6 +727,8 @@ export function StoryApp({ scene }: { scene: import('../scenes/module.js').Scene
                 <textarea
                   id="story-input"
                   ref={input}
+                  onCompositionStart={() => host.controller.images.gate({ composing: true })}
+                  onCompositionEnd={() => host.controller.images.gate({ composing: false })}
                   value={draft}
                   rows={1}
                   maxLength={1000}

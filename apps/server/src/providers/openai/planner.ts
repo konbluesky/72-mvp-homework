@@ -76,12 +76,15 @@ export class GptPlanner implements ReplyPlanner {
       const actions = (input.allowedActions ?? []).map((action) => action.id);
       const schema = z.toJSONSchema(
         PlannerOutputSchema.extend({
+          mediaDecision: PlannerOutputSchema.shape.mediaDecision.unwrap(),
           actionId: actions.length
             ? z.enum([actions[0]!, ...actions.slice(1)]).nullable()
             : z.null(),
         }),
       );
-      const prompt = input.systemPrompt ?? PLANNER_RULES;
+      const prompt =
+        (input.systemPrompt ?? PLANNER_RULES) +
+        '\nimageSharing 是服务端依据已确认场景和交流进度授予的角色主动表达机会，独立于需要用户同意的剧情 actionId。candidate.available=true 表示本次主动准备图片已获场景许可；title、originLabel、sharingIntention说明角色想留下的这一刻。用户无需先要求看照片、画图或确认生图。普通闲聊且用户没有拒绝、转移到不适合分享的话题时，优先选择 prepare 一次，并给出完整的有限 intent；不要仅因用户没提照片而选择 defer。prepare 时 segments 正常承接用户，服务端会附加场景编写的准备台词，不要重复宣告或声称图片已经完成。确实需要暂缓时 defer；用户拒绝分享或取消照片时 dismiss；已宣布准备中的任务选择 keep，不重复创建。candidate为空不得 prepare。所有地点、亲密、剧情选择仍遵守原 actionId 同意规则；此能力不授予其他剧情权限，不编造图片内容、网址、人物身份或工作流。';
       const systemPrompt =
         this.config.GPT_STRUCTURED_OUTPUT === 'json_mode'
           ? `${prompt}\n严格按照下方 JSON Schema 输出一个完整的 ReplyPlan JSON 对象。必须包含所有必填字段，只使用声明的字段和枚举值，不得添加额外字段。不要输出 Markdown 代码块、解释或 JSON 之外的文字。\nReplyPlan JSON Schema:\n${JSON.stringify(schema)}`
@@ -102,6 +105,7 @@ export class GptPlanner implements ReplyPlanner {
               committedHistory: input.history,
               committedFacts: input.facts,
               scene: input.scene,
+              imageSharing: input.mediaCandidate ?? null,
               allowedActions: input.allowedActions ?? [],
               ...(input.repair === undefined
                 ? {}

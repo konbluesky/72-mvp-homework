@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ReplyPlanSchema } from '@mira/protocol';
+import { ReplyPlanSchema, PlannerOutputSchema } from '@mira/protocol';
 import { z } from 'zod';
+import { plannerOutput } from '../../../../tests/fixtures/provider-http.js';
 import { loadConfig, type Config } from '../config/index.js';
 import { PLANNER_RULES as MIRA_SYSTEM_PROMPT } from '../scenario/runtime/context.js';
 import { DeepgramTts } from './deepgram/tts.js';
@@ -75,12 +76,12 @@ describe('provider contracts without paid network calls', () => {
       DEEPGRAM_API_KEY: 'test-deepgram',
       DEEPGRAM_MODEL: 'flux-lijuan-zh',
     });
-    const plan = {
+    const plan = plannerOutput({
       suggestions: [],
       segments: [
         { text: '来自已配置接口的回复。', emotion: 'curious', action: 'none', events: [] },
       ],
-    };
+    });
     const http = vi.fn<Fetch>().mockImplementation(async (url) => {
       if (String(url).startsWith('https://gpt.example/v1/')) {
         return Response.json({
@@ -194,7 +195,7 @@ describe('provider contracts without paid network calls', () => {
   it.each(['json_schema', 'json_mode', 'function_calling'] as const)(
     'ChatOpenAI %s preserves user model and contract with no implicit model tuning',
     async (method) => {
-      const plan = mockPlan('你好', []);
+      const plan = plannerOutput(mockPlan('你好', []));
       const message =
         method === 'function_calling'
           ? {
@@ -243,14 +244,15 @@ describe('provider contracts without paid network calls', () => {
         );
         expect(schema.properties.actionId).toEqual({ type: 'null' });
       } else {
-        expect(system).toBe(MIRA_SYSTEM_PROMPT);
+        expect(system).toContain(MIRA_SYSTEM_PROMPT);
+        expect(system).toContain('imageSharing');
       }
     },
   );
   it.each(['json_schema', 'function_calling'] as const)(
     'ChatOpenAI responses/%s uses the configured transport',
     async (method) => {
-      const plan = mockPlan('你好', []);
+      const plan = plannerOutput(mockPlan('你好', []));
       const output =
         method === 'function_calling'
           ? [
@@ -300,7 +302,7 @@ describe('mock conversation content without a speech implementation', () => {
     expect('tts' in provider).toBe(false);
     for (const input of ['你好', '你在等谁', '旅行', '我陪你', '能看看照片吗', '不要照片', '雨'])
       expect(
-        ReplyPlanSchema.safeParse(
+        PlannerOutputSchema.safeParse(
           await provider.planner.plan({ text: input, history: [], facts: [] }, signal()),
         ).success,
       ).toBe(true);

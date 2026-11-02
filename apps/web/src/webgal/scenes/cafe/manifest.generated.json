@@ -23,7 +23,7 @@
   "assetRoot": "/assets/cafe-story/",
   "minimumBackgrounds": 8,
   "id": "last-lamp",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "locations": {
     "street-wide": "街角远景",
     "cafe-front": "门头雨棚",
@@ -41,5 +41,5 @@
       "url": "/assets/travel-photo.svg"
     }
   },
-  "opening": "你也来躲雨？窗边还有个位置，要不要先坐一会儿？"
+  "opening": "你好，这边的位子还空着。需要坐一会儿吗？"
 }

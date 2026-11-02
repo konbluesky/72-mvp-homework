@@ -170,6 +170,20 @@ export class InkScenario {
       if (value && allowed && !allowed.includes(value))
         throw new AppError('INVALID_PLAN', 500, '故事投影引用了未声明的内容。');
     }
+    const direction = this.content.directorNotes.find(
+      (note) =>
+        (note.requires ?? []).every((name) => knownFlags.has(name)) &&
+        (!note.beats || (!!state.beat && note.beats.includes(state.beat))) &&
+        (!note.locations || note.locations.includes(state.location)),
+    );
+    const preferred = direction?.replyActions ?? [];
+    state.actions.sort((a, b) => {
+      const rank = (id: string) => {
+        const index = preferred.indexOf(id);
+        return index < 0 ? preferred.length : index;
+      };
+      return rank(a.id) - rank(b.id);
+    });
     return {
       story: state,
       recommendationPolicy: this.content.recommendations,
@@ -204,33 +218,9 @@ export class InkScenario {
         )?.text ?? '',
     };
   }
-  suggestions(checkpoint: StoryCheckpoint): ReplySuggestion[] {
-    const frame = this.frame(checkpoint);
-    const known = new Set(frame.story.milestones);
-    const note = this.content.directorNotes.find(
-      (item) =>
-        (item.requires ?? []).every((flag) => known.has(flag)) &&
-        (!item.beats || (!!frame.story.beat && item.beats.includes(frame.story.beat))) &&
-        (!item.locations || item.locations.includes(frame.story.location)),
-    );
-    const guided = (note?.replyActions ?? [])
-      .flatMap((id) => {
-        const draft = this.content.playerReplies?.[id];
-        if (!draft || !frame.story.actions.some((action) => action.id === id)) return [];
-        return [
-          {
-            label: draft.length > 20 ? draft.slice(0, 19) + '…' : draft,
-            draft,
-            interaction: { kind: 'action' as const, actionId: id, revision: checkpoint.revision },
-          },
-        ];
-      })
-      .slice(0, this.content.recommendations?.maxGuiding ?? 1);
-    const chat = (note?.chatReplies ?? []).map((draft) => ({
-      label: draft.length > 20 ? draft.slice(0, 19) + '…' : draft,
-      draft,
-    }));
-    return [...guided, ...chat].slice(0, 3);
+  /** Dialogue recommendations belong to the LLM; explicit story controls use StoryFrame.actions. */
+  suggestions(_checkpoint: StoryCheckpoint): ReplySuggestion[] {
+    return [];
   }
 
   propose(input: StoryInteraction | string, checkpoint: StoryCheckpoint): StoryBeat[] {

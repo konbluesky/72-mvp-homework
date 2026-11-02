@@ -108,3 +108,11 @@ SessionCreated 可选 opening 为故事包提供的 {text,revision,suggestions}�
 场景快照可附带 `scenario: {id,version}`，当前服务端始终提供，用于前端与所装配模块匹配。`presentation.ready.payload.environmentAfter`由服务端故事投影提供；Scheduler不再从具体的照片/雨势事实推导环境，只在实际呈现成功后投影随事件返回的状态。
 
 标准photo/environment事件与四态、表演动作保留兼容；它们的资源、事实和呈现实现由故事包解释。生产的隐藏Lore和Ink存档不进入公开呈现manifest。
+
+## 图片分享与字幕（schemaVersion 4）
+
+`image.pending` 包含 share 投影、独立 slotEventId 与无世界事件的 introduction；`image.ready` 包含 shareId/version、imageEventId、私有 assetId 与 introduction。它们分别产生 `image-slot` 和 `image` 回执。`text.ready` 明确表达无音频的字幕演出，普通 `audio.ready` 仍强制鉴权 audioUrl；引出台词为两者的受限联合。音频/字幕、占位和图片的成功不能相互替代。
+
+SessionSnapshot 增加已宣布 imageShares（最多一项），不含提示词或供应商 ID。GET `/api/sessions/:id/image-shares/:shareId`、POST 同路径 `/cancel` 与 `/retry` 均要求会话鉴权；retry 带 requestId/expectedVersion。没有通用创建生图接口。未呈现 ready 不公开 assetId；已确认历史可通过受鉴权媒体恢复缩略图。
+
+begin 可带 `mediaPresentation:{purpose:'media-share',expectedGeneration,shareId,expectedShareVersion}`，成功返回 claimId。input 使用 `media:{kind:'image-share',shareId,claimId}`；不伪造 user text 或 actionId。过时申请返回冲突并安静暂缓，不取消当前新用户轮。新的展示继续复用单轮 SSE，绝不向 reply.done 后的旧流追加事件。

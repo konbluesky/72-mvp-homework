@@ -14,6 +14,9 @@ export interface MediaStore {
   delete(key: string): Promise<void>;
   close(): Promise<void>;
 }
+function objectKey(key: string): string {
+  return `${key.startsWith('i_') ? 'private-images' : 'private-audio'}/${safeKey(key)}`;
+}
 function safeKey(key: string): string {
   if (!/^[a-zA-Z0-9_-]{1,100}$/.test(key)) throw new Error('Invalid media key');
   return key;
@@ -57,7 +60,7 @@ export class R2MediaStore implements MediaStore {
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.config.R2_BUCKET,
-        Key: `private-audio/${safeKey(key)}`,
+        Key: objectKey(key),
         Body: bytes,
         ContentType: mimeType,
         CacheControl: 'private, no-store',
@@ -67,10 +70,14 @@ export class R2MediaStore implements MediaStore {
   }
   async get(key: string, signal: AbortSignal) {
     const result = await this.client.send(
-      new GetObjectCommand({ Bucket: this.config.R2_BUCKET, Key: `private-audio/${safeKey(key)}` }),
+      new GetObjectCommand({ Bucket: this.config.R2_BUCKET, Key: objectKey(key) }),
       { abortSignal: signal },
     );
-    if (!result.Body || (result.ContentLength ?? 0) > this.config.MAX_AUDIO_BYTES) {
+    if (
+      !result.Body ||
+      (result.ContentLength ?? 0) >
+        (key.startsWith('i_') ? this.config.MAX_IMAGE_BYTES : this.config.MAX_AUDIO_BYTES)
+    ) {
       if (result.Body) await result.Body.transformToWebStream().cancel();
       throw new Error('Invalid stored audio');
     }
@@ -88,7 +95,10 @@ export class R2MediaStore implements MediaStore {
         signal.throwIfAborted();
         if (done) break;
         length += value.length;
-        if (length > this.config.MAX_AUDIO_BYTES) {
+        if (
+          length >
+          (key.startsWith('i_') ? this.config.MAX_IMAGE_BYTES : this.config.MAX_AUDIO_BYTES)
+        ) {
           await reader.cancel();
           throw new Error('Stored audio is too large');
         }
@@ -104,7 +114,7 @@ export class R2MediaStore implements MediaStore {
     await this.client.send(
       new DeleteObjectCommand({
         Bucket: this.config.R2_BUCKET,
-        Key: `private-audio/${safeKey(key)}`,
+        Key: objectKey(key),
       }),
       { abortSignal: AbortSignal.timeout(5000) },
     );

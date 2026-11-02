@@ -377,3 +377,100 @@ it('keeps a no-audio navigation pending after generation completion and ignores 
   expect(view.narration).toBe('');
   scheduler.cancel();
 });
+
+describe('independent image presentation receipts', () => {
+  it('prepares the image and introduction before showing, and does not infer an image receipt from audio', async () => {
+    const h = harness();
+    const image = deferred<void>();
+    const shown = vi.fn(async () => undefined);
+    h.scheduler.setImages({
+      pending: async () => undefined,
+      prepare: () => image.promise,
+      ready: shown,
+    });
+    h.scheduler.begin(turn(1));
+    h.scheduler.enqueueImageReady(turn(1), {
+      shareId: 'share',
+      version: 1,
+      imageEventId: 'image',
+      assetId: 'asset',
+      introduction: segment('intro'),
+    });
+    h.scheduler.generationDone(turn(1));
+    await tick();
+    expect(shown).not.toHaveBeenCalled();
+    h.ready('intro');
+    await tick();
+    expect(shown).not.toHaveBeenCalled();
+    image.resolve();
+    await tick();
+    expect(shown).toHaveBeenCalledTimes(1);
+    expect(h.receipt).toHaveBeenCalledWith(
+      { targetId: 'image', kind: 'image', status: 'presented' },
+      turn(1),
+    );
+    expect(h.receipt).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'segment', status: 'presented' }),
+      turn(1),
+    );
+    h.ended.get('intro')?.();
+    await tick();
+    h.scheduler.cancel();
+  });
+  it('does not display or receipt a late download after user interruption', async () => {
+    const h = harness();
+    const image = deferred<void>();
+    const shown = vi.fn(async () => undefined);
+    h.scheduler.setImages({
+      pending: async () => undefined,
+      prepare: () => image.promise,
+      ready: shown,
+    });
+    h.scheduler.begin(turn(1));
+    h.scheduler.enqueueImageReady(turn(1), {
+      shareId: 'share',
+      version: 1,
+      imageEventId: 'image',
+      assetId: 'asset',
+      introduction: segment('intro'),
+    });
+    h.ready('intro');
+    h.scheduler.cancel();
+    image.resolve();
+    await tick();
+    expect(shown).not.toHaveBeenCalled();
+    expect(h.receipt).not.toHaveBeenCalled();
+  });
+});
+
+it('retires both issued targets when an image unit cannot load, without replaying its introduction', async () => {
+  const h = harness();
+  h.scheduler.setImages({
+    pending: async () => undefined,
+    prepare: async () => {
+      throw new Error('DOWNLOAD_FAILED');
+    },
+    ready: async () => undefined,
+  });
+  h.scheduler.begin(turn(1));
+  h.scheduler.enqueueImageReady(turn(1), {
+    shareId: 'share',
+    version: 1,
+    imageEventId: 'image',
+    assetId: 'same-asset',
+    introduction: segment('intro'),
+  });
+  h.ready('intro');
+  h.scheduler.generationDone(turn(1));
+  await tick();
+  expect(h.receipt).toHaveBeenCalledWith(
+    { targetId: 'image', kind: 'image', status: 'failed' },
+    turn(1),
+  );
+  expect(h.receipt).toHaveBeenCalledWith(
+    { targetId: 'intro', kind: 'segment', status: 'failed' },
+    turn(1),
+  );
+  expect(h.starts).not.toHaveBeenCalled();
+  h.scheduler.cancel();
+});

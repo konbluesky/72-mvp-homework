@@ -7,10 +7,8 @@ import { AppError } from '../http/errors.js';
 
 function setup(extra: Record<string, string> = {}) {
   const manager = new SessionManager(testConfig(extra), { scenario: cafeScenario });
-  const created = manager.create();
+  const created = manager.create('conversation');
   const session = manager.authenticate(created.sessionId, `Bearer ${created.sessionToken}`);
-  const meeting = cafeScenario.propose('move-lobby', session.narrative)[0]!;
-  session.narrative = cafeScenario.accept(session.narrative, meeting.checkpoint);
   const frame = cafeScenario.frame(session.narrative);
   session.story = frame.story;
   session.facts = frame.facts;
@@ -129,7 +127,9 @@ describe('single owner and presented facts', () => {
   it('authenticates only the owning token and expires sessions', () => {
     vi.useFakeTimers();
     const { manager, session, created } = setup({ SESSION_TTL_SECONDS: '1' });
-    expect(() => manager.authenticate(session.id, 'Bearer wrong')).toThrowError('请重新进入');
+    expect(() => manager.authenticate(session.id, 'Bearer wrong')).toThrowError(
+      expect.objectContaining({ code: 'UNAUTHORIZED' }),
+    );
     vi.advanceTimersByTime(1001);
     expect(() => manager.authenticate(session.id, `Bearer ${created.sessionToken}`)).toThrowError(
       '这次相遇已结束',

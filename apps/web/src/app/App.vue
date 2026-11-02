@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import ImageShareCard from '../images/ImageShareCard.vue';
 import { ApiClient } from '../api/client.js';
 import { ConnectionMonitor } from '../connection/monitor.js';
 import ConnectionStatus from '../connection/ConnectionStatus.vue';
@@ -49,6 +50,8 @@ const visibleMessages = computed(() => {
   for (const line of messages.value) {
     const previous = grouped.at(-1);
     if (
+      !line.shareId &&
+      !previous?.shareId &&
       line.role === 'character' &&
       previous?.role === 'character' &&
       line.messageId === previous.messageId
@@ -104,7 +107,40 @@ const playback = new PlaybackScheduler({
   },
 });
 controller = new TurnController(api, playback, scene);
-watch(text, (value) => api.persistence?.write('draft', value), { flush: 'sync' });
+watch(
+  text,
+  (value) => {
+    api.persistence?.write('draft', value);
+    controller.images.gate({ draft: !!value.trim() });
+    controller.images.inputChanged();
+  },
+  { flush: 'sync' },
+);
+controller.images.gate({ draft: !!text.value.trim() });
+watch(
+  () => scene.imageItems,
+  (items) => {
+    for (const item of items) conversation.addMedia(item.shareId, item.anchorId);
+  },
+  { deep: true },
+);
+watch(followConversation, (value) => controller.images.gate({ reading: !value }));
+const imageShortcuts = computed(() =>
+  scene.imageItems.filter(
+    (item) =>
+      scene.imageShares[item.shareId] &&
+      !visibleMessages.value.some((line) => line.shareId === item.shareId),
+  ),
+);
+function locateImage(shareId: string) {
+  history.value?.showModal();
+  void nextTick(() =>
+    document
+      .querySelector(`.history-lines [data-share-id="${shareId}"]`)
+      ?.scrollIntoView({ block: 'nearest' }),
+  );
+}
+
 watch(inputMode, (value) => api.persistence?.updatePreferences({ inputMode: value }), {
   flush: 'sync',
 });
@@ -557,6 +593,11 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
           :class="line.role === 'user' ? 'recent-user' : 'character-message'"
           :aria-label="line.role === 'user' ? '你发送的消息' : `${content.speaker} 的回复`"
         >
+          <ImageShareCard
+            v-if="line.shareId && scene.imageShares[line.shareId]"
+            :share="scene.imageShares[line.shareId]!"
+            :coordinator="controller.images"
+          />
           <button
             v-if="line.role === 'user' && delivery(line.messageId)?.status === 'failed'"
             class="message-retry"
@@ -572,6 +613,7 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
           </button>
           <span v-if="line.source === 'sample'" class="sample-label">语音示例</span>
           <p
+            v-if="!line.shareId"
             :class="{
               subtitle: line.role === 'character' && line.id === latestReplyId,
               'message-paused': line.paused,
@@ -606,6 +648,15 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
         </button>
       </div>
       <div class="interaction-area">
+        <button
+          v-for="item in imageShortcuts"
+          :key="item.shareId"
+          class="image-share-shortcut"
+          type="button"
+          @click="locateImage(item.shareId)"
+        >
+          纪念照状态 · 查看原卡
+        </button>
         <div v-if="scene.failure || scene.sessionExpired" class="recovery" role="alert">
           <p>{{ scene.failure || '会话已结束，请重新开始。' }}</p>
           <div class="recovery-actions">
@@ -734,6 +785,8 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
             ><textarea
               id="text-input"
               ref="input"
+              @compositionstart="controller.images.gate({ composing: true })"
+              @compositionend="controller.images.gate({ composing: false })"
               v-model="text"
               :disabled="!scene.connected || scene.voicePreview === 'transcribing'"
               maxlength="1000"
@@ -859,7 +912,7 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
         场景与素材 <span>使用说明、角色来源</span>
       </button>
     </div>
-    <p v-if="scene.mode === 'mock'" class="sheet-description">演示模式 · 本地回复与示例语音</p>
+    <p v-if="scene.mode === 'mock'" class="sheet-description">演示模式 · 本地回复与明确模拟图片</p>
   </dialog>
   <dialog ref="history" class="history-sheet" aria-labelledby="history-title">
     <header class="sheet-header">
@@ -869,7 +922,7 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
       </div>
       <button class="dialog-close" aria-label="关闭对话回看" @click="history?.close()">×</button>
     </header>
-    <p class="sheet-description">最近 40 条已显示的文字，保存在当前浏览器。</p>
+    <p class="sheet-description">最近 60 条已显示的文字与图片状态，保存在当前浏览器。</p>
     <div class="history-lines">
       <article
         v-for="line in messages"
@@ -877,7 +930,13 @@ watch([inputMode, () => scene.voicePreview], ([mode, phase]) => {
         class="history-line"
         :class="{ 'history-user': line.role === 'user' }"
       >
-        <div class="history-role">
+        <ImageShareCard
+          v-if="line.shareId && scene.imageShares[line.shareId]"
+          :share="scene.imageShares[line.shareId]!"
+          :coordinator="controller.images"
+          history
+        />
+        <div v-else class="history-role">
           {{ line.role === 'character' ? content.speaker : '你'
           }}<small v-if="line.source === 'opening'">开场</small
           ><small v-else-if="line.source === 'sample'">示例转录</small

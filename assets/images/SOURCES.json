@@ -1,0 +1,10 @@
+{
+  "files": [
+    {
+      "file": "window-keepsake-mock.webp",
+      "source": "apps/web/public/assets/cafe-story/window-seat.webp",
+      "purpose": "Explicit simulated image sharing fixture, reuses the existing scene artwork. No private generated media.",
+      "sha256": "d6d9adbc463be640b2276b2435c857cb1d0df4182844fc8d3971c56b11167ce4"
+    }
+  ]
+}

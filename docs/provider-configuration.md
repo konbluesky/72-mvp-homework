@@ -105,3 +105,27 @@ npm run providers:probe -- --stage tts --text "你好，请坐。" --output outp
 ## 场景规划边界
 
 GPT适配不再直接导入咖啡馆身份/prompt，由Graph传入scenario的systemPrompt、已公开scene与allowedActions。私有PlannerOutput含actionId和推荐元数据，Graph再转换为公开ReplyPlan或Ink演出。普通聊天保留同次生成推荐，关键explicit选择不由模型自行执行。CONTEXT_HISTORY_TOKENS默认1800，使用本地估算与LangChain trimMessages裁剪历史，不代表GPT总context上限，不调用额外计数或摘要服务。
+
+## 主动图片分享
+
+默认 Mock 使用 `assets/images/window-keepsake-mock.webp` 的明确模拟场景图，不访问 ComfyUI。`MOCK_IMAGE_DELAY_MS=6000`，`MOCK_IMAGE_FAILURE=none/first/always` 控制演示等待与确定失败；第一失败可手动重新准备一次，总 attempt 最多两次。无 Deepgram key 时使用显式 `text.ready` 字幕演出，不产生假声音；配置 key 后仍可使用真实 TTS。
+
+Live 生图必须显式配置：
+
+```dotenv
+APP_MODE=live
+IMAGE_PROVIDER=comfyui
+COMFYUI_BASE_URL=https://kindra-tune.hottv.ai/
+COMFYUI_OUTPUT=view
+COMFYUI_CHECKPOINT=oneObsession_v24.safetensors
+COMFYUI_HEADERS_JSON={}
+IMAGE_JOB_TIMEOUT_MS=900000
+IMAGE_MAX_ACTIVE=1
+IMAGE_MAX_QUEUED=8
+```
+
+GPT/Deepgram 的现有 Live 配置仍需完整。ComfyUI 自建实例默认不要求 API key；若网关鉴权，通过后端 `COMFYUI_HEADERS_JSON` 设置字符串鉴权头，不放进 VITE 配置、不打印正文。标准 SaveImage 从原实例 `/view` 取图。选择原 `SaveImageS3` 时改 `COMFYUI_OUTPUT=s3`，并显式设置 `COMFYUI_S3_ORIGIN=https://your-object-origin.example`；支持原工作流 images[].filename/subfolder 输出，只在配置 origin 内读取，不向对象服务发送节点鉴权头。该 origin 不提供时配置校验失败，不能默认猜测 CDN。
+
+独立任务默认 15 分钟，单次 HTTP/下载 15 秒，后端约 3 秒查询供应商，前端请求完成后约 2 秒查询已宣布分享；隐藏/离线暂停前端查询，网络错误退避。长等待 30 秒开始轻提示，没有虚构进度。图片保存默认 30 分钟、12 MiB 上限，R2 前缀 `private-images/` 与音频分开；会话/分享结束和 TTL 清理不依赖无限会话的 session TTL。
+
+接单响应未知时只按原 correlation 对账，不再 POST；取消只终止本地分享安排。Live 失败没有 Mock 回退。图片签名/尺寸/解码检查不保证人物身份、服装、手部等语义质量。只读发现确认节点与 checkpoint 存在；本轮没有真实出图或付费调用验收。详细流程与边界见[图片分享架构](architecture/image-sharing.md)。

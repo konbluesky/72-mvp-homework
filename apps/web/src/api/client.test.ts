@@ -70,7 +70,7 @@ describe('monitoring API and controlled failures', () => {
       headers.push(new Headers(init?.headers));
       return new Response(
         JSON.stringify(
-          String(url).endsWith('/ping') ? { schemaVersion: 3, status: 'ok' } : session,
+          String(url).endsWith('/ping') ? { schemaVersion: 4, status: 'ok' } : session,
         ),
       );
     };

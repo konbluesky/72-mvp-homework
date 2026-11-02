@@ -15,6 +15,8 @@ import type { OutgoingMessage } from './messages.js';
 /** Shared headless projection, used by both Vue compatibility and the WebGAL host. */
 export function initialInteractiveState() {
   return {
+    imageShares: {} as Record<string, import('./conversation-items.js').ImageShareView>,
+    imageItems: [] as import('./conversation-items.js').ImageShareItem[],
     connected: false,
     sessionExpired: false,
     connection: initialConnectionView(),

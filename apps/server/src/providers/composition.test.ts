@@ -12,14 +12,21 @@ import { runConversation } from '../graphs/conversation.js';
 import { SessionManager } from '../sessions/manager.js';
 import { plannerResponse } from '../../../../tests/fixtures/provider-http.js';
 import type { Fetch } from './http.js';
-import type { ServerEvent } from '@mira/protocol';
+import type { ServerEvent, PlannerOutput } from '@mira/protocol';
 
 describe('provider composition', () => {
-  it('mock conversation never supplies a synthetic voice and speech always uses Deepgram', async () => {
+  it('keyless mock explicitly selects captions and configured real speech stays Deepgram', async () => {
     const http = vi.fn<Fetch>();
     const providers = createProviders(testConfig(), http, cafeScenario.mockProviders);
     expect(providers.stt?.info.provider).toBe('mock');
-    expect(providers.tts.info.provider).toBe('deepgram');
+    expect(providers.tts.info.provider).toBe('text-only');
+    expect(
+      createProviders(
+        testConfig({ DEEPGRAM_API_KEY: 'test-key', DEEPGRAM_MODEL: 'flux-lijuan-zh' }),
+        http,
+        cafeScenario.mockProviders,
+      ).tts.info.provider,
+    ).toBe('deepgram');
     await providers.stt?.transcribe(
       { bytes: wav(), mimeType: 'audio/wav' },
       new AbortController().signal,
@@ -29,6 +36,25 @@ describe('provider composition', () => {
       createProviders(testConfig({ STT_PROVIDER: 'disabled' }), http, cafeScenario.mockProviders)
         .stt,
     ).toBeUndefined();
+  });
+  it('keeps the optional image capability when speech input is disabled', () => {
+    const providers = createProviders(
+      testConfig({
+        APP_MODE: 'live',
+        STT_PROVIDER: 'disabled',
+        IMAGE_PROVIDER: 'comfyui',
+        GPT_BASE_URL: 'https://gpt.example/v1',
+        GPT_API_KEY: 'test-gpt',
+        GPT_MODEL: 'test',
+        DEEPGRAM_API_KEY: 'test-dg',
+        DEEPGRAM_MODEL: 'flux-lijuan-zh',
+      }),
+      vi.fn<Fetch>(),
+    );
+    expect(providers.stt).toBeUndefined();
+    expect(providers.image?.simulated).toBe(false);
+    expect(providers.planner).toBeDefined();
+    expect(providers.tts).toBeDefined();
   });
   it('swaps a single recognizer while the same Graph, GPT planner and TTS adapter keep running', async () => {
     class AlternativeStt implements SpeechToTextProvider {
@@ -54,11 +80,14 @@ describe('provider composition', () => {
       endpoints.push(path);
       if (path === '/v1/chat/completions')
         return plannerResponse({
+          actionId: null,
+          actionRequest: null,
+          mediaDecision: null,
           suggestions: [],
           segments: [
             { text: '旅行让人想起很多事。', emotion: 'curious', action: 'lookWindow', events: [] },
           ],
-        });
+        } as PlannerOutput);
       if (path === '/v2/speak')
         return new Response(new Uint8Array([0xff, 0xfb, 0x90, 0, 1]), {
           headers: { 'Content-Type': 'audio/mpeg' },

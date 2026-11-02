@@ -1,3 +1,5 @@
+import { ImageSharingService } from './images/sharing.js';
+import { MockImageProvider } from './images/mock.js';
 import { defaultScenario } from './scenario/index.js';
 import type { ScenarioDefinition } from './scenario/ports.js';
 import Fastify, { type FastifyRequest } from 'fastify';
@@ -12,6 +14,9 @@ import {
 } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
+  ImageShareSchema,
+  ImageShareParamsSchema,
+  RetryImageShareSchema,
   BeginTurnSchema,
   BeginTurnResponseSchema,
   CancelTurnSchema,
@@ -77,6 +82,9 @@ export async function createApp(options: AppOptions = {}) {
   const scenario = options.scenario ?? options.sessions?.scenario ?? defaultScenario;
   const providers = options.providers ?? createProviders(config, fetch, scenario.mockProviders);
   const sessions = options.sessions ?? new SessionManager(config, { scenario });
+  if (config.APP_MODE === 'mock' && scenario.imageSharing && !providers.image)
+    providers.image = new MockImageProvider(config, scenario.imageSharing.mockImage);
+  const images = new ImageSharingService(config, sessions, media, providers.image);
   if (sessions.scenario !== scenario) throw new Error('Session and Graph scenario must match.');
   const app = Fastify({
     logger:
@@ -199,8 +207,10 @@ export async function createApp(options: AppOptions = {}) {
       if (mediaRoute?.responses)
         Object.assign(mediaRoute.responses, {
           '200': {
-            description: 'Authenticated, private audio binary.',
+            description: 'Authenticated, private audio or image binary.',
             content: {
+              'image/png': { schema: { type: 'string', format: 'binary' } },
+              'image/jpeg': { schema: { type: 'string', format: 'binary' } },
               'audio/wav': { schema: { type: 'string', format: 'binary' } },
               'audio/mpeg': { schema: { type: 'string', format: 'binary' } },
             },
@@ -329,7 +339,7 @@ export async function createApp(options: AppOptions = {}) {
         description:
           'Create an anonymous session; replaceSessionId requires its bearer token and atomically replaces that session.',
         security: [{}, { sessionToken: [] }],
-        body: CreateSessionSchema.optional(),
+        body: CreateSessionSchema.nullish(),
         response: { 201: SessionCreatedSchema, ...errors },
       },
     },
@@ -374,6 +384,54 @@ export async function createApp(options: AppOptions = {}) {
       ...sessions.snapshot(sessions.authenticate(request.params.id, request.headers.authorization)),
       capabilities: { voiceInput: Boolean(providers.stt) },
     }),
+  );
+  app.get(
+    '/api/sessions/:id/image-shares/:shareId',
+    {
+      logLevel: 'warn',
+      schema: {
+        security,
+        params: ImageShareParamsSchema,
+        response: { 200: ImageShareSchema, ...errors },
+      },
+    },
+    async (request) => {
+      const session = sessions.authenticate(request.params.id, request.headers.authorization);
+      return sessions.imageProjection(sessions.getImage(session, request.params.shareId));
+    },
+  );
+  app.post(
+    '/api/sessions/:id/image-shares/:shareId/cancel',
+    {
+      schema: {
+        security,
+        params: ImageShareParamsSchema,
+        response: { 200: ImageShareSchema, ...errors },
+      },
+    },
+    async (request) => {
+      const session = sessions.authenticate(request.params.id, request.headers.authorization);
+      const work = sessions.getImage(session, request.params.shareId);
+      sessions.endImage(session, work, 'cancelled');
+      return sessions.imageProjection(work);
+    },
+  );
+  app.post(
+    '/api/sessions/:id/image-shares/:shareId/retry',
+    {
+      schema: {
+        security,
+        params: ImageShareParamsSchema,
+        body: RetryImageShareSchema,
+        response: { 200: ImageShareSchema, ...errors },
+      },
+    },
+    async (request) => {
+      const session = sessions.authenticate(request.params.id, request.headers.authorization);
+      const work = sessions.getImage(session, request.params.shareId);
+      sessions.retryImage(session, work, request.body);
+      return sessions.imageProjection(work);
+    },
   );
   app.post(
     '/api/sessions/:id/turns',
@@ -529,7 +587,7 @@ export async function createApp(options: AppOptions = {}) {
         input.inputId,
         input.digest,
         {
-          expectAudio: input.input.kind !== 'interaction',
+          expectAudio: input.input.kind === 'text' || input.input.kind === 'audio',
           contentDigest: input.contentDigest,
         },
       );
@@ -605,8 +663,9 @@ export async function createApp(options: AppOptions = {}) {
   app.addHook('onClose', async () => {
     clearInterval(sweep);
     sessions.close();
+    await images.close();
     await media.close();
   });
   await app.ready();
-  return Object.assign(app, { services: { config, providers, media, sessions, scenario } });
+  return Object.assign(app, { services: { config, providers, media, sessions, scenario, images } });
 }

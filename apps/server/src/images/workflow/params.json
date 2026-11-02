@@ -1,0 +1,11 @@
+{
+  "version": "base-generate-v1",
+  "bindings": {
+    "sampler": "5",
+    "size": "6",
+    "positive": "12",
+    "negative": "13",
+    "output": "17",
+    "checkpoint": "18"
+  }
+}

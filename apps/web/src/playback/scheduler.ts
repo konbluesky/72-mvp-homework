@@ -1,7 +1,9 @@
 import {
   sameTurn,
   type Action,
-  type AudioReadyPayload,
+  type SpeechReadyPayload,
+  type ImagePendingPayload,
+  type ImageReadyPayload,
   type Emotion,
   type Interaction,
   type PresentationEvent,
@@ -58,13 +60,23 @@ interface SchedulerOptions {
   timing?(name: string, durationMs: number): void;
   loadTimeoutMs?: number;
 }
+type ImageUnit = { imagePending: ImagePendingPayload } | { imageReady: ImageReadyPayload };
+export interface ImagePresentationPort {
+  prepare?(payload: ImageReadyPayload, signal: AbortSignal): Promise<void>;
+  pending(payload: ImagePendingPayload, signal: AbortSignal): Promise<void>;
+  ready(payload: ImageReadyPayload, signal: AbortSignal): Promise<void>;
+}
 type PreparedResult = { ok: true; audio: PreparedAudio } | { ok: false };
 
 /** Owns audio, captions, visual events and every callback attached to their turn. */
 export class PlaybackScheduler {
   private turn?: TurnIdentity;
+  private images?: ImagePresentationPort;
+  setImages(port: ImagePresentationPort) {
+    this.images = port;
+  }
   private cancellation = new AbortController();
-  private queue: Array<AudioReadyPayload | PresentationReadyPayload> = [];
+  private queue: Array<SpeechReadyPayload | PresentationReadyPayload | ImageUnit> = [];
   private prepared = new Map<string, Promise<PreparedResult>>();
   private stop?: () => void;
   private draining = 0;
@@ -74,8 +86,8 @@ export class PlaybackScheduler {
   private suggestions: ReplySuggestion[] = [];
   private presentationFailed = false;
   private confirmedNarration = '';
-  private blocked?: AudioReadyPayload;
-  private text?: AudioReadyPayload;
+  private blocked?: SpeechReadyPayload;
+  private text?: SpeechReadyPayload;
   private textVisual?: Promise<boolean>;
   private lifetime?: ReturnType<typeof setTimeout>;
   private received = new Set<string>();
@@ -127,7 +139,7 @@ export class PlaybackScheduler {
     }
   }
 
-  enqueue(turn: TurnIdentity, segment: AudioReadyPayload): void {
+  enqueue(turn: TurnIdentity, segment: SpeechReadyPayload): void {
     if (!this.current(turn) || this.received.has(segment.segmentId)) return;
     if (this.readyAt.size >= 4) throw new Error('PLAYBACK_QUEUE_LIMIT');
     this.received.add(segment.segmentId);
@@ -141,6 +153,19 @@ export class PlaybackScheduler {
     if (this.received.size >= 12) throw new Error('PLAYBACK_QUEUE_LIMIT');
     this.received.add(payload.presentationId);
     this.queue.push(payload);
+    void this.pump(turn);
+  }
+  enqueueImagePending(turn: TurnIdentity, payload: ImagePendingPayload): void {
+    if (!this.current(turn) || this.received.has(payload.slotEventId)) return;
+    this.enqueue(turn, payload.introduction);
+    this.received.add(payload.slotEventId);
+    this.queue.push({ imagePending: payload });
+    void this.pump(turn);
+  }
+  enqueueImageReady(turn: TurnIdentity, payload: ImageReadyPayload): void {
+    if (!this.current(turn) || this.received.has(payload.imageEventId)) return;
+    this.received.add(payload.imageEventId);
+    this.queue.push({ imageReady: payload });
     void this.pump(turn);
   }
   generationDone(turn: TurnIdentity, suggestions: ReplySuggestion[] = []): void {
@@ -274,7 +299,12 @@ export class PlaybackScheduler {
   private prefetch(): void {
     // The current sentence and only its immediate successor may hold decoded audio.
     for (const segment of this.queue.slice(0, 2)) {
-      if ('presentationId' in segment || this.prepared.has(segment.segmentId)) continue;
+      if (
+        !('segmentId' in segment) ||
+        !('audioUrl' in segment) ||
+        this.prepared.has(segment.segmentId)
+      )
+        continue;
       const signal = AbortSignal.any([
         this.cancellation.signal,
         AbortSignal.timeout(this.options.loadTimeoutMs ?? 12_000),
@@ -299,6 +329,59 @@ export class PlaybackScheduler {
     }
     const owner = ++this.sequence;
     this.draining = owner;
+    if ('imagePending' in segment || 'imageReady' in segment) {
+      const pending = 'imagePending' in segment;
+      const payload = pending ? segment.imagePending : segment.imageReady;
+      const targetId = 'slotEventId' in payload ? payload.slotEventId : payload.imageEventId;
+      try {
+        const signal = AbortSignal.any([
+          this.cancellation.signal,
+          AbortSignal.timeout(this.options.loadTimeoutMs ?? 12000),
+        ]);
+        if (!this.images) throw new Error('IMAGE_UNSUPPORTED');
+        if ('slotEventId' in payload) await this.images.pending(payload, signal);
+        else {
+          const intro = payload.introduction;
+          const audio =
+            'audioUrl' in intro
+              ? abortable(this.options.audio.prepare(intro.audioUrl, signal), signal)
+                  .then((audio) => ({ ok: true as const, audio }))
+                  .catch(() => ({ ok: false as const }))
+              : Promise.resolve({ ok: false as const });
+          if ('audioUrl' in intro) this.prepared.set(intro.segmentId, audio);
+          await Promise.all([this.images.prepare?.(payload, signal), audio]);
+          if (!this.current(turn) || this.draining !== owner) return;
+          await this.images.ready(payload, signal);
+        }
+        if (!this.current(turn) || this.draining !== owner) return;
+        this.options.receipt(
+          { targetId, kind: pending ? 'image-slot' : 'image', status: 'presented' },
+          turn,
+        );
+        this.queue.shift();
+        if (!pending) {
+          this.queue.unshift(payload.introduction);
+          this.readyAt.set(payload.introduction.segmentId, this.now());
+        }
+      } catch {
+        if (!this.current(turn) || this.draining !== owner) return;
+        this.presentationFailed = true;
+        this.options.receipt(
+          { targetId, kind: pending ? 'image-slot' : 'image', status: 'failed' },
+          turn,
+        );
+        if (!pending)
+          this.options.receipt(
+            { targetId: payload.introduction.segmentId, kind: 'segment', status: 'failed' },
+            turn,
+          );
+        this.queue.shift();
+      }
+      this.draining = 0;
+      this.prefetch();
+      void this.pump(turn);
+      return;
+    }
     if ('presentationId' in segment) {
       this.options.started?.(turn);
       this.options.view({
@@ -330,6 +413,52 @@ export class PlaybackScheduler {
       });
       this.queue.shift();
       this.draining = 0;
+      this.prefetch();
+      void this.pump(turn);
+      return;
+    }
+    if (!('audioUrl' in segment)) {
+      this.options.started?.(turn);
+      this.options.view({
+        interaction: 'idle',
+        playback: 'text',
+        subtitle: segment.text,
+        emotion: segment.emotion,
+        action: segment.action,
+        mouthOpen: 0,
+      });
+      const signal = this.cancellation.signal;
+      const visual = this.present(segment.events, turn, signal);
+      try {
+        await abortable(
+          new Promise<void>((resolve) => {
+            const timer = setTimeout(
+              resolve,
+              Math.max(1400, Math.min(6500, segment.text.length * 130)),
+            );
+            signal.addEventListener(
+              'abort',
+              () => {
+                clearTimeout(timer);
+                resolve();
+              },
+              { once: true },
+            );
+          }),
+          signal,
+        );
+        await visual;
+      } catch {
+        return;
+      }
+      if (!this.current(turn) || this.draining !== owner) return;
+      this.options.receipt(
+        { targetId: segment.segmentId, kind: 'segment', status: 'presented', mode: 'text' },
+        turn,
+      );
+      this.queue.shift();
+      this.draining = 0;
+      this.options.view({ subtitle: '', action: 'none' });
       this.prefetch();
       void this.pump(turn);
       return;
@@ -399,7 +528,7 @@ export class PlaybackScheduler {
       signal.removeEventListener('abort', finish);
     }
   }
-  private audioFailed(segment: AudioReadyPayload, owner: number): void {
+  private audioFailed(segment: SpeechReadyPayload, owner: number): void {
     if (this.draining !== owner) return;
     this.draining = 0;
     this.blocked = segment;

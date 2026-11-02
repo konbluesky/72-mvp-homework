@@ -112,6 +112,22 @@ const base = z.object({
   MAX_INPUTS_PER_MINUTE: positive(12, 1000),
   MAX_SESSIONS_PER_MINUTE: positive(10, 1000),
   HEARTBEAT_INTERVAL_MS: positive(10000, 60000),
+  IMAGE_PROVIDER: z.enum(['disabled', 'comfyui']).default('disabled'),
+  COMFYUI_BASE_URL: z.url().default('https://kindra-tune.hottv.ai/'),
+  COMFYUI_HEADERS_JSON: jsonObject,
+  COMFYUI_OUTPUT: z.enum(['view', 's3']).default('view'),
+  COMFYUI_CHECKPOINT: z.string().min(1).max(200).default('oneObsession_v24.safetensors'),
+  COMFYUI_S3_ORIGIN: z.string().default(''),
+  IMAGE_JOB_TIMEOUT_MS: positive(900000, 1800000),
+  IMAGE_REQUEST_TIMEOUT_MS: positive(15000, 60000),
+  IMAGE_POLL_MS: positive(3000, 30000),
+  IMAGE_LONG_WAIT_MS: positive(30000, 300000),
+  IMAGE_ASSET_TTL_SECONDS: positive(1800, 86400),
+  IMAGE_MAX_ACTIVE: positive(1, 8),
+  IMAGE_MAX_QUEUED: positive(8, 32),
+  MAX_IMAGE_BYTES: positive(12582912, 33554432),
+  MOCK_IMAGE_DELAY_MS: positive(6000, 120000),
+  MOCK_IMAGE_FAILURE: z.enum(['none', 'first', 'always']).default('none'),
   MEDIA_STORE: z.enum(['local', 'r2']).default('local'),
   MEDIA_LOCAL_DIR: z.string().default('./data/media'),
   MEDIA_DELIVERY: z.literal('api_proxy').default('api_proxy'),
@@ -150,6 +166,36 @@ function configurationSchema(required: ReadonlySet<ProviderRole>, application: b
       config.CORS_ALLOWED_ORIGINS.some((v) => !isOrigin(v))
     )
       issue('CORS_ALLOWED_ORIGINS', 'Use explicit HTTP(S) origins without paths or wildcards');
+    try {
+      const url = new URL(config.COMFYUI_BASE_URL);
+      if (
+        !['https:', 'http:'].includes(url.protocol) ||
+        url.username ||
+        url.password ||
+        url.search ||
+        url.hash
+      )
+        issue('COMFYUI_BASE_URL', 'Use an HTTP(S) API root without credentials');
+    } catch {
+      issue('COMFYUI_BASE_URL', 'Invalid API root');
+    }
+    for (const [key, value] of Object.entries(config.COMFYUI_HEADERS_JSON))
+      if (
+        !/^[a-z0-9-]+$/i.test(key) ||
+        ['host', 'content-length', 'connection'].includes(key.toLowerCase()) ||
+        typeof value !== 'string' ||
+        /[\r\n]/.test(value)
+      )
+        issue('COMFYUI_HEADERS_JSON', 'Use string authentication headers');
+    if (config.COMFYUI_OUTPUT === 's3') {
+      try {
+        const u = new URL(config.COMFYUI_S3_ORIGIN);
+        if (u.protocol !== 'https:' || u.origin !== config.COMFYUI_S3_ORIGIN)
+          issue('COMFYUI_S3_ORIGIN', 'Use an explicit HTTPS object origin');
+      } catch {
+        issue('COMFYUI_S3_ORIGIN', 'Required for S3 output');
+      }
+    }
     if (config.APP_MODE === 'live') {
       const requireValue = (
         name: 'GPT_BASE_URL' | 'GPT_API_KEY' | 'GPT_MODEL' | 'DEEPGRAM_API_KEY' | 'DEEPGRAM_MODEL',

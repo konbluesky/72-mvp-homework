@@ -3,6 +3,7 @@ import { ActionSchema, ContentIdSchema, EmotionSchema, LocationSchema } from '@m
 import artifact from './compiled.json' with { type: 'json' };
 import manifestData from './manifest.json' with { type: 'json' };
 import characterData from './character.json' with { type: 'json' };
+import imageData from './image-sharing.json' with { type: 'json' };
 import loreData from './lore.json' with { type: 'json' };
 import type { ScenarioDefinition } from '../ports.js';
 import { createMockProviders } from './mock.js';
@@ -159,7 +160,83 @@ const runtime = new InkScenario({
   playerReplies: manifest.playerReplies,
   documents: lore,
 });
+const imageRecipe = z
+  .object({
+    slotKey: ContentIdSchema,
+    originLabel: z.string().max(100),
+    title: z.string().max(80),
+    character: z.string().max(300),
+    appearance: z.string().max(500),
+    location: ContentIdSchema,
+    environment: z.string().max(500),
+    positive: z.string().max(500),
+    negative: z.string().max(500),
+    intentTags: z
+      .object({
+        focus: z
+          .object({
+            character: z.string().max(300),
+            prop: z.string().max(300),
+            environment: z.string().max(300),
+          })
+          .strict(),
+        mood: z
+          .object({
+            warm: z.string().max(300),
+            playful: z.string().max(300),
+            quiet: z.string().max(300),
+          })
+          .strict(),
+        framing: z
+          .object({
+            portrait: z.string().max(300),
+            medium: z.string().max(300),
+            detail: z.string().max(300),
+          })
+          .strict(),
+      })
+      .strict()
+      .optional(),
+    width: z.number().int().min(256).max(2048),
+    height: z.number().int().min(256).max(2048),
+    introduction: z.string().max(160),
+    readyLine: z.string().max(160),
+    mockImage: z.string(),
+  })
+  .strict()
+  .parse(imageData);
 export const cafeScenario: ScenarioDefinition = {
+  imageSharing: {
+    mockImage: imageRecipe.mockImage,
+    candidate: (checkpoint, _history) => {
+      const frame = runtime.frame(checkpoint);
+      if (
+        frame.story.location !== imageRecipe.location ||
+        !frame.story.milestones.includes('companionship') ||
+        frame.story.ending
+      )
+        return undefined;
+      const { mockImage: _, ...recipe } = imageRecipe;
+      void _;
+      return {
+        ...recipe,
+        appearanceState: frame.story.milestones.includes('makeup_returned')
+          ? 'after-makeup'
+          : 'initial',
+      };
+    },
+    accepts: (checkpoint, recipe) => {
+      const frame = runtime.frame(checkpoint);
+      return (
+        recipe.appearanceState ===
+          (frame.story.milestones.includes('makeup_returned') ? 'after-makeup' : 'initial') &&
+        frame.story.location === recipe.location &&
+        frame.story.milestones.includes('companionship') &&
+        !frame.story.ending &&
+        (!frame.story.shot || frame.story.shot.mode === 'shared')
+      );
+    },
+  },
   mockProviders: createMockProviders,
   initial: (entry) => runtime.initial(entry),
   frame: (checkpoint) => runtime.frame(checkpoint),
@@ -187,7 +264,6 @@ export const cafeScenario: ScenarioDefinition = {
       scene: {
         ...context.scene,
         performanceActions: manifest.performanceActions,
-        replyCandidates: runtime.suggestions(checkpoint),
         openingLine:
           checkpoint.revision === 0 ? manifest.voices[manifest.openingVoice]?.text : null,
       },

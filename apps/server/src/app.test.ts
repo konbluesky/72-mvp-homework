@@ -229,11 +229,19 @@ describe('Fastify API boundaries', () => {
     const { app } = await setup();
     expect((await app.inject('/healthz')).json()).toEqual({ status: 'ok' });
     expect((await app.inject('/api/connection/ping')).json()).toEqual({
-      schemaVersion: 3,
+      schemaVersion: 4,
       status: 'ok',
     });
     expect((await app.inject('/readyz')).json()).toEqual({ status: 'ready', mode: 'mock' });
-    expect(Object.keys(app.swagger().paths ?? {})).toHaveLength(10);
+    expect(Object.keys(app.swagger().paths ?? {})).toEqual(
+      expect.arrayContaining([
+        '/api/sessions',
+        '/api/sessions/{id}/turns/{turnId}/input',
+        '/api/sessions/{id}/image-shares/{shareId}',
+        '/api/sessions/{id}/image-shares/{shareId}/cancel',
+        '/api/sessions/{id}/image-shares/{shareId}/retry',
+      ]),
+    );
   });
   it('rejects unsupported speech before decoding or provider calls and accepts the next text turn', async () => {
     const { app, headers, base, providers } = await setup({
@@ -596,9 +604,6 @@ it('normalizes an actual multipart recording before simulated STT and the shared
 it('merges a receipt-confirmed Ink prefix when disconnect beats the frozen snapshot', async () => {
   const { app, headers, base, created } = await setup();
   const session = app.services.sessions.authenticate(created.sessionId, headers.authorization);
-  for (const action of ['move-lobby', 'move-counter'])
-    for (const beat of cafeScenario.propose(action, session.narrative))
-      session.narrative = cafeScenario.accept(session.narrative, beat.checkpoint);
   const frame = cafeScenario.frame(session.narrative);
   session.story = frame.story;
   session.facts = frame.facts;
@@ -610,7 +615,7 @@ it('merges a receipt-confirmed Ink prefix when disconnect beats the frozen snaps
     body: JSON.stringify({
       generation: 1,
       inputId: 'read',
-      interaction: { kind: 'inspect', prop: 'letter' },
+      interaction: { kind: 'inspect', prop: 'notice' },
     }),
     signal: abort.signal,
   });
@@ -658,7 +663,7 @@ it('merges a receipt-confirmed Ink prefix when disconnect beats the frozen snaps
   });
   expect(next.status).toBe(200);
   const snapshot = (await app.inject({ url: base, headers })).json();
-  expect(snapshot.scene.story.revealed).toContain('letter');
+  expect(snapshot.scene.story.revealed).toContain('notice');
   expect(snapshot.scene.story.phase).toBe('exploration');
   expect(snapshot.generation).toBe(2);
 });

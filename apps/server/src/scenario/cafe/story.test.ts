@@ -14,9 +14,9 @@ describe('authored long-form cafe story', () => {
   });
   it('keeps a non-progressing chat reply beside a concrete story opportunity', () => {
     const state = advance(cafeScenario.initial(), 'talk-a01-1');
-    const suggestions = cafeScenario.suggestions!(state);
-    expect(suggestions[0]?.interaction).toMatchObject({ actionId: 'talk-a01-2' });
-    expect(suggestions.some((item) => !item.interaction)).toBe(true);
+    expect(cafeScenario.suggestions!(state)).toEqual([]);
+    expect(cafeScenario.frame(state).story.actions[0]?.id).toBe('talk-a01-2');
+    expect(JSON.stringify(cafeScenario.context(state, []).scene)).not.toContain('replyCandidates');
   });
   it('does not turn optional letter presentation into trust, attraction or chapter progress', () => {
     let state = advance(cafeScenario.initial(), 'move-counter');

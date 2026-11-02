@@ -15,6 +15,10 @@
 
 ## 架构与契约
 
+- [会话持久化（设计草案，待审阅）](architecture/session-persistence-design.md)：解释 SQLite 与持久卷、ORM/驱动选型、CRUD 集中边界、改动范围和跨重启恢复；尚未实施。
+
+- [主动图片分享](architecture/image-sharing.md)：独立后台 ComfyUI、占位/图片回执、两入口卡片、空闲展示与 Mock 配置；本轮未执行真实出图或功能验收。
+
 - [剧情导演与LLM会话分离（初步设计，待审阅）](architecture/llm-directed-story-design.md)：固定脚本与动态推荐的职责、补妆前后流程、涉及文件、调用成本与迁移边界；尚未实施。
 
 - [当前程序组件与交互时序](architecture/program-interactions.md)：两个前端入口、WebGAL/Live2D、Ink、LangGraph、协议、LLM/Deepgram 的职责边界，以及聊天、动作、语音预览和打断时序；附标准 PlantUML 源文件。

@@ -233,6 +233,26 @@ export class MockPlanner implements ReplyPlanner {
       };
     }
     const plan = mockPlan(photoRequested(input.text) ? '旅行' : input.text, input.facts);
+    const mediaDecision = input.mediaCandidate
+      ? {
+          decision: /(不要|不想|别|取消).{0,8}(拍|照片|纪念|分享)/u.test(input.text)
+            ? 'dismiss'
+            : 'prepare',
+          intent: {
+            focus: /(雨|窗|天气)/u.test(input.text)
+              ? 'environment'
+              : /(咖啡|杯)/u.test(input.text)
+                ? 'prop'
+                : 'character',
+            mood: /(雨|安静)/u.test(input.text)
+              ? 'quiet'
+              : /(笑|逗)/u.test(input.text)
+                ? 'playful'
+                : 'warm',
+            framing: 'medium',
+          },
+        }
+      : null;
     // Only authored scene milestones change the offline tone; no turn-count progression.
     const milestones = new Set(frame.success ? frame.data.milestones : []);
     const ordinaryChat =
@@ -270,6 +290,7 @@ export class MockPlanner implements ReplyPlanner {
       : undefined;
     return {
       ...plan,
+      mediaDecision,
       actionId: null,
       actionRequest: null,
       suggestions: [

@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { ScenarioDefinition, StoryCheckpoint } from '../scenario/ports.js';
 import type {
-  AudioReadyPayload,
+  SpeechReadyPayload,
   PresentationEvent,
   StoryState,
   Facts,
@@ -10,12 +10,18 @@ import type {
   SessionCreated,
   TurnIdentity,
   MessageAttempt,
+  MediaVisualIntent,
+  ImageShare,
+  BeginTurnSchema,
 } from '@mira/protocol';
 import type { Config } from '../config/index.js';
+import type { z } from 'zod';
+import type { ImageWork } from '../images/types.js';
 import { AppError } from '../http/errors.js';
 
 interface IssuedTarget {
   kind: Receipt['kind'];
+  shareId?: string;
   text?: string;
   confirmed?: Receipt;
   event?: PresentationEvent;
@@ -26,6 +32,9 @@ interface IssuedTarget {
 export interface Turn {
   identity: TurnIdentity;
   messageId?: string;
+  conversationSnapshot?: { revision: number; location: string };
+  mediaShareId?: string;
+  claimId?: string;
   contentDigest?: string;
   pendingUser?: string;
   userCommitted?: boolean;
@@ -58,6 +67,10 @@ export interface Session {
   narrative: StoryCheckpoint;
   history: Array<{ role: 'user' | 'assistant'; text: string; mode?: 'audio' | 'text' }>;
   inputTimes: number[];
+  imageShares: Map<string, ImageWork>;
+  imageMemory: Array<{ shareId: string; originLabel: string; presentedAt: number }>;
+  mediaAllowed: boolean;
+  confirmedConversation?: { revision: number; location: string };
 }
 export interface ManagerDependencies {
   scenario: ScenarioDefinition;
@@ -75,6 +88,12 @@ export class SessionManager {
   private readonly id: () => string;
   private closing = false;
   readonly scenario: ScenarioDefinition;
+  imageLifecycle?: {
+    start(session: Session, work: ImageWork): void;
+    removed(session: Session): void;
+    assetAvailable(id: string, sessionId: string): boolean;
+    discard(work: ImageWork): void;
+  };
 
   constructor(
     private readonly config: Config,
@@ -112,6 +131,9 @@ export class SessionManager {
       narrative,
       history: [],
       inputTimes: [],
+      imageShares: new Map(),
+      imageMemory: [],
+      mediaAllowed: true,
     };
     const created: Omit<SessionCreated, 'capabilities'> = {
       sessionId: id,
@@ -157,22 +179,16 @@ export class SessionManager {
       generation: session.generation,
       scene: this.scene(session),
       history: [...session.history],
+      imageShares: [...session.imageShares.values()]
+        .filter((work) => work.slotConfirmed)
+        .map((work) => this.imageProjection(work)),
       messageAttempts: [...session.turns.values()].flatMap((turn) =>
         turn.messageId ? [this.messageAttempt(turn)] : [],
       ),
     };
   }
 
-  begin(
-    session: Session,
-    input: {
-      generation: number;
-      turnId: string;
-      messageId?: string;
-      receipts: Receipt[];
-      frozenTurns: FrozenTurn[];
-    },
-  ) {
+  begin(session: Session, input: z.infer<typeof BeginTurnSchema>) {
     if (this.closing)
       throw new AppError('CAPACITY_EXCEEDED', 503, '服务正在维护，请稍后再来。', true);
     if (input.generation < session.generation)
@@ -221,7 +237,37 @@ export class SessionManager {
     const acknowledged = this.receipts(session, combined, input.frozenTurns);
     for (const frozen of input.frozenTurns) this.freeze(session, frozen);
     if (input.generation === session.generation && session.current) {
-      return { ...session.current.identity, status: session.current.status, acknowledged };
+      return {
+        ...session.current.identity,
+        status: session.current.status,
+        acknowledged,
+        ...(session.current.claimId ? { claimId: session.current.claimId } : {}),
+      };
+    }
+    let claimed: ImageWork | undefined;
+    const request = input.mediaPresentation;
+    if (request) {
+      claimed = session.imageShares.get(request.shareId);
+      const current = session.current;
+      const retired = current?.status === 'cancelled' && current.frozenFinal;
+      if (
+        input.messageId ||
+        request.expectedGeneration !== session.generation ||
+        input.generation !== session.generation + 1 ||
+        !claimed ||
+        claimed.share.version !== request.expectedShareVersion ||
+        claimed.share.phase !== 'ready' ||
+        claimed.claim ||
+        !session.mediaAllowed ||
+        !this.imageEligible(session, claimed) ||
+        !claimed.share.assetId ||
+        !this.imageLifecycle?.assetAvailable(claimed.share.assetId, session.id) ||
+        (current &&
+          !retired &&
+          (!current.generationDone ||
+            [...current.targets.values()].some((target) => !target.confirmed)))
+      )
+        throw new AppError('TURN_CONFLICT', 409, '照片稍后再看。', true);
     }
     if (session.current) this.cancel(session.current);
     const turn: Turn = {
@@ -235,6 +281,13 @@ export class SessionManager {
       waiters: new Set(),
       released: true,
     };
+    if (claimed) {
+      const claimId = this.id();
+      turn.mediaShareId = claimed.share.shareId;
+      turn.claimId = claimId;
+      claimed.claim = { id: claimId, turn: turn.identity };
+    }
+    if (!input.mediaPresentation) session.mediaAllowed = false;
     session.generation = input.generation;
     session.current = turn;
     session.turns.set(input.turnId, turn);
@@ -243,7 +296,12 @@ export class SessionManager {
       if (oldest === undefined) break;
       session.turns.delete(oldest);
     }
-    return { ...turn.identity, status: turn.status, acknowledged };
+    return {
+      ...turn.identity,
+      status: turn.status,
+      acknowledged,
+      ...(turn.claimId ? { claimId: turn.claimId } : {}),
+    };
   }
 
   getTurn(session: Session, turnId: string, generation: number): Turn {
@@ -335,7 +393,7 @@ export class SessionManager {
     turn.pendingUser = text;
   }
 
-  issue(session: Session, turn: Turn, payload: AudioReadyPayload): void {
+  issue(session: Session, turn: Turn, payload: SpeechReadyPayload): void {
     this.assertCurrent(session, turn);
     turn.targets.set(payload.segmentId, { kind: 'segment', text: payload.text });
     this.issueEvents(session, turn, payload.events);
@@ -404,6 +462,46 @@ export class SessionManager {
           turn.userCommitted = true;
           session.history = session.history.slice(-40);
         }
+        if (target.shareId && target.kind === 'image-slot') {
+          const work = session.imageShares.get(target.shareId);
+          if (
+            work &&
+            !work.slotConfirmed &&
+            work.share.phase === 'preparing' &&
+            work.work === 'awaiting-slot'
+          ) {
+            work.slotConfirmed = true;
+            work.work = 'queued';
+            work.share.version++;
+            this.imageLifecycle?.start(session, work);
+          }
+        } else if (target.shareId && target.kind === 'image') {
+          const work = session.imageShares.get(target.shareId);
+          if (
+            work &&
+            work.share.phase === 'ready' &&
+            work.claim &&
+            work.claim.id === turn.claimId &&
+            work.claim.turn.sessionId === turn.identity.sessionId &&
+            work.claim.turn.turnId === turn.identity.turnId &&
+            work.claim.turn.generation === turn.identity.generation &&
+            work.claim.imageEventId === receipt.targetId
+          ) {
+            const presentedAt = this.now();
+            work.share = {
+              ...work.share,
+              version: work.share.version + 1,
+              phase: 'presented',
+              presentedAt,
+            };
+            session.imageMemory.push({
+              shareId: work.share.shareId,
+              originLabel: work.share.originLabel,
+              presentedAt,
+            });
+            work.claim = undefined;
+          }
+        }
         if (target.kind === 'segment' && target.text) {
           session.history.push({
             role: 'assistant',
@@ -443,6 +541,17 @@ export class SessionManager {
   }
 
   cancel(turn: Turn): void {
+    const session = this.sessions.get(turn.identity.sessionId);
+    if (session)
+      for (const work of session.imageShares.values()) {
+        if (
+          turn.frozenFinal &&
+          work.claim?.turn.turnId === turn.identity.turnId &&
+          work.claim.turn.generation === turn.identity.generation
+        )
+          work.claim = undefined;
+      }
+    if (session) this.releaseUnseenImageReservations(session, turn);
     if (!turn.frozen)
       turn.frozen = new Set(
         [...turn.targets.values()].flatMap((target) =>
@@ -583,16 +692,47 @@ export class SessionManager {
     }
   }
 
+  private releaseUnseenImageReservations(session: Session, turn: Turn): void {
+    // A provisional disconnect may still carry a visible-slot receipt in its first final snapshot.
+    if (!turn.frozenFinal) return;
+    for (const work of session.imageShares.values()) {
+      if (
+        work.slotConfirmed ||
+        !(
+          (work.work === 'awaiting-slot' && work.share.phase === 'preparing') ||
+          (work.work === 'ended' && work.share.phase === 'expired')
+        ) ||
+        work.sourceTurn.sessionId !== turn.identity.sessionId ||
+        work.sourceTurn.turnId !== turn.identity.turnId ||
+        work.sourceTurn.generation !== turn.identity.generation
+      )
+        continue;
+      this.endImage(session, work, 'cancelled');
+      session.imageShares.delete(work.share.shareId);
+      // The old issued target remains in its frozen turn and cannot accept a late success.
+      // Confirmed slots and explicit terminal decisions keep their session allowance.
+    }
+  }
+
   private freeze(session: Session, frozen: FrozenTurn): void {
     this.validateFrozen(session, frozen);
     const turn = session.turns.get(frozen.turnId);
     if (!turn || turn.frozenFinal) return;
     turn.frozenFinal = true;
+    for (const work of session.imageShares.values())
+      if (
+        work.claim &&
+        work.claim.id === turn.claimId &&
+        work.claim.turn.turnId === turn.identity.turnId &&
+        work.claim.turn.generation === turn.identity.generation
+      )
+        work.claim = undefined;
     // Only provisional disconnects need candidate states for the first explicit snapshot.
     // Once frozen, unpresented branches cannot be extended and need not retain full Ink JSON.
     for (const target of turn.targets.values()) {
       if (target.confirmed?.status !== 'presented') delete target.checkpoint;
     }
+    this.releaseUnseenImageReservations(session, turn);
     turn.frozen = new Set([
       ...frozen.receipts.map(receiptKey),
       ...[...turn.targets.values()].flatMap((target) =>
@@ -637,19 +777,216 @@ export class SessionManager {
 
   private finishIfPresented(turn: Turn): void {
     if (turn.generationDone && [...turn.targets.values()].every((target) => target.confirmed)) {
+      const session = this.sessions.get(turn.identity.sessionId);
+      if (
+        session &&
+        turn.conversationSnapshot &&
+        turn.targets.size &&
+        [...turn.targets.values()].every((target) => target.confirmed?.status === 'presented')
+      )
+        session.confirmedConversation = turn.conversationSnapshot;
       clearTimeout(turn.timer);
       turn.timer = undefined;
     }
   }
 
+  imageProjection(work: ImageWork): ImageShare {
+    return {
+      ...work.share,
+      longWait: this.now() - work.share.announcedAt >= this.config.IMAGE_LONG_WAIT_MS,
+      canRetryGeneration: work.share.phase === 'failed' && work.attemptCount < 2,
+      ...(work.share.presentedAt && work.share.assetId
+        ? { assetId: work.share.assetId }
+        : { assetId: undefined }),
+    };
+  }
+  imageCandidate(session: Session) {
+    const confirmed = session.confirmedConversation;
+    if (
+      !confirmed ||
+      confirmed.revision !== session.narrative.revision ||
+      confirmed.location !== session.story.location
+    )
+      return undefined;
+    return this.scenario.imageSharing?.candidate(session.narrative, session.history);
+  }
+  imageEligible(session: Session, work: ImageWork): boolean {
+    return (
+      this.sessions.get(session.id) === session &&
+      this.now() < work.share.expiresAt &&
+      !!this.scenario.imageSharing?.accepts(session.narrative, work.recipe)
+    );
+  }
+  reserveImage(
+    session: Session,
+    turn: Turn,
+    intent: MediaVisualIntent,
+    simulated: boolean,
+  ): ImageWork | undefined {
+    this.assertCurrent(session, turn);
+    if (session.imageShares.size) return undefined;
+    const candidate = this.imageCandidate(session);
+    if (!candidate) return undefined;
+    const shareId = this.id();
+    const now = this.now();
+    const work: ImageWork = {
+      share: {
+        shareId,
+        attemptId: this.id(),
+        version: 1,
+        phase: 'preparing',
+        originLabel: candidate.originLabel,
+        title: candidate.title,
+        width: candidate.width,
+        height: candidate.height,
+        expiresAt: now + this.config.IMAGE_JOB_TIMEOUT_MS,
+        announcedAt: now,
+        simulated,
+        canRetryGeneration: false,
+        longWait: false,
+      },
+      recipe: { ...candidate, intent, seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER) },
+      sourceTurn: turn.identity,
+      slotEventId: this.id(),
+      slotConfirmed: false,
+      attemptCount: 1,
+      work: 'awaiting-slot',
+      abort: new AbortController(),
+    };
+    session.imageShares.set(shareId, work);
+    return work;
+  }
+  issueImageSlot(session: Session, turn: Turn, work: ImageWork): void {
+    this.assertCurrent(session, turn);
+    turn.targets.set(work.slotEventId, { kind: 'image-slot', shareId: work.share.shareId });
+  }
+  imageDecision(
+    session: Session,
+    decision: 'prepare' | 'defer' | 'dismiss' | 'keep' | undefined,
+  ): void {
+    session.mediaAllowed = decision !== 'defer' && decision !== 'dismiss';
+    if (decision === 'dismiss')
+      for (const work of session.imageShares.values())
+        if (work.share.phase !== 'presented') this.endImage(session, work, 'cancelled');
+  }
+  updateImage(
+    session: Session,
+    work: ImageWork,
+    attemptId: string,
+    patch: Partial<ImageShare>,
+    state: ImageWork['work'],
+  ): boolean {
+    if (
+      this.sessions.get(session.id) !== session ||
+      session.imageShares.get(work.share.shareId) !== work ||
+      work.share.attemptId !== attemptId ||
+      ['cancelled', 'expired', 'presented'].includes(work.share.phase) ||
+      work.abort.signal.aborted
+    )
+      return false;
+    if (work.share.expiresAt <= this.now()) {
+      this.endImage(session, work, 'expired');
+      return false;
+    }
+    work.work = state;
+    work.share = { ...work.share, ...patch, version: work.share.version + 1 };
+    return true;
+  }
+  getImage(session: Session, id: string): ImageWork {
+    const work = session.imageShares.get(id);
+    if (!work || !work.slotConfirmed)
+      throw new AppError('MEDIA_NOT_FOUND', 404, '这张照片的准备记录已结束。');
+    if (work.share.expiresAt <= this.now() && !['cancelled', 'expired'].includes(work.share.phase))
+      this.endImage(session, work, 'expired');
+    return work;
+  }
+  endImage(session: Session, work: ImageWork, phase: 'cancelled' | 'expired'): void {
+    if (['cancelled', 'expired'].includes(work.share.phase)) return;
+    work.share = {
+      ...work.share,
+      phase,
+      version: work.share.version + 1,
+      reason: phase === 'cancelled' ? 'cancelled' : 'deadline',
+      canRetryGeneration: false,
+    };
+    work.work = 'ended';
+    work.claim = undefined;
+    work.abort.abort();
+    this.imageLifecycle?.discard(work);
+    const current = session.current;
+    if (current?.mediaShareId === work.share.shareId && !current.abort.signal.aborted)
+      this.cancel(current);
+  }
+  retryImage(
+    session: Session,
+    work: ImageWork,
+    request: { requestId: string; expectedVersion: number },
+  ): void {
+    if (work.retryRequestId === request.requestId) return;
+    if (
+      work.share.version !== request.expectedVersion ||
+      work.share.phase !== 'failed' ||
+      work.attemptCount >= 2 ||
+      !this.imageEligible(session, work)
+    )
+      throw new AppError('TURN_CONFLICT', 409, '这张照片暂时不能重新准备。');
+    work.retryRequestId = request.requestId;
+    work.attemptCount++;
+    work.abort = new AbortController();
+    work.work = 'queued';
+    work.share = {
+      ...work.share,
+      attemptId: this.id(),
+      phase: 'preparing',
+      version: work.share.version + 1,
+      expiresAt: this.now() + this.config.IMAGE_JOB_TIMEOUT_MS,
+      announcedAt: this.now(),
+      reason: undefined,
+    };
+    this.imageLifecycle?.start(session, work);
+  }
+  claimImage(session: Session, turn: Turn, id: string, claimId: string): ImageWork {
+    this.assertCurrent(session, turn);
+    const work = this.getImage(session, id);
+    if (
+      turn.mediaShareId !== id ||
+      turn.claimId !== claimId ||
+      work.claim?.id !== claimId ||
+      work.claim.turn.turnId !== turn.identity.turnId ||
+      work.share.phase !== 'ready' ||
+      !this.imageEligible(session, work) ||
+      !work.share.assetId ||
+      !this.imageLifecycle?.assetAvailable(work.share.assetId, session.id)
+    )
+      throw new AppError('TURN_CONFLICT', 409, '照片稍后再看。');
+    return work;
+  }
+  issueImage(session: Session, turn: Turn, work: ImageWork, eventId: string): void {
+    this.assertCurrent(session, turn);
+    if (!work.claim || work.claim.turn.turnId !== turn.identity.turnId)
+      throw new AppError('TURN_CONFLICT', 409, '照片稍后再看。');
+    work.claim.imageEventId = eventId;
+    turn.targets.set(eventId, { kind: 'image', shareId: work.share.shareId });
+  }
+
   sweep(): void {
-    for (const session of this.sessions.values())
+    for (const session of this.sessions.values()) {
       if (session.expiresAt !== null && session.expiresAt <= this.now()) this.remove(session);
+      else
+        for (const work of session.imageShares.values())
+          if (
+            work.share.expiresAt <= this.now() &&
+            !['cancelled', 'expired'].includes(work.share.phase)
+          )
+            this.endImage(session, work, 'expired');
+    }
   }
 
   private remove(session: Session): void {
     for (const turn of session.turns.values()) this.cancel(turn);
+    for (const work of session.imageShares.values()) this.endImage(session, work, 'cancelled');
     this.sessions.delete(session.id);
+    this.imageLifecycle?.removed(session);
   }
 
   close(): void {

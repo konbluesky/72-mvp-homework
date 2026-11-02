@@ -9,12 +9,13 @@ import {
   DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { describe, expect, it, vi } from 'vitest';
+import { toneWav } from '../../../../tests/fixtures/audio.js';
 import { loadConfig } from '../config/index.js';
 import { MediaService, LocalMediaStore, R2MediaStore, type MediaStore } from './index.js';
 const signal = () => new AbortController().signal;
 async function audio() {
   return {
-    bytes: await readFile(new URL('../../../../assets/mock-audio/hello.wav', import.meta.url)),
+    bytes: toneWav(),
     mimeType: 'audio/wav',
   };
 }

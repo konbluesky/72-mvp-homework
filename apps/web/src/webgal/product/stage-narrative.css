@@ -1,0 +1,250 @@
+.stage-view-notice {
+  margin-left: auto;
+  padding: 8px 12px;
+  border: 1px solid #b7c4af2b;
+  border-radius: 7px;
+  background: #10232ccb;
+  color: #d2d7c5;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  line-height: 1.5;
+}
+.stage-narrative {
+  position: absolute;
+  z-index: 3;
+  top: clamp(76px, 21%, 160px);
+  bottom: 24px;
+  width: min(44%, 600px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 22px;
+  pointer-events: none;
+}
+.stage-narrative[data-side='left'] {
+  left: 26px;
+}
+.stage-narrative[data-side='right'] {
+  right: 26px;
+}
+.stage-narrative-tabs {
+  display: none;
+}
+.stage-narrative section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(50% - 11px);
+  overflow: hidden;
+  pointer-events: auto;
+}
+.stage-narrative-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+  margin-bottom: 10px;
+  color: #cbbb9b;
+  font:
+    11px/1.4 -apple-system,
+    BlinkMacSystemFont,
+    'PingFang SC',
+    sans-serif;
+  letter-spacing: 1.8px;
+}
+.stage-narrative-label i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+}
+.stage-narrative p {
+  min-height: 0;
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #d2c5ad55 transparent;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--story-serif);
+  font-size: clamp(15px, 1.35vw, 19px);
+  font-weight: 400;
+  line-height: 1.95;
+  letter-spacing: 0.04em;
+  text-wrap: pretty;
+}
+.stage-thought {
+  align-self: flex-end;
+  width: min(100%, 360px);
+  padding: 20px 22px;
+  border-left: 2px solid #c4ac7d9e;
+  border-radius: 0 12px 12px 0;
+  background: linear-gradient(125deg, #122a32ed, #13282ac2);
+  box-shadow: 0 10px 38px #06141730;
+  backdrop-filter: blur(10px);
+  color: #f1e6d1;
+}
+.stage-narration {
+  margin-top: auto;
+  padding: 15px 18px;
+  border-radius: 8px;
+  background: linear-gradient(100deg, #0c1c23db, #0c1c2394);
+  backdrop-filter: blur(3px);
+  color: #e2e7df;
+  text-shadow: 0 1px 5px #0008;
+}
+.stage-narration p {
+  font-size: clamp(14px, 1.15vw, 17px);
+}
+.stage-narrative section:only-child {
+  max-height: 65%;
+}
+.stage-narrative.is-solitary {
+  left: 50%;
+  right: auto;
+  top: 25%;
+  bottom: 20%;
+  width: min(76%, 640px);
+  transform: translateX(-50%);
+  justify-content: center;
+}
+.stage-narrative.is-solitary .stage-narration {
+  margin-top: 0;
+}
+.stage-narrative.is-solitary .stage-thought {
+  align-self: stretch;
+  width: auto;
+}
+
+/* A short, wide display needs useful stage height, rather than a shrunken cinema strip. */
+@media (min-width: 560px) and (max-height: 600px) and (orientation: landscape) {
+  .story-app:has(> .story-stage) {
+    display: grid;
+    grid-template: 46px minmax(0, 1fr) / minmax(0, 1fr) minmax(230px, 35%);
+    column-gap: 14px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .story-app > .story-header {
+    grid-column: 1 / -1;
+  }
+  .story-app > .story-stage {
+    grid-row: 2;
+    grid-column: 1;
+    height: 100%;
+    min-height: 0;
+  }
+  .story-app > .story-content {
+    grid-row: 2;
+    grid-column: 2;
+    height: 100%;
+    max-height: none;
+    padding: 8px 0;
+  }
+}
+
+/* Phone / narrow-stage views use one readable channel at a time, inside the stage. */
+@media (max-width: 680px), (min-width: 560px) and (max-height: 600px) and (orientation: landscape) {
+  .stage-narrative[data-side],
+  .stage-narrative.is-solitary {
+    inset: auto 12px 12px;
+    width: auto;
+    max-height: calc(100% - 72px);
+    gap: 0;
+    transform: none;
+    border: 1px solid #b4c3b02e;
+    border-radius: 10px;
+    background: #10232cef;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px #0003;
+    overflow: hidden;
+    justify-content: flex-end;
+  }
+  .stage-narrative-tabs {
+    display: flex;
+    gap: 18px;
+    flex: none;
+    min-height: 44px;
+    padding: 0 14px;
+    border-bottom: 1px solid #c0c9b523;
+    pointer-events: auto;
+  }
+  .stage-narrative-tabs button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: #aeb9ac;
+    font-size: 11px;
+    letter-spacing: 0.7px;
+  }
+  .stage-narrative-tabs button[aria-pressed='true'] {
+    color: #ead8b3;
+    border-bottom-color: #d0b780;
+  }
+  .stage-narrative section,
+  .stage-narrative section:only-child {
+    align-self: stretch;
+    width: auto;
+    max-height: min(16dvh, 128px);
+    margin: 0;
+    padding: 11px 14px 13px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .stage-narrative[data-channel='thought'] .stage-narration,
+  .stage-narrative[data-channel='narration'] .stage-thought {
+    display: none;
+  }
+  .stage-narrative p,
+  .stage-narrative .stage-narration p {
+    font-size: 14px;
+    line-height: 1.85;
+    letter-spacing: 0.015em;
+  }
+  .stage-narrative-tabs ~ section .stage-narrative-label {
+    display: none;
+  }
+  .stage-narrative-label {
+    margin-bottom: 7px;
+    font-size: 10px;
+  }
+  .story-stage:has(.stage-narrative) .stage-character-identity {
+    display: none;
+  }
+}
+
+@media (max-width: 680px) and (max-height: 600px) and (orientation: portrait) {
+  .story-app > .story-content {
+    height: clamp(220px, 44dvh, 270px);
+  }
+}
+@media (min-width: 560px) and (max-height: 600px) and (orientation: landscape) {
+  .stage-narrative section,
+  .stage-narrative section:only-child {
+    max-height: min(26dvh, 128px);
+  }
+}
+/* In very short viewports, let the page scroll rather than crushing the stage and input. */
+@media (max-width: 559px) and (max-height: 480px) {
+  .story-app {
+    height: auto;
+    min-height: 100dvh;
+  }
+  .story-app > .story-stage {
+    height: 220px;
+    flex: none;
+  }
+  .story-app > .story-content {
+    height: 240px;
+    max-height: none;
+  }
+}

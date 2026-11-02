@@ -1,3 +1,4 @@
+import { retainReading } from '../interaction/conversation-items.js';
 import { ref } from 'vue';
 import type { PlaybackView } from '../playback/scheduler.js';
 import { ReadingHistorySchema, type BrowserPersistence } from '../persistence/browser.js';
@@ -9,6 +10,7 @@ export interface DisplayLine {
   source: 'opening' | 'text' | 'voice' | 'sample' | 'playback';
   paused: boolean;
   messageId?: string;
+  shareId?: string;
 }
 
 /** A bounded reading view. Never sends receipts or writes session facts. */
@@ -26,7 +28,14 @@ export function useConversationDisplay(opening: string, persistence?: BrowserPer
       'history',
       messages.value.map((line) => ({
         id: line.id,
-        kind: line.source === 'opening' ? 'opening' : line.role === 'user' ? 'user' : 'speech',
+        kind: line.shareId
+          ? 'image-share'
+          : line.source === 'opening'
+            ? 'opening'
+            : line.role === 'user'
+              ? 'user'
+              : 'speech',
+        ...(line.shareId ? { shareId: line.shareId } : {}),
         text: line.text,
         source: line.source,
         paused: line.paused,
@@ -37,7 +46,7 @@ export function useConversationDisplay(opening: string, persistence?: BrowserPer
 
   function append(line: Omit<DisplayLine, 'id'>) {
     const id = ++sequence;
-    messages.value = [...messages.value.slice(-39), { ...line, id }];
+    messages.value = retainReading([...messages.value, { ...line, id }]);
     save();
     return id;
   }
@@ -96,7 +105,7 @@ export function useConversationDisplay(opening: string, persistence?: BrowserPer
   if (saved?.length) {
     messages.value = saved
       .filter((line) => line.kind !== 'narration')
-      .slice(-40)
+      .slice(-60)
       .map((line) => ({
         id: line.id,
         role: line.kind === 'user' ? 'user' : 'character',
@@ -106,6 +115,7 @@ export function useConversationDisplay(opening: string, persistence?: BrowserPer
           (line.kind === 'opening' ? 'opening' : line.kind === 'user' ? 'text' : 'playback'),
         paused: line.paused,
         ...(line.messageId ? { messageId: line.messageId } : {}),
+        ...('shareId' in line && line.shareId ? { shareId: line.shareId } : {}),
       }));
     sequence = Math.max(0, ...messages.value.map((line) => line.id));
     const character = messages.value.filter((line) => line.role === 'character').at(-1);
@@ -121,6 +131,17 @@ export function useConversationDisplay(opening: string, persistence?: BrowserPer
     lastUser,
     lastUserIsSample,
     replyPaused,
+    addMedia(shareId: string, anchorId: string) {
+      if (messages.value.some((line) => line.shareId === shareId)) return;
+      append({
+        shareId,
+        role: 'character',
+        text: '',
+        source: 'playback',
+        paused: false,
+        ...(anchorId ? { messageId: anchorId } : {}),
+      });
+    },
     addUser,
     observePlayback,
     pauseCaption,

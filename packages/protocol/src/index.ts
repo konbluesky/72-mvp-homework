@@ -22,7 +22,7 @@ export * from './story.js';
 // 基础：标识、轮次身份与业务状态
 
 /** 业务事件版本；未知版本由客户端拒绝，避免按旧含义执行。 */
-export const SCHEMA_VERSION = 3 as const;
+export const SCHEMA_VERSION = 4 as const;
 
 /** 不透明标识，只允许短字符集；不承载路径、URL 或权限。 */
 export const IdSchema = z
@@ -155,6 +155,71 @@ export const MessageAttemptSchema = TurnIdentitySchema.extend({
 }).strict();
 export type MessageAttempt = z.infer<typeof MessageAttemptSchema>;
 
+/** Image sharing is a session capability; provider details remain private. */
+export const MediaVisualIntentSchema = z
+  .object({
+    focus: z.enum(['character', 'prop', 'environment']),
+    mood: z.enum(['warm', 'playful', 'quiet']),
+    framing: z.enum(['portrait', 'medium', 'detail']),
+  })
+  .strict();
+export type MediaVisualIntent = z.infer<typeof MediaVisualIntentSchema>;
+export const ImageShareSchema = z
+  .object({
+    shareId: IdSchema,
+    attemptId: IdSchema,
+    version: z.number().int().positive(),
+    phase: z.enum([
+      'preparing',
+      'submit_unknown',
+      'ready',
+      'presented',
+      'failed',
+      'cancelled',
+      'expired',
+    ]),
+    originLabel: z.string().min(1).max(100),
+    title: z.string().min(1).max(80),
+    width: z.number().int().min(64).max(4096),
+    height: z.number().int().min(64).max(4096),
+    expiresAt: z.number().int().positive(),
+    announcedAt: z.number().int().positive(),
+    presentedAt: z.number().int().positive().optional(),
+    assetId: IdSchema.optional(),
+    simulated: z.boolean(),
+    canRetryGeneration: z.boolean(),
+    longWait: z.boolean(),
+    reason: z
+      .enum(['generation_failed', 'invalid_image', 'deadline', 'cancelled', 'session_ended'])
+      .optional(),
+  })
+  .strict();
+export type ImageShare = z.infer<typeof ImageShareSchema>;
+export const ImageShareParamsSchema = RouteImageParams();
+function RouteImageParams() {
+  return z.object({ id: IdSchema, shareId: IdSchema }).strict();
+}
+export const RetryImageShareSchema = z
+  .object({ requestId: IdSchema, expectedVersion: z.number().int().positive() })
+  .strict();
+export const MediaPresentationSchema = z
+  .object({
+    purpose: z.literal('media-share'),
+    expectedGeneration: z.number().int().nonnegative(),
+    shareId: IdSchema,
+    expectedShareVersion: z.number().int().positive(),
+  })
+  .strict();
+export const MediaInputSchema = z
+  .object({
+    generation: z.number().int().positive(),
+    inputId: IdSchema,
+    media: z
+      .object({ kind: z.literal('image-share'), shareId: IdSchema, claimId: IdSchema })
+      .strict(),
+  })
+  .strict();
+
 /** 重连时查询已确认状态，不重播旧事件；history 不包含未呈现的助手计划。 */
 export const SessionSnapshotSchema = z.object({
   sessionId: IdSchema,
@@ -163,6 +228,7 @@ export const SessionSnapshotSchema = z.object({
   capabilities: CapabilitiesSchema,
   scene: SceneSchema,
   messageAttempts: z.array(MessageAttemptSchema).max(100).optional(),
+  imageShares: z.array(ImageShareSchema).max(1).optional(),
   history: z
     .array(
       z.object({
@@ -225,6 +291,14 @@ export const PlannerOutputSchema = z
           .strict(),
       )
       .max(3),
+    mediaDecision: z
+      .object({
+        decision: z.enum(['prepare', 'defer', 'dismiss', 'keep']),
+        intent: MediaVisualIntentSchema.nullable(),
+      })
+      .strict()
+      .nullable()
+      .optional(),
     // Whole current input as evidence; confirmed intent is required before any story action.
     actionRequest: z
       .object({
@@ -285,6 +359,15 @@ export const AudioReadyPayloadSchema = z
   .strict();
 
 export type AudioReadyPayload = z.infer<typeof AudioReadyPayloadSchema>;
+/** Explicit caption-only mode for an offline session; never masquerades as played audio. */
+export const CaptionReadyPayloadSchema = AudioReadyPayloadSchema.omit({ audioUrl: true })
+  .extend({ captionOnly: z.literal(true) })
+  .strict();
+export type SpeechReadyPayload = AudioReadyPayload | z.infer<typeof CaptionReadyPayloadSchema>;
+export const SpeechReadyPayloadSchema = z.union([
+  AudioReadyPayloadSchema,
+  CaptionReadyPayloadSchema,
+]);
 
 export const PresentationReadyPayloadSchema = z
   .object({
@@ -297,6 +380,29 @@ export const PresentationReadyPayloadSchema = z
   })
   .strict();
 export type PresentationReadyPayload = z.infer<typeof PresentationReadyPayloadSchema>;
+
+const IntroductionPayloadSchema = z.union([
+  AudioReadyPayloadSchema.extend({ events: z.array(PresentationEventSchema).max(0) }).strict(),
+  CaptionReadyPayloadSchema.extend({ events: z.array(PresentationEventSchema).max(0) }).strict(),
+]);
+export const ImagePendingPayloadSchema = z
+  .object({
+    share: ImageShareSchema,
+    slotEventId: IdSchema,
+    introduction: IntroductionPayloadSchema,
+  })
+  .strict();
+export type ImagePendingPayload = z.infer<typeof ImagePendingPayloadSchema>;
+export const ImageReadyPayloadSchema = z
+  .object({
+    shareId: IdSchema,
+    version: z.number().int().positive(),
+    imageEventId: IdSchema,
+    assetId: IdSchema,
+    introduction: IntroductionPayloadSchema,
+  })
+  .strict();
+export type ImageReadyPayload = z.infer<typeof ImageReadyPayloadSchema>;
 
 // 呈现回执：实际发生后，才能确认事实
 
@@ -314,6 +420,8 @@ export const ReceiptSchema = TurnIdentitySchema.extend({
   targetId: IdSchema,
   kind: z.enum([
     'segment',
+    'image-slot',
+    'image',
     'photo',
     'environment',
     'location',
@@ -355,6 +463,7 @@ export const BeginTurnSchema = z
   .object({
     generation: z.number().int().positive(),
     turnId: IdSchema,
+    mediaPresentation: MediaPresentationSchema.optional(),
     // 重试保留消息 ID，每次执行使用新的 turnId/generation。
     messageId: IdSchema.optional(),
     receipts: z.array(ReceiptSchema).max(128).default([]),
@@ -366,6 +475,7 @@ export const BeginTurnSchema = z
 export const BeginTurnResponseSchema = TurnIdentitySchema.extend({
   status: z.enum(['begun', 'running', 'completed', 'cancelled']),
   acknowledged: z.array(IdSchema),
+  claimId: IdSchema.optional(),
 });
 
 /** begin 确认后的文字输入；路由携带 sessionId/turnId，正文补充 generation。 */
@@ -385,7 +495,7 @@ export const InteractionInputSchema = z
     interaction: StoryInteractionSchema,
   })
   .strict();
-export const JsonInputSchema = z.union([TextInputSchema, InteractionInputSchema]);
+export const JsonInputSchema = z.union([TextInputSchema, InteractionInputSchema, MediaInputSchema]);
 
 /** multipart 的 metadata 字段；音频另用 audio 文件上传，不放入 JSON/SSE。 */
 export const AudioInputMetadataSchema = z
@@ -479,8 +589,11 @@ export const ServerEventSchema = z.discriminatedUnion('type', [
     type: z.literal('input.transcribed'),
     payload: z.object({ text: z.string().max(1000), simulated: z.boolean() }),
   }),
+  Envelope.extend({ type: z.literal('image.pending'), payload: ImagePendingPayloadSchema }),
+  Envelope.extend({ type: z.literal('image.ready'), payload: ImageReadyPayloadSchema }),
   // 音频可下载后才能入队，实际播放开始仍由调度器决定。
   Envelope.extend({ type: z.literal('audio.ready'), payload: AudioReadyPayloadSchema }),
+  Envelope.extend({ type: z.literal('text.ready'), payload: CaptionReadyPayloadSchema }),
   Envelope.extend({
     type: z.literal('presentation.ready'),
     payload: PresentationReadyPayloadSchema,

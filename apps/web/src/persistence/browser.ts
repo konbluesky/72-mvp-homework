@@ -21,11 +21,12 @@ export const ReadingHistorySchema = z
     z
       .object({
         id: z.number().int().positive(),
-        kind: z.enum(['user', 'speech', 'narration', 'opening']),
+        kind: z.enum(['user', 'speech', 'narration', 'opening', 'image-share']),
         text: z.string().max(8000),
         source: z.enum(['opening', 'text', 'voice', 'sample', 'playback']).optional(),
         paused: z.boolean().default(false),
         messageId: IdSchema.optional(),
+        shareId: IdSchema.optional(),
       })
       .strict(),
   )

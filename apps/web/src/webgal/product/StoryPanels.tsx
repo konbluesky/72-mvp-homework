@@ -1,3 +1,4 @@
+import { ImageShareCard } from '../../images/ImageShareCard';
 import { useEffect, useRef } from 'react';
 import type { StoryAction } from '@mira/protocol';
 import type { InteractiveState } from '../../interaction/state';
@@ -9,7 +10,8 @@ import { messageStatusText } from '../../interaction/messages.js';
 export type StoryPanel = 'locations' | 'menu' | 'history' | 'document' | 'restart' | null;
 export interface StoryLogEntry {
   id: number;
-  kind: 'speech' | 'narration' | 'user' | 'opening';
+  kind: 'speech' | 'narration' | 'user' | 'opening' | 'image-share';
+  shareId?: string;
   text: string;
   paused?: boolean;
   messageId?: string;
@@ -112,15 +114,23 @@ export function StoryPanels({
               {log.length ? (
                 log.map((entry) => (
                   <article key={entry.id} className={`backlog-entry backlog-${entry.kind}`}>
-                    <small>
-                      {entry.kind === 'user'
-                        ? '你'
-                        : entry.kind === 'speech'
-                          ? host.scene.speaker
-                          : entry.kind === 'opening'
-                            ? '开场文字'
-                            : '场景'}
-                    </small>
+                    {entry.shareId && state.imageShares[entry.shareId] ? (
+                      <ImageShareCard
+                        share={state.imageShares[entry.shareId]!}
+                        coordinator={host.controller.images}
+                        history
+                      />
+                    ) : (
+                      <small>
+                        {entry.kind === 'user'
+                          ? '你'
+                          : entry.kind === 'speech'
+                            ? host.scene.speaker
+                            : entry.kind === 'opening'
+                              ? '开场文字'
+                              : '场景'}
+                      </small>
+                    )}
                     <p>{entry.text}</p>
                     {entry.paused && <small>已打断</small>}
                     {entry.kind === 'user' && (

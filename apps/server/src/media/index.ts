@@ -14,7 +14,9 @@ export class MediaError extends Error {
 }
 interface Asset {
   sessionId: string;
-  turnId: string;
+  turnId?: string;
+  shareId?: string;
+  kind: 'audio' | 'image';
   mimeType: string;
   expiresAt: number;
   size: number;
@@ -24,6 +26,7 @@ export class MediaService {
   private readonly pendingWrites = new Set<Promise<{ assetId: string; url: string }>>();
   private bytes = 0;
   private closed = false;
+  private endedSessions = new Set<string>();
   constructor(
     private readonly config: Config,
     private readonly store: MediaStore,
@@ -49,27 +52,32 @@ export class MediaService {
     turnId: string,
     audio: AudioData,
     signal: AbortSignal,
+    shareId?: string,
   ): Promise<{ assetId: string; url: string }> {
     signal.throwIfAborted();
-    validateAudio(audio);
+    if (!shareId) validateAudio(audio);
     if (
       this.closed ||
-      audio.bytes.length > this.config.MAX_AUDIO_BYTES ||
+      this.endedSessions.has(sessionId) ||
+      audio.bytes.length > (shareId ? this.config.MAX_IMAGE_BYTES : this.config.MAX_AUDIO_BYTES) ||
       this.bytes + audio.bytes.length > this.config.MAX_MEDIA_BYTES
     )
       throw new MediaError('CAPACITY_EXCEEDED');
     // Reserve synchronously before writing so concurrent calls cannot overcommit capacity.
     this.bytes += audio.bytes.length;
-    const assetId = this.id();
+    const assetId = (shareId ? 'i_' : '') + this.id();
     try {
       await this.store.put(assetId, audio.bytes, audio.mimeType, signal);
       signal.throwIfAborted();
-      if (this.closed) throw new MediaError('MEDIA_FAILED');
+      if (this.closed || this.endedSessions.has(sessionId)) throw new MediaError('MEDIA_FAILED');
       this.assets.set(assetId, {
         sessionId,
-        turnId,
+        ...(shareId ? { shareId } : { turnId }),
+        kind: shareId ? 'image' : 'audio',
         mimeType: audio.mimeType,
-        expiresAt: this.now() + this.config.MEDIA_TTL_SECONDS * 1000,
+        expiresAt:
+          this.now() +
+          (shareId ? this.config.IMAGE_ASSET_TTL_SECONDS : this.config.MEDIA_TTL_SECONDS) * 1000,
         size: audio.bytes.length,
       });
       return { assetId, url: `/api/media/${assetId}` };
@@ -78,6 +86,33 @@ export class MediaService {
       // A cancelled upload may have physically succeeded; remove the unpublishable object.
       await this.store.delete(assetId);
       throw error;
+    }
+  }
+  async putImage(sessionId: string, shareId: string, image: AudioData, signal: AbortSignal) {
+    const operation = this.persist(sessionId, '', image, signal, shareId);
+    this.pendingWrites.add(operation);
+    try {
+      return await operation;
+    } finally {
+      this.pendingWrites.delete(operation);
+    }
+  }
+  available(assetId: string, sessionId: string, minimumMs = 0): boolean {
+    const asset = this.assets.get(assetId);
+    return !!asset && asset.sessionId === sessionId && asset.expiresAt > this.now() + minimumMs;
+  }
+  async deleteSession(sessionId: string): Promise<void> {
+    this.endedSessions.add(sessionId);
+    try {
+      await Promise.all(
+        [...this.assets]
+          .filter(([, a]) => a.sessionId === sessionId)
+          .map(([id]) => this.delete(id)),
+      );
+    } finally {
+      void Promise.allSettled([...this.pendingWrites]).then(() =>
+        this.endedSessions.delete(sessionId),
+      );
     }
   }
   async get(
@@ -92,7 +127,7 @@ export class MediaService {
       const bytes = await this.store.get(assetId, signal);
       signal.throwIfAborted();
       if (bytes.length !== asset.size) throw new MediaError('MEDIA_FAILED');
-      validateAudio({ bytes, mimeType: asset.mimeType });
+      if (asset.kind === 'audio') validateAudio({ bytes, mimeType: asset.mimeType });
       if (asset.expiresAt <= this.now() || !this.assets.has(assetId))
         throw new MediaError('MEDIA_NOT_FOUND');
       return { bytes, mimeType: asset.mimeType };
@@ -152,10 +187,14 @@ export async function cleanupLocalOrphans(config: Config, purgeAll = false): Pro
     throw error;
   }
   for (const file of files) {
-    if (!file.isFile() || !/^[0-9a-f-]{36}$/.test(file.name)) continue;
+    if (!file.isFile() || !/^(?:i_)?[0-9a-f-]{36}$/.test(file.name)) continue;
     const path = join(config.MEDIA_LOCAL_DIR, file.name);
     const info = await stat(path);
-    if (purgeAll || Date.now() - info.mtimeMs > config.MEDIA_TTL_SECONDS * 1000)
+    if (
+      purgeAll ||
+      Date.now() - info.mtimeMs >
+        Math.max(config.MEDIA_TTL_SECONDS, config.IMAGE_ASSET_TTL_SECONDS) * 1000
+    )
       await rm(path, { force: true });
   }
 }

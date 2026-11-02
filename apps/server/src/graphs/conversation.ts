@@ -4,10 +4,12 @@ import {
   ReplyPlanSchema,
   PlannerOutputSchema,
   type AudioReadyPayload,
+  type SpeechReadyPayload,
   type ReplyPlan,
   type ServerEvent,
   type StoryInteraction,
   type PresentationEvent,
+  type PlannerOutput,
 } from '@mira/protocol';
 import type { Config } from '../config/index.js';
 import type { ProviderSet } from '../providers/index.js';
@@ -26,6 +28,7 @@ import type { Session, SessionManager, Turn } from '../sessions/manager.js';
 import { actionConfirmationInput } from '../scenario/runtime/action-confirmation.js';
 
 export type TurnInput =
+  | { kind: 'media'; media: { kind: 'image-share'; shareId: string; claimId: string } }
   | { kind: 'text'; text: string }
   | { kind: 'audio'; bytes: Uint8Array; mimeType: string }
   | { kind: 'interaction'; interaction: StoryInteraction };
@@ -53,6 +56,7 @@ const GraphState = Annotation.Root({
   actionId: Annotation<string | null>(),
   needsConfirmation: Annotation<boolean>(),
   conversationOnly: Annotation<boolean>(),
+  mediaDecision: Annotation<PlannerOutput['mediaDecision']>(),
 });
 
 /** A non-cooperative upstream can finish later, but cannot keep the graph alive or publish. */
@@ -68,6 +72,8 @@ export async function runConversation(
   const { config, providers, media, sessions, logger, scenario } = dependencies;
   const id = dependencies.id ?? randomUUID;
   const signal = turn.abort.signal;
+  if (turn.mediaShareId && input.kind !== 'media')
+    throw new AppError('INVALID_REQUEST', 400, '这次回应只用于展示照片。');
   const origin = session.narrative;
   const active = () => sessions.assertCurrent(session, turn);
   const stage = <T>(name: string, operation: () => Promise<T>) =>
@@ -77,15 +83,101 @@ export async function runConversation(
       active();
       return value;
     });
-  const context = async (text: string, repair?: unknown) => ({
-    text,
-    facts: Object.entries(session.facts)
-      .filter(([, value]) => value)
-      .map(([key]) => key),
-    history: await trimPlannerHistory([...session.history], config.CONTEXT_HISTORY_TOKENS),
-    ...scenario.context(origin, session.history),
-    ...(repair === undefined ? {} : { repair }),
-  });
+  const notAlreadySaid = (suggestion: { draft: string }) =>
+    !session.history.some(
+      (message) => message.role === 'user' && message.text.trim() === suggestion.draft.trim(),
+    );
+  const context = async (text: string, repair?: unknown) => {
+    const imageCandidate =
+      providers.image && !session.imageShares.size ? sessions.imageCandidate(session) : undefined;
+    return {
+      text,
+      facts: Object.entries(session.facts)
+        .filter(([, value]) => value)
+        .map(([key]) => key),
+      history: await trimPlannerHistory([...session.history], config.CONTEXT_HISTORY_TOKENS),
+      ...scenario.context(origin, session.history),
+      mediaCandidate: providers.image
+        ? {
+            candidate: imageCandidate
+              ? {
+                  available: true,
+                  title: imageCandidate.title,
+                  originLabel: imageCandidate.originLabel,
+                  sharingIntention: imageCandidate.introduction,
+                  allowedFocus: ['character', 'prop', 'environment'],
+                  allowedMood: ['warm', 'playful', 'quiet'],
+                  allowedFraming: ['portrait', 'medium', 'detail'],
+                }
+              : null,
+            announced: [...session.imageShares.values()]
+              .filter((work) => work.slotConfirmed)
+              .map((work) => ({
+                phase: work.share.phase,
+                originLabel: work.share.originLabel,
+                presented: !!work.share.presentedAt,
+              })),
+            memory: session.imageMemory,
+          }
+        : undefined,
+      ...(repair === undefined ? {} : { repair }),
+    };
+  };
+
+  const prepareLine = async (
+    text: string,
+    emotion: AudioReadyPayload['emotion'] = 'relieved',
+    action: AudioReadyPayload['action'] = 'none',
+    lineSignal: AbortSignal = signal,
+  ): Promise<SpeechReadyPayload> => {
+    let audioUrl: string | undefined;
+    if (providers.tts.info.provider !== 'text-only') {
+      const audio = await stage('tts', () =>
+        abortable(providers.tts.synthesize(text, lineSignal), lineSignal),
+      );
+      const publication = media.put(session.id, turn.identity.turnId, audio, lineSignal);
+      void publication
+        .then((asset) => {
+          if (lineSignal.aborted) return media.delete(asset.assetId);
+        })
+        .catch(() => undefined);
+      audioUrl = (await stage('media_store', () => abortable(publication, lineSignal))).url;
+    }
+    return {
+      segmentId: id(),
+      text,
+      emotion,
+      action,
+      events: [],
+      ...(audioUrl ? { audioUrl } : { captionOnly: true as const }),
+    };
+  };
+  // A finite media turn reuses SSE and the scheduler, without creating a user message or GPT call.
+  if (input.kind === 'media') {
+    const work = sessions.claimImage(session, turn, input.media.shareId, input.media.claimId);
+    const introduction = await prepareLine(work.recipe.readyLine);
+    sessions.claimImage(session, turn, input.media.shareId, input.media.claimId);
+    const imageEventId = id();
+    sessions.issueImage(session, turn, work, imageEventId);
+    sessions.issue(session, turn, introduction);
+    await publish({
+      type: 'image.ready',
+      payload: {
+        shareId: work.share.shareId,
+        version: work.share.version,
+        imageEventId,
+        assetId: work.share.assetId!,
+        introduction,
+      },
+    });
+    sessions.firstAudioPublished(turn);
+    await publish({
+      type: 'reply.done',
+      payload: { segmentCount: 1, suggestions: scenario.suggestions?.(session.narrative) ?? [] },
+    });
+    sessions.generated(turn);
+    return;
+  }
 
   const graph = new StateGraph(GraphState)
     .addNode('normalize_input', async () => {
@@ -122,8 +214,12 @@ export async function runConversation(
             : null;
       if (!intent) throw new AppError('INVALID_REQUEST', 400, '没有识别到场景操作。');
       const beats = scenario.propose(intent, session.narrative);
+      // A validated story action can also keep/defer/dismiss an existing image share.
+      // New user input temporarily pauses delivery until this semantic pass completes.
+      sessions.imageDecision(session, state.mediaDecision?.decision);
       const dependencies: string[] = [];
       let audioCount = 0;
+      let usedGeneratedReply = false;
       for (const beat of beats) {
         active();
         if (dependencies.length) {
@@ -134,28 +230,32 @@ export async function runConversation(
           if (turn.targets.get(previous)?.confirmed?.status !== 'presented')
             throw new AppError('MEDIA_FAILED', 502, '场景未完成，已保留最后确认的位置。', true);
         }
-        if (beat.line) {
-          const audio = await stage('tts', () => providers.tts.synthesize(beat.line!.text, signal));
-          const upload = media.put(session.id, turn.identity.turnId, audio, signal);
-          void upload
-            .then(async (asset) => {
-              if (signal.aborted) await media.delete(asset.assetId);
-            })
-            .catch(() => undefined);
-          const asset = await stage('media_store', () => abortable(upload, signal));
-          const payload: AudioReadyPayload = {
-            segmentId: id(),
-            text: beat.line.text,
-            audioUrl: asset.url,
-            emotion: beat.line.emotion,
-            action: beat.line.action,
-            events: [],
-          };
+        // Ordinary response beats may use the LLM's actual reply. Authored facts, shots,
+        // movement and milestone changes retain their deterministic presentation anchors.
+        const canImprovise =
+          beats.length === 1 &&
+          beat.event.type === 'beat' &&
+          !beat.event.shot &&
+          beat.frame.story.milestones.join('|') ===
+            scenario.frame(origin).story.milestones.join('|');
+        if (canImprovise && state.plan?.segments.length) usedGeneratedReply = true;
+        const lines =
+          canImprovise && state.plan?.segments.length
+            ? state.plan.segments
+            : beat.line
+              ? [beat.line]
+              : [];
+        for (const line of lines) {
+          const payload = await prepareLine(line.text, line.emotion, line.action);
           sessions.issue(session, turn, payload);
           try {
-            await publish({ type: 'audio.ready', payload });
+            await publish(
+              'audioUrl' in payload
+                ? { type: 'audio.ready', payload }
+                : { type: 'text.ready', payload },
+            );
           } catch (error) {
-            await media.delete(asset.assetId);
+            if ('audioUrl' in payload) await media.delete(payload.audioUrl.split('/').at(-1)!);
             throw error;
           }
           dependencies.push(payload.segmentId);
@@ -167,7 +267,10 @@ export async function runConversation(
           type: 'presentation.ready',
           payload: {
             presentationId: id(),
-            caption: beat.caption,
+            caption:
+              canImprovise && state.plan?.segments.length
+                ? '她听完你的话，自然地接着回应。'
+                : beat.caption,
             events: [event],
             storyAfter: beat.frame.story,
             factsAfter: beat.frame.facts,
@@ -177,13 +280,54 @@ export async function runConversation(
         dependencies.push(event.eventId);
         sessions.firstAudioPublished(turn);
       }
-      await publish({
-        type: 'reply.done',
-        payload: {
-          segmentCount: audioCount,
-          suggestions: scenario.suggestions?.(beats.at(-1)?.checkpoint ?? session.narrative) ?? [],
-        },
-      });
+      // Suggestions must describe what was actually presented, not the old cursor.
+      const lastTarget = dependencies.at(-1);
+      if (lastTarget) {
+        await stage('story_presentation', () =>
+          sessions.waitForPresentation(session, turn, lastTarget),
+        );
+        if (turn.targets.get(lastTarget)?.confirmed?.status !== 'presented')
+          throw new AppError('MEDIA_FAILED', 502, '场景未完成，已保留最后确认的位置。', true);
+      }
+      let suggestions: ReplyPlan['suggestions'] = [];
+      const latest = scenario.frame(session.narrative);
+      if (usedGeneratedReply && state.plan) {
+        suggestions = state.plan.suggestions.filter(notAlreadySaid);
+      } else if (!latest.story.shot || latest.story.shot.mode === 'shared') {
+        try {
+          const latestContext = scenario.context(session.narrative, session.history);
+          const raw = await stage('story_suggestions', () =>
+            providers.planner.plan(
+              {
+                ...latestContext,
+                systemPrompt:
+                  latestContext.systemPrompt +
+                  '\n本次只为刚刚实际说完的回应生成玩家下一句推荐。segments必须为空，actionId和actionRequest必须为null。依据最新历史与当前剧情机会，不重复已经完成的邀请或旧问题。',
+                text: '',
+                facts: Object.entries(session.facts)
+                  .filter(([, value]) => value)
+                  .map(([key]) => key),
+                history: session.history.map(({ role, text }) => ({ role, text })).slice(-16),
+              },
+              signal,
+            ),
+          );
+          const generated = PlannerOutputSchema.safeParse(raw);
+          if (generated.success && !generated.data.actionId)
+            suggestions = filterSuggestions(
+              generated.data.suggestions,
+              latest.story.actions,
+              latest.story.phase,
+              latest.recommendationPolicy,
+            ).filter(notAlreadySaid);
+        } catch (error) {
+          if (signal.aborted) throw error;
+          active(); // A late failed request must not finish a superseded turn.
+          logger.info({ ...turn.identity, stage: 'story_suggestions', outcome: 'unavailable' });
+        }
+      }
+      active();
+      await publish({ type: 'reply.done', payload: { segmentCount: audioCount, suggestions } });
       sessions.generated(turn);
       return {};
     })
@@ -196,6 +340,7 @@ export async function runConversation(
           '这是独处或留白片段，请选择等候、继续或结束。',
           true,
         );
+      turn.conversationSnapshot = { revision: origin.revision, location: session.story.location };
       sessions.addUser(session, turn, state.text);
       return {};
     })
@@ -217,12 +362,32 @@ export async function runConversation(
           scenario.frame(origin).story.actions,
         );
         if (action) {
-          return {
-            actionId: action.id,
-            needsConfirmation: action.explicit,
-            plan: null,
-            valid: true,
-          };
+          const actionFrame = scenario.frame(origin);
+          const response = decision.data.segments.length
+            ? ReplyPlanSchema.safeParse({
+                segments: decision.data.segments,
+                suggestions: filterSuggestions(
+                  decision.data.suggestions,
+                  actionFrame.story.actions,
+                  actionFrame.story.phase,
+                  actionFrame.recommendationPolicy,
+                ).filter((item) => item.draft.trim() !== state.text.trim() && notAlreadySaid(item)),
+              })
+            : null;
+          if (!response || response.success) {
+            try {
+              if (response?.success) scenario.validate(response.data);
+              return {
+                actionId: action.id,
+                needsConfirmation: action.explicit,
+                plan: response?.success ? response.data : null,
+                mediaDecision: decision.data.mediaDecision ?? null,
+                valid: true,
+              };
+            } catch (error) {
+              if (!(error instanceof AppError)) throw error;
+            }
+          }
         }
       } else if (!decision.success || (!decision.data.actionId && !decision.data.actionRequest)) {
         const frame = scenario.frame(session.narrative);
@@ -235,14 +400,19 @@ export async function runConversation(
                 frame.story.phase,
                 frame.recommendationPolicy,
                 scenario.suggestions?.(session.narrative),
-              ),
+              ).filter((item) => item.draft.trim() !== state.text.trim() && notAlreadySaid(item)),
             }
           : state.raw;
         const parsed = ReplyPlanSchema.safeParse(raw);
         if (parsed.success) {
           try {
             scenario.validate(parsed.data);
-            return { plan: parsed.data, actionId: null, valid: true };
+            return {
+              plan: parsed.data,
+              actionId: null,
+              valid: true,
+              mediaDecision: decision.success ? decision.data.mediaDecision : null,
+            };
           } catch (error) {
             if (!(error instanceof AppError)) throw error;
           }
@@ -297,8 +467,19 @@ export async function runConversation(
         planBytes: Buffer.byteLength(JSON.stringify(state.plan)),
         usage: 'unknown',
       });
+      sessions.imageDecision(session, state.mediaDecision?.decision);
+      const work =
+        providers.image && state.mediaDecision?.decision === 'prepare' && state.mediaDecision.intent
+          ? sessions.reserveImage(
+              session,
+              turn,
+              state.mediaDecision.intent,
+              providers.image.simulated,
+            )
+          : undefined;
+      const segments = work ? state.plan.segments.slice(0, 3) : state.plan.segments;
       const published: string[] = [];
-      for (const [index, segment] of state.plan.segments.entries()) {
+      for (const [index, segment] of segments.entries()) {
         // At most the current sentence and one successor may be ready. Receipts release pressure.
         const predecessor = published[index - 2];
         if (predecessor)
@@ -327,38 +508,20 @@ export async function runConversation(
             ? AbortSignal.any([signal, nextTimeout.signal])
             : signal;
           logger.info({ ...turn.identity, stage: 'tts_provider', ...providers.tts.info });
-          const audio = await stage('tts', () =>
-            abortable(providers.tts.synthesize(segment.text, synthesisSignal), synthesisSignal),
-          );
-          logger.info({
-            ...turn.identity,
-            stage: 'tts_result',
-            providerRequestId: audio.requestId ?? 'unknown',
-          });
-          const publication = media.put(session.id, turn.identity.turnId, audio, synthesisSignal);
-          // If cancellation wins a store upload race, the late object is never left unowned.
-          void publication
-            .then(async (asset) => {
-              if (synthesisSignal.aborted) await media.delete(asset.assetId);
-            })
-            .catch(() =>
-              logger.info({ ...turn.identity, stage: 'media_cleanup', outcome: 'failed' }),
-            );
-          const asset = await stage('media_store', () => abortable(publication, synthesisSignal));
-          const payload: AudioReadyPayload = {
-            segmentId: id(),
-            text: segment.text,
-            emotion: segment.emotion,
-            action: segment.action,
-            audioUrl: asset.url,
+          const payload: SpeechReadyPayload = {
+            ...(await prepareLine(segment.text, segment.emotion, segment.action, synthesisSignal)),
             events: segment.events.map((event) => ({ ...event, eventId: id() })),
           };
           sessions.issue(session, turn, payload);
           try {
-            await publish({ type: 'audio.ready', payload });
+            await publish(
+              'audioUrl' in payload
+                ? { type: 'audio.ready', payload }
+                : { type: 'text.ready', payload },
+            );
             sessions.firstAudioPublished(turn);
           } catch (error) {
-            await media.delete(asset.assetId);
+            if ('audioUrl' in payload) await media.delete(payload.audioUrl.split('/').at(-1)!);
             throw error;
           }
           published.push(payload.segmentId);
@@ -366,10 +529,24 @@ export async function runConversation(
           if (timer) clearTimeout(timer);
         }
       }
+      if (work) {
+        const introduction = await prepareLine(work.recipe.introduction);
+        sessions.issue(session, turn, introduction);
+        sessions.issueImageSlot(session, turn, work);
+        await publish({
+          type: 'image.pending',
+          payload: {
+            share: sessions.imageProjection(work),
+            slotEventId: work.slotEventId,
+            introduction,
+          },
+        });
+        sessions.firstAudioPublished(turn);
+      }
       await publish({
         type: 'reply.done',
         payload: {
-          segmentCount: state.plan.segments.length,
+          segmentCount: segments.length + (work ? 1 : 0),
           suggestions: state.plan.suggestions,
         },
       });
@@ -413,6 +590,7 @@ export async function runConversation(
       actionId: null,
       needsConfirmation: false,
       conversationOnly: false,
+      mediaDecision: null,
     },
     { signal, recursionLimit: config.LANGGRAPH_RECURSION_LIMIT },
   );

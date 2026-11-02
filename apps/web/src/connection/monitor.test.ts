@@ -5,7 +5,7 @@ import { ConnectionMonitor, type ConnectionPort, type ConnectionView } from './m
 const tick = async () => {
   for (let i = 0; i < 16; i++) await Promise.resolve();
 };
-const probe: ConnectionProbe = { schemaVersion: 3, status: 'ok' };
+const probe: ConnectionProbe = { schemaVersion: 4, status: 'ok' };
 function fixture() {
   const streams: ReadableStreamDefaultController<Uint8Array>[] = [];
   const views: ConnectionView[] = [];
@@ -28,7 +28,7 @@ function fixture() {
         controller.enqueue(
           new TextEncoder().encode(
             `data: ${JSON.stringify({
-              schemaVersion: 3,
+              schemaVersion: 4,
               type: 'connection.ready',
               connectionId: id,
               seq: 1,

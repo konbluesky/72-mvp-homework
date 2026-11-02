@@ -100,6 +100,7 @@ export class InteractiveHost {
       presented: (turn, success) => this.controller.replyCompleted(turn, success),
     });
     this.controller = new TurnController(this.api, this.playback, this.state);
+    this.controller.images.setAppearance(this.characterId);
     this.monitor = new ConnectionMonitor(this.api, {
       view: (value) => {
         this.state.connection = value;
@@ -239,6 +240,7 @@ export class InteractiveHost {
     const actor = this.actor;
     if (!actor || this.disposed) return;
     if (interrupt) this.controller.interrupt();
+    this.controller.images.setAppearance(id);
     this.characterLoad.abort();
     this.characterLoad = new AbortController();
     const attempt = this.characterLoad;

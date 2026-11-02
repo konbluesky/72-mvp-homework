@@ -1,6 +1,7 @@
+import { plannerOutput } from '../../../../tests/fixtures/provider-http.js';
 import { cafeScenario } from '../scenario/cafe/index.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Receipt, ServerEvent } from '@mira/protocol';
+import type { Receipt, ServerEvent, ReplyPlan } from '@mira/protocol';
 import { runConversation } from './conversation.js';
 import { SessionManager } from '../sessions/manager.js';
 import {
@@ -150,7 +151,7 @@ describe('real LangGraph orchestration', () => {
       const http = vi
         .fn<Fetch>()
         .mockResolvedValueOnce(completion(invalid))
-        .mockResolvedValueOnce(completion(oneSegment));
+        .mockResolvedValueOnce(completion(plannerOutput(oneSegment as ReplyPlan)));
       const planner = new GptPlanner(
         testConfig({
           GPT_BASE_URL: 'https://gpt.example/v1',

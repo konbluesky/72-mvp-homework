@@ -9,14 +9,14 @@ flowchart LR
   Graph --> TTS[TextToSpeechProvider]
   STT --> DS[DeepgramStt / MockStt]
   Plan --> GP[GptPlanner / MockPlanner]
-  TTS --> DT[DeepgramTts / MockTts]
+  TTS --> DT[DeepgramTts / explicit captions]
   DS --> HTTP[DeepgramClient]
   DT --> HTTP
 ```
 
 `providers/types.ts`定义三个小接口：识别器接收规范化WAV并返回Transcription（文本、模拟标记、可选request ID/时长）；Planner返回待Graph校验的unknown计划；合成器返回AudioData（字节、MIME、可选request ID）。每个对象都有只含provider/model的info供诊断，不能打印整个适配实例或其私有配置。
 
-`ProviderSet`仅组合 `stt? / planner / tts`。`providers/index.ts`是唯一按已校验配置选择适配器的组合入口。当前Live选择DeepgramStt、GptPlanner、DeepgramTts；Mock使用三个独立Mock类。显式disabled省略stt，HTTP层由实际对象能力生成会话/快照的voiceInput，而不是由APP_MODE猜测。
+`ProviderSet`组合 `stt? / planner / tts / image?`。`providers/index.ts`是唯一按已校验配置选择适配器的组合入口。当前Live选择DeepgramStt、GptPlanner、DeepgramTts；Mock使用独立模拟识别/规划与明确图片样本；未配置真实语音时输出字幕。显式disabled省略stt，HTTP层由实际对象能力生成会话/快照的voiceInput，而不是由APP_MODE猜测。
 
 `DeepgramClient`只负责官方HTTP传输、共享Token鉴权、有限响应体、取消/超时、HTTP状态与request ID。`deepgram/stt.ts`和`deepgram/tts.ts`分别拥有/v1/listen JSON与/v2/speak MP3契约、模型和预算；一个接口变化不会迫使另一个类解析其数据。`openai/planner.ts`保留用户GPT配置，所有调用（含诊断与修复）仍在LangGraph节点内。媒体格式校验在 `media/audio-format.ts`，存储层不依赖模型SDK。
 
@@ -56,4 +56,6 @@ PlanInput额外接受场景提供的systemPrompt与allowedActions，供应商适
 
 ## 2026-11-01 移除Mock语音
 
-场景Mock工厂只提供识别/规划，不再提供TTS。`createProviders`统一使用真实DeepgramTts，包括选择Mock会话适配器时也不创建模拟声音；实际发声需要真实Deepgram配置。没有text.ready或新文字替代通道，Live失败不回退Mock。原有用户主动选择的音频故障字幕恢复保持不变。CI应继续通过已有依赖注入测试替身隔离外部调用，不调用付费Provider。
+场景Mock工厂只提供识别/规划，不再提供TTS。`createProviders`统一使用真实DeepgramTts，包括选择Mock会话适配器时也不创建模拟声音；实际发声需要真实Deepgram配置。后续图片分享实施新增显式 text.ready 字幕通道供无密钥 Mock 使用，不创建模拟声音；Live失败不回退Mock。原有用户主动选择的音频故障字幕恢复保持不变。CI应继续通过已有依赖注入测试替身隔离外部调用，不调用付费Provider。
+
+2026-11-01：新增可选 ImageProvider、原生 ComfyImageProvider 和 ImageSharingService，任务独立于 Graph/TTS 轮次期限，只有占位回执才能提交。STT disabled 保留其余 provider 能力。分享 ready 的有限展示轮次不调用 Planner；媒体归属、私有传输、claim 和回执边界见[图片分享架构](image-sharing.md)。

@@ -7,6 +7,8 @@ import {
   type FrozenTurn,
   type MessageAttempt,
 } from '@mira/protocol';
+import { MediaShareCoordinator } from './media-share-coordinator.js';
+import type { ImageShareView } from './conversation-items.js';
 import { ApiClient, ApiError } from '../api/client.js';
 import { readSse } from '../api/sse.js';
 import type { PlaybackScheduler } from '../playback/scheduler.js';
@@ -17,6 +19,8 @@ import type { ActiveRecovery } from '../persistence/browser.js';
 import type { OutgoingMessage } from './messages.js';
 
 export class TurnController {
+  readonly images: MediaShareCoordinator;
+  private mediaTurn?: TurnIdentity;
   private sessionId = '';
   private generation = 0;
   private current?: TurnIdentity;
@@ -43,6 +47,15 @@ export class TurnController {
     private readonly playback: PlaybackScheduler,
     private readonly store: InteractiveState,
   ) {
+    this.images = new MediaShareCoordinator(
+      api,
+      store,
+      (share, revision) => this.presentImage(share, revision),
+      () => {
+        if (this.mediaTurn && this.isCurrent(this.mediaTurn)) this.interrupt();
+      },
+    );
+    playback.setImages(this.images);
     this.removeStorageListener = api.persistence?.onReplacement(() => {
       if (this.disposed) return;
       this.connectionLost();
@@ -88,6 +101,7 @@ export class TurnController {
     this.store.connected = false;
     this.store.sessionExpired = true;
     this.sessionId = '';
+    this.images.setSession('');
     this.api.clear();
     this.api.persistence?.saveRecovery({ status: 'expired', outgoing: this.store.outgoing });
   }
@@ -189,6 +203,7 @@ export class TurnController {
         if (!this.ownsConnection(epoch)) return;
         this.generation = Math.max(this.generation, snapshot.generation);
         this.reconcileMessages(snapshot.messageAttempts, snapshot.generation);
+        this.images.setSession(this.sessionId, snapshot.imageShares ?? []);
         this.store.voiceInput = snapshot.capabilities.voiceInput;
         this.store.scenario = snapshot.scene.scenario ?? null;
         this.store.environment = snapshot.scene.environment;
@@ -213,6 +228,7 @@ export class TurnController {
         this.pendingRestart = false;
         this.sessionId = session.sessionId;
         this.generation = 0;
+        this.images.setSession(this.sessionId);
         this.receipts.clear();
         this.store.mode = session.mode;
         this.store.voiceInput = session.capabilities.voiceInput;
@@ -307,6 +323,7 @@ export class TurnController {
     const clean = text.trim();
     if (!clean || !this.store.connected) return;
     void this.playback.unlock().catch(() => undefined);
+    this.images.inputChanged();
     const messageId = crypto.randomUUID();
     const turn = this.start({ messageId, input: { text: clean }, visible: true });
     void this.submit(turn, clean);
@@ -315,6 +332,7 @@ export class TurnController {
   interact(interaction: StoryInteraction, visible = false): string | undefined {
     if (!this.store.connected) return;
     void this.playback.unlock().catch(() => undefined);
+    this.images.inputChanged();
     const messageId = crypto.randomUUID();
     const turn = this.start({ messageId, input: { interaction }, visible });
     void this.submit(turn, { interaction });
@@ -387,6 +405,7 @@ export class TurnController {
     });
   }
   press(): void {
+    this.images.inputChanged();
     if (!this.store.connected || this.recording) return;
     if (!this.store.voiceInput) {
       this.store.failure = '当前模式暂不支持语音输入，请使用文字输入。';
@@ -448,6 +467,7 @@ export class TurnController {
         });
     }
     this.current = undefined;
+    this.mediaTurn = undefined;
     this.store.activeMessageId = '';
     this.active.abort();
     this.playback.cancel();
@@ -496,10 +516,79 @@ export class TurnController {
     this.checkpointBrowser();
     this.disposed = true;
     this.removeStorageListener?.();
+    this.images.dispose();
     this.connection.abort();
     this.receipts.clear();
     this.api.clear();
     await this.playback.dispose();
+  }
+  private async presentImage(share: ImageShareView, revision: number): Promise<boolean> {
+    if (
+      this.disposed ||
+      !this.store.connected ||
+      this.store.playback !== 'idle' ||
+      this.store.interaction !== 'idle' ||
+      revision !== this.images.inputRevision ||
+      share.phase !== 'ready'
+    )
+      return false;
+    const expectedGeneration = this.generation;
+    // Freeze the previous completed presentation before acquiring a new, finite media lease.
+    this.interrupt();
+    if (revision !== this.images.inputRevision) return false;
+    const turn = {
+      sessionId: this.sessionId,
+      generation: ++this.generation,
+      turnId: crypto.randomUUID(),
+    };
+    this.current = turn;
+    this.mediaTurn = turn;
+    this.active = new AbortController();
+    const signal = this.active.signal;
+    this.playback.begin(turn);
+    const begun = this.api.begin(
+      turn,
+      this.receipts.outbox(),
+      this.receipts.snapshots(),
+      signal,
+      undefined,
+      {
+        purpose: 'media-share',
+        expectedGeneration,
+        shareId: share.shareId,
+        expectedShareVersion: share.version,
+      },
+    );
+    this.begin = begun.then((response) => {
+      if (!this.isCurrent(turn)) return;
+      this.receipts.acknowledge(response.acknowledged);
+      if (!response.claimId) throw new Error('MISSING_IMAGE_CLAIM');
+    });
+    void this.begin.catch(() => undefined);
+    try {
+      const response = await begun;
+      if (!this.isCurrent(turn) || revision !== this.images.inputRevision) return false;
+      this.receipts.acknowledge(response.acknowledged);
+      if (!response.claimId) throw new Error('MISSING_IMAGE_CLAIM');
+      await this.submit(turn, {
+        media: { kind: 'image-share', shareId: share.shareId, claimId: response.claimId },
+      });
+      return true;
+    } catch {
+      if (this.isCurrent(turn)) {
+        this.interrupt();
+        try {
+          const snapshot = await this.api.snapshot();
+          if (this.sessionId === turn.sessionId && !this.current) {
+            this.generation = Math.max(this.generation, snapshot.generation);
+            this.images.setSession(this.sessionId, snapshot.imageShares ?? []);
+          }
+        } catch {
+          /* The connection monitor owns session recovery. */
+        }
+      }
+      return false;
+    }
   }
   private start(message?: Pick<OutgoingMessage, 'messageId' | 'input' | 'visible'>): TurnIdentity {
     this.interrupt();
@@ -551,7 +640,11 @@ export class TurnController {
   }
   private async submit(
     turn: TurnIdentity,
-    input: string | { blob: Blob; durationMs: number } | { interaction: StoryInteraction },
+    input:
+      | string
+      | { blob: Blob; durationMs: number }
+      | { interaction: StoryInteraction }
+      | { media: { kind: 'image-share'; shareId: string; claimId: string } },
   ): Promise<void> {
     const begin = this.begin;
     const signal = this.active.signal;
@@ -598,6 +691,13 @@ export class TurnController {
               this.store.transcribed = event.payload.text;
               this.store.simulated = event.payload.simulated;
               break;
+            case 'image.pending':
+              this.playback.enqueueImagePending(turn, event.payload);
+              break;
+            case 'image.ready':
+              this.playback.enqueueImageReady(turn, event.payload);
+              break;
+            case 'text.ready':
             case 'audio.ready':
               this.playback.enqueue(turn, event.payload);
               break;
@@ -680,6 +780,7 @@ export class TurnController {
       this.failVoiceInput(turn, error.message);
       return;
     }
+    const automatic = sameTurn(this.mediaTurn, turn);
     const message = this.store.outgoing.find((entry) => sameTurn(entry.turn, turn));
     const failure =
       error instanceof ApiError
@@ -698,7 +799,8 @@ export class TurnController {
         error: failure,
       });
     const inline = message && ('text' in message.input || message.visible);
-    this.store.failure = inline && !message.started && !message.presented ? '' : failure;
+    this.store.failure =
+      automatic || (inline && !message.started && !message.presented) ? '' : failure;
     if (error instanceof ApiError && error.code === 'STALE_TURN')
       void this.recoverConnection(true, true);
     if (error instanceof ApiError && ['SESSION_EXPIRED', 'UNAUTHORIZED'].includes(error.code)) {

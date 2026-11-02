@@ -1,0 +1,33 @@
+{
+  "slotKey": "window-keepsake",
+  "originLabel": "窗边 · 今晚的纪念",
+  "title": "纪念照",
+  "character": "1girl, solo, adult_woman, flight_attendant",
+  "appearance": "(grey_hair:1.1), (purple_hair:0.65), short_hair, side_ponytail, low_ponytail, wavy_hair, bangs, (blue_eyes:1.15), (black_jacket:1.1), grey_jacket, black_skirt, grey_skirt, skirt_suit, white_shirt, long_sleeves, buttons, (white_trim:1.3), white_piping, white_cuffs, lapels, (neckerchief:1.3), (striped_ascot:1.2), blue_ascot, silk, white_stripes, tied_neckerchief, fully_clothed",
+  "location": "window-seat",
+  "environment": "indoors, cafe, night, window, rain, warm_lighting, wooden_table, coffee_cup",
+  "positive": "score_9, score_8_up, score_7_up, source_anime, rating_safe",
+  "negative": "score_6, score_5, score_4, worst_quality, low_quality, lowres, bad_anatomy, bad_hands, extra_fingers, missing_fingers, extra_limbs, multiple_girls, multiple_views, long_hair, black_hair, blonde_hair, hat, flight_attendant_hat, necktie, navy_blue_jacket, animal_ears, text, watermark, signature, nsfw, nude, winter_scarf, long_scarf, knitted_fabric, tassels, fringe, shawl",
+  "intentTags": {
+    "focus": {
+      "character": "portrait, solo_focus, looking_at_viewer",
+      "prop": "holding_cup, hands_on_cup, coffee_cup, seated",
+      "environment": "wide_shot, seated, window, rain, cozy"
+    },
+    "mood": {
+      "warm": "gentle_smile, closed_mouth, relaxed",
+      "playful": "playful_smile, raised_eyebrow, lively",
+      "quiet": "calm_expression, closed_mouth, serene"
+    },
+    "framing": {
+      "portrait": "upper_body",
+      "medium": "cowboy_shot, seated",
+      "detail": "close-up"
+    }
+  },
+  "width": 1024,
+  "height": 1024,
+  "introduction": "想给今晚留张纪念，等我一下。",
+  "readyLine": "这张，留个纪念。",
+  "mockImage": "assets/images/window-keepsake-mock.webp"
+}

@@ -26,13 +26,15 @@ it('keeps photo and rain receipts separate in the original page without changing
 it('offers a continuous authored story route and rejects a recommendation from an old checkpoint', () => {
   let checkpoint = cafeScenario.initial('story');
   const route = ['talk-a01-1', 'talk-a01-2', 'talk-a01-3', 'talk-a01-4'];
-  const opening = cafeScenario.suggestions!(checkpoint)[0]!;
+  const opening = { kind: 'action' as const, actionId: route[0]!, revision: checkpoint.revision };
   for (const actionId of route) {
-    const guide = cafeScenario.suggestions!(checkpoint)[0]!;
-    expect(guide.interaction).toEqual({ kind: 'action', actionId, revision: checkpoint.revision });
-    for (const beat of cafeScenario.propose(guide.interaction!, checkpoint))
+    expect(cafeScenario.frame(checkpoint).story.actions[0]?.id).toBe(actionId);
+    for (const beat of cafeScenario.propose(
+      { kind: 'action', actionId, revision: checkpoint.revision },
+      checkpoint,
+    ))
       checkpoint = cafeScenario.accept(checkpoint, beat.checkpoint);
   }
   expect(cafeScenario.frame(checkpoint).story.beat).toBe('a02-1');
-  expect(() => cafeScenario.propose(opening.interaction!, checkpoint)).toThrow();
+  expect(() => cafeScenario.propose(opening, checkpoint)).toThrow();
 });

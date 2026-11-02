@@ -1,0 +1,80 @@
+{
+  "4": {
+    "inputs": {
+      "samples": ["5", 0],
+      "vae": ["18", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE\u89e3\u7801"
+    }
+  },
+  "5": {
+    "inputs": {
+      "seed": 663572625663043,
+      "steps": 25,
+      "cfg": 3.5,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": ["18", 0],
+      "positive": ["12", 0],
+      "negative": ["13", 0],
+      "latent_image": ["6", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K\u91c7\u6837\u5668"
+    }
+  },
+  "6": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "\u7a7aLatent\u56fe\u50cf"
+    }
+  },
+  "12": {
+    "inputs": {
+      "text": "",
+      "clip": ["18", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "\u6b63\u9762\u63d0\u793a\u8bcd"
+    }
+  },
+  "13": {
+    "inputs": {
+      "text": "",
+      "clip": ["18", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "\u8d1f\u9762\u63d0\u793a\u8bcd"
+    }
+  },
+  "17": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": ["4", 0]
+    },
+    "class_type": "SaveImageS3",
+    "_meta": {
+      "title": "\u4fdd\u5b58\u56fe\u50cf"
+    }
+  },
+  "18": {
+    "inputs": {
+      "ckpt_name": "oneObsession_v24.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Checkpoint\u52a0\u8f7d\u5668\uff08\u7b80\u6613\uff09"
+    }
+  }
+}

@@ -39,6 +39,14 @@ export interface StoryBeat {
   line?: { text: string; emotion: Emotion; action: Action };
 }
 export interface ScenarioDefinition {
+  imageSharing?: {
+    candidate(
+      checkpoint: StoryCheckpoint,
+      history: Array<{ role: 'user' | 'assistant'; text: string }>,
+    ): Omit<import('../images/types.js').ImageRecipe, 'intent' | 'seed'> | undefined;
+    accepts(checkpoint: StoryCheckpoint, recipe: import('../images/types.js').ImageRecipe): boolean;
+    mockImage: string;
+  };
   mockProviders?: () => Omit<import('../providers/types.js').ProviderSet, 'tts'>;
   initial(entry?: 'story' | 'conversation'): StoryCheckpoint;
   frame(checkpoint: StoryCheckpoint): StoryFrame;

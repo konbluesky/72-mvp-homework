@@ -45,7 +45,10 @@
 /docs/architecture/*
 !/docs/architecture/decisions.md
 !/docs/architecture/providers.md
+!/docs/architecture/image-sharing.md
 !/docs/architecture/narrative-runtime-design.md
+!/docs/architecture/llm-directed-story-design.md
+!/docs/architecture/session-persistence-design.md
 !/docs/architecture/webgal-interaction-design.md
 !/docs/architecture/scene-modules.md
 !/docs/architecture/program-interactions.md
@@ -111,3 +114,22 @@ Thumbs.db
 
 # Ink bytecode is reproduced by scenarios:build, then copied by the server build.
 /apps/server/src/scenario/*/compiled.json
+assets/mock-audio/after.wav
+assets/mock-audio/comfort.wav
+assets/mock-audio/gallery.wav
+assets/mock-audio/hello.wav
+assets/mock-audio/helloNext.wav
+assets/mock-audio/lastNight.wav
+assets/mock-audio/letterKnown.wav
+assets/mock-audio/letterUnknown.wav
+assets/mock-audio/manifest.json
+assets/mock-audio/photo.wav
+assets/mock-audio/rain.wav
+assets/mock-audio/refuse.wav
+assets/mock-audio/storyDepart.wav
+assets/mock-audio/storyLetter.wav
+assets/mock-audio/storyReadLetter.wav
+assets/mock-audio/storyStay.wav
+assets/mock-audio/travel.wav
+assets/mock-audio/waiting.wav
+assets/mock-audio/washroomPause.wav

@@ -54,36 +54,29 @@ describe('scenario context and soft suggestions', () => {
   });
 });
 
-it('binds only scenario-authored requests to interactions, preserving the checkpoint revision', () => {
+it('preserves LLM recommendation wording without binding it to a scripted interaction', () => {
   const checkpoint = cafeScenario.initial('story');
-  const authored = cafeScenario.suggestions!(checkpoint);
-  const guide = authored.find((item) => item.interaction?.kind === 'action')!;
-  if (guide.interaction?.kind !== 'action') throw new Error('Expected authored action');
   const frame = cafeScenario.frame(checkpoint);
+  const action = frame.story.actions.find((item) => item.id === 'talk-a01-1')!;
+  const generated = {
+    label: '接话',
+    draft: '你今天下班后，最想做什么？',
+    kind: 'explore',
+    relatedActionId: action.id,
+  };
   const filtered = filterSuggestions(
-    [
-      {
-        label: '改写',
-        draft: '如果这样做会怎样？',
-        kind: 'explore',
-        relatedActionId: guide.interaction.actionId,
-      },
-      { label: '聊天', draft: '我也喜欢雨声。', kind: 'chat', relatedActionId: null },
-    ],
+    [generated],
     frame.story.actions,
     frame.story.phase,
     frame.recommendationPolicy,
-    authored,
+    [
+      {
+        label: '固定',
+        draft: '我先坐一会儿，今晚不急着走。',
+        interaction: { kind: 'action', actionId: action.id, revision: checkpoint.revision },
+      },
+    ],
   );
-  expect(filtered[0]).toEqual(guide);
-  expect(filtered[1]).not.toHaveProperty('interaction');
-  expect(
-    filterSuggestions(
-      [{ label: '不可用', draft: '读信吧。', kind: 'explore', relatedActionId: 'inspect-letter' }],
-      frame.story.actions,
-      frame.story.phase,
-      frame.recommendationPolicy,
-      authored,
-    ),
-  ).toEqual([]);
+  expect(filtered).toEqual([{ label: generated.label, draft: generated.draft }]);
+  expect(filtered[0]).not.toHaveProperty('interaction');
 });

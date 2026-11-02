@@ -22,6 +22,7 @@ export interface PlanInput {
   systemPrompt?: string;
   allowedActions?: StoryAction[];
   repair?: unknown;
+  mediaCandidate?: unknown;
 }
 export interface SpeechToTextProvider {
   readonly info: ProviderInfo;
@@ -37,6 +38,7 @@ export interface TextToSpeechProvider {
 }
 /** Composition by capability: replacing one adapter never changes Graph or playback. */
 export interface ProviderSet {
+  image?: import('../images/types.js').ImageProvider;
   stt?: SpeechToTextProvider;
   planner: ReplyPlanner;
   tts: TextToSpeechProvider;

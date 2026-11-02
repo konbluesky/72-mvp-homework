@@ -98,7 +98,7 @@ describe('Live voice HTTP to actual capability adapters', () => {
       expect(stages).toEqual(['stt', 'planner', 'tts']);
       const snapshot = (await app.inject({ url: base, headers })).json();
       expect(snapshot.capabilities.voiceInput).toBe(true);
-      expect(snapshot.history).toEqual([{ role: 'user', text: '能看看照片吗？' }]);
+      expect(snapshot.history).toEqual([]); // Generation alone does not commit an unheard user turn.
     } finally {
       await app.close();
     }

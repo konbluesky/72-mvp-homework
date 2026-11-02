@@ -1,6 +1,8 @@
 import { abortable } from '../playback/abortable.js';
 import { BrowserPersistence, type SessionCredentials } from '../persistence/browser.js';
 import {
+  ImageShareSchema,
+  type MediaPresentationSchema,
   BeginTurnResponseSchema,
   ConnectionProbeSchema,
   HttpErrorSchema,
@@ -120,6 +122,7 @@ export class ApiClient {
     frozenTurns: FrozenTurn[],
     signal: AbortSignal,
     messageId?: string,
+    mediaPresentation?: import('zod').z.infer<typeof MediaPresentationSchema>,
   ) {
     return this.json(`/api/sessions/${turn.sessionId}/turns`, BeginTurnResponseSchema, {
       method: 'POST',
@@ -130,6 +133,7 @@ export class ApiClient {
         ...(messageId ? { messageId } : {}),
         receipts,
         frozenTurns,
+        ...(mediaPresentation ? { mediaPresentation } : {}),
       }),
     });
   }
@@ -155,7 +159,11 @@ export class ApiClient {
   }
   input(
     turn: TurnIdentity,
-    input: string | { blob: Blob; durationMs: number } | { interaction: StoryInteraction },
+    input:
+      | string
+      | { blob: Blob; durationMs: number }
+      | { interaction: StoryInteraction }
+      | { media: { kind: 'image-share'; shareId: string; claimId: string } },
     inputId: string,
     signal: AbortSignal,
   ): Promise<Response> {
@@ -168,6 +176,8 @@ export class ApiClient {
         inputId,
         interaction: input.interaction,
       });
+    else if ('media' in input)
+      body = JSON.stringify({ generation: turn.generation, inputId, media: input.media });
     else {
       body = new FormData();
       body.append(
@@ -239,6 +249,52 @@ export class ApiClient {
       offset += chunk.byteLength;
     }
     return buffer.buffer;
+  }
+  imageShare(id: string, signal: AbortSignal) {
+    return this.json(
+      `/api/sessions/${this.requireSession().sessionId}/image-shares/${id}`,
+      ImageShareSchema,
+      { signal },
+    );
+  }
+  cancelImage(id: string, signal: AbortSignal) {
+    return this.json(
+      `/api/sessions/${this.requireSession().sessionId}/image-shares/${id}/cancel`,
+      ImageShareSchema,
+      { method: 'POST', signal },
+    );
+  }
+  retryImage(id: string, expectedVersion: number, requestId: string, signal: AbortSignal) {
+    return this.json(
+      `/api/sessions/${this.requireSession().sessionId}/image-shares/${id}/retry`,
+      ImageShareSchema,
+      { method: 'POST', body: JSON.stringify({ expectedVersion, requestId }), signal },
+    );
+  }
+  async image(path: string, signal: AbortSignal): Promise<Blob> {
+    if (!/^\/api\/media\/[a-zA-Z0-9_-]+$/.test(path)) throw new Error('INVALID_MEDIA_PATH');
+    const response = await this.request(path, { signal });
+    const type = response.headers.get('content-type')?.split(';')[0];
+    if (type !== 'image/png' && type !== 'image/jpeg') throw new Error('INVALID_IMAGE_TYPE');
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('EMPTY_IMAGE');
+    const chunks: Uint8Array<ArrayBuffer>[] = [];
+    let size = 0;
+    try {
+      for (;;) {
+        signal.throwIfAborted();
+        const result = await reader.read();
+        if (result.done) break;
+        size += result.value.length;
+        if (size > 16 * 1024 * 1024) throw new Error('IMAGE_TOO_LARGE');
+        chunks.push(new Uint8Array(result.value));
+      }
+    } finally {
+      await reader.cancel().catch(() => undefined);
+      reader.releaseLock();
+    }
+    if (!size) throw new Error('EMPTY_IMAGE');
+    return new Blob(chunks, { type });
   }
   private requireSession(): SessionCredentials {
     if (!this.session) throw new ApiError('SESSION_EXPIRED', '故事连接已结束，请重新开始。');

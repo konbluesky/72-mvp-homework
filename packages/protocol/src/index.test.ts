@@ -82,7 +82,7 @@ describe('network schemas', () => {
     expect(
       ServerEventSchema.safeParse({
         type: 'reply.done',
-        schemaVersion: 3,
+        schemaVersion: 4,
         payload: { segmentCount: 0 },
       }).success,
     ).toBe(false);
@@ -117,7 +117,7 @@ describe('network schemas', () => {
 describe('stateless monitoring contract', () => {
   it('rejects unknown commands, sequence errors and credentials in health frames', () => {
     const frame = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       type: 'connection.ready',
       connectionId: 'monitor',
       seq: 1,
@@ -133,7 +133,7 @@ describe('stateless monitoring contract', () => {
     ])
       expect(ConnectionEventSchema.safeParse({ ...frame, ...extra }).success).toBe(false);
     expect(
-      ConnectionProbeSchema.safeParse({ schemaVersion: 3, status: 'ok', token: 'private' }).success,
+      ConnectionProbeSchema.safeParse({ schemaVersion: 4, status: 'ok', token: 'private' }).success,
     ).toBe(false);
   });
 });
@@ -141,7 +141,7 @@ describe('stateless monitoring contract', () => {
 it('rejects executable story targets and accepts independent presentation without an audio URL', async () => {
   const { JsonInputSchema, PresentationReadyPayloadSchema, SCHEMA_VERSION } =
     await import('./index.js');
-  expect(SCHEMA_VERSION).toBe(3);
+  expect(SCHEMA_VERSION).toBe(4);
   expect(
     JsonInputSchema.safeParse({
       generation: 1,
@@ -163,4 +163,74 @@ it('rejects executable story targets and accepts independent presentation withou
       events: [{ eventId: 'arrive', type: 'location', location: 'lobby' }],
     }).events,
   ).toHaveLength(1);
+});
+
+it('bounds the image share contract and keeps media input separate from user dialogue', async () => {
+  const { ImagePendingPayloadSchema, MediaInputSchema, BeginTurnSchema, AudioReadyPayloadSchema } =
+    await import('./index.js');
+  const share = {
+    shareId: 'share',
+    attemptId: 'attempt',
+    version: 1,
+    phase: 'preparing',
+    originLabel: 'test',
+    title: 'test',
+    width: 1024,
+    height: 1024,
+    announcedAt: 1,
+    expiresAt: 10000,
+    simulated: true,
+    canRetryGeneration: false,
+    longWait: false,
+  };
+  const intro = {
+    segmentId: 'intro',
+    text: '稍等。',
+    emotion: 'relieved',
+    action: 'none',
+    events: [],
+    captionOnly: true,
+  };
+  expect(
+    ImagePendingPayloadSchema.safeParse({ share, slotEventId: 'slot', introduction: intro })
+      .success,
+  ).toBe(true);
+  expect(
+    ImagePendingPayloadSchema.safeParse({
+      share: { ...share, prompt_id: 'private' },
+      slotEventId: 'slot',
+      introduction: intro,
+    }).success,
+  ).toBe(false);
+  expect(
+    ImagePendingPayloadSchema.safeParse({
+      share,
+      slotEventId: 'slot',
+      introduction: {
+        ...intro,
+        events: [{ eventId: 'world', type: 'environment', environment: 'changed' }],
+      },
+    }).success,
+  ).toBe(false);
+  expect(AudioReadyPayloadSchema.safeParse(intro).success).toBe(false);
+  expect(
+    MediaInputSchema.safeParse({
+      generation: 2,
+      inputId: 'input',
+      media: { kind: 'image-share', shareId: 'share', claimId: 'claim' },
+      text: 'fake user',
+    }).success,
+  ).toBe(false);
+  expect(
+    BeginTurnSchema.safeParse({
+      generation: 2,
+      turnId: 'delivery',
+      mediaPresentation: {
+        purpose: 'media-share',
+        expectedGeneration: 1,
+        shareId: 'share',
+        expectedShareVersion: 1,
+      },
+    }).success,
+  ).toBe(true);
 });
